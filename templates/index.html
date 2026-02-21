@@ -968,7 +968,7 @@
             </div>
 
             <!-- Hidden inputs -->
-            <input type="file" id="model-photo-camera" accept="image/*" capture="user" onchange="previewModelPhoto(this)" style="display:none">
+            <input type="file" id="model-photo-camera" accept="image/*" capture="environment" onchange="previewModelPhoto(this)" style="display:none">
             <input type="file" id="model-photo-gallery" accept="image/*" onchange="previewModelPhoto(this)" style="display:none">
 
             <!-- Photo preview -->
@@ -1390,28 +1390,94 @@
     // STEP 3: CAMERA & PHOTO
     // ============================
     function openCamera() {
-        document.getElementById('model-photo-camera').click();
+        const input = document.getElementById('model-photo-camera');
+        input.value = '';
+        input.click();
     }
 
     function openGallery() {
-        document.getElementById('model-photo-gallery').click();
+        const input = document.getElementById('model-photo-gallery');
+        input.value = '';
+        input.click();
     }
 
     function previewModelPhoto(input) {
-        if (input.files && input.files[0]) {
-            modelPhotoFile = input.files[0];
+        if (!input.files || !input.files[0]) return;
+
+        const file = input.files[0];
+        if (!file.type.startsWith('image/')) {
+            showToast('Por favor selecciona una imagen', 'error');
+            return;
+        }
+
+        showToast('Procesando foto...', '');
+
+        // Compress image for mobile cameras (they produce 8-15MB files)
+        compressImage(file, 1200, 0.85).then(compressedFile => {
+            modelPhotoFile = compressedFile;
+            const url = URL.createObjectURL(compressedFile);
+            document.getElementById('model-preview-img').src = url;
+            document.getElementById('model-preview-container').style.display = 'block';
+            document.querySelector('.capture-options').style.display = 'none';
+            document.getElementById('photo-guide').style.display = 'none';
+            document.getElementById('btn-generate').disabled = false;
+            showToast('Foto lista ✓', 'success');
+        }).catch(err => {
+            console.error('Compress error:', err);
+            // Fallback: use original file
+            modelPhotoFile = file;
             const reader = new FileReader();
             reader.onload = (e) => {
                 document.getElementById('model-preview-img').src = e.target.result;
                 document.getElementById('model-preview-container').style.display = 'block';
-                // Hide capture buttons
                 document.querySelector('.capture-options').style.display = 'none';
-                // Hide guide
                 document.getElementById('photo-guide').style.display = 'none';
+                document.getElementById('btn-generate').disabled = false;
             };
-            reader.readAsDataURL(input.files[0]);
-            document.getElementById('btn-generate').disabled = false;
-        }
+            reader.readAsDataURL(file);
+            showToast('Foto cargada ✓', 'success');
+        });
+    }
+
+    function compressImage(file, maxDim, quality) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => {
+                let w = img.width;
+                let h = img.height;
+
+                // Scale down if too large
+                if (w > maxDim || h > maxDim) {
+                    if (w > h) {
+                        h = Math.round(h * maxDim / w);
+                        w = maxDim;
+                    } else {
+                        w = Math.round(w * maxDim / h);
+                        h = maxDim;
+                    }
+                }
+
+                const canvas = document.createElement('canvas');
+                canvas.width = w;
+                canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, w, h);
+
+                canvas.toBlob(blob => {
+                    if (blob) {
+                        const compressed = new File([blob], file.name || 'photo.jpg', { type: 'image/jpeg' });
+                        console.log(`Compressed: ${(file.size/1024/1024).toFixed(1)}MB → ${(compressed.size/1024/1024).toFixed(1)}MB`);
+                        resolve(compressed);
+                    } else {
+                        reject(new Error('toBlob failed'));
+                    }
+                }, 'image/jpeg', quality);
+
+                URL.revokeObjectURL(img.src);
+            };
+            img.onerror = () => reject(new Error('Image load failed'));
+            img.src = URL.createObjectURL(file);
+        });
     }
 
     function retakePhoto() {
@@ -1420,7 +1486,6 @@
         document.querySelector('.capture-options').style.display = 'grid';
         document.getElementById('photo-guide').style.display = 'block';
         document.getElementById('btn-generate').disabled = true;
-        // Reset file inputs
         document.getElementById('model-photo-camera').value = '';
         document.getElementById('model-photo-gallery').value = '';
     }
