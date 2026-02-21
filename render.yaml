@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: fashion-tryon
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn main:app -w 2 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT
+    envVars:
+      - key: FASHN_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: fashion-tryon-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: PYTHON_VERSION
+        value: 3.11.9
+
+databases:
+  - name: fashion-tryon-db
+    plan: free
+    databaseName: fashion_tryon
+    user: fashion_user
