@@ -534,6 +534,30 @@
         }
         .garment-card.selected .garment-check { display: flex; }
 
+        .garment-delete {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            width: 26px;
+            height: 26px;
+            background: rgba(204, 68, 68, 0.85);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 0.75rem;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 5;
+            pointer-events: auto;
+            font-family: inherit;
+        }
+        .garment-card:hover .garment-delete { display: flex; }
+        @media (max-width: 768px) {
+            .garment-delete { display: flex; }
+        }
+
         /* ===== OUTFIT SLOTS ===== */
         .outfit-slot {
             flex: 1;
@@ -819,14 +843,6 @@
                     <label>Peso (kg)</label>
                     <input type="number" id="weight" placeholder="65" min="30" max="200">
                 </div>
-                <div class="form-group">
-                    <label>Pecho (cm) — opcional</label>
-                    <input type="number" id="chest" placeholder="Opcional">
-                </div>
-                <div class="form-group">
-                    <label>Cintura (cm) — opcional</label>
-                    <input type="number" id="waist" placeholder="Opcional">
-                </div>
             </div>
 
             <div class="size-result" id="size-result">
@@ -991,9 +1007,15 @@
                 <div class="form-group">
                     <label>Categoría</label>
                     <select id="g-category" required>
-                        <option value="tops">Tops / Camisetas</option>
-                        <option value="bottoms">Pantalones / Faldas</option>
-                        <option value="one-pieces">Vestidos / Enterizos</option>
+                        <option value="tops">Camiseta</option>
+                        <option value="tops">Camisa</option>
+                        <option value="tops">Buzo / Saco</option>
+                        <option value="tops">Blusa</option>
+                        <option value="bottoms">Pantalón</option>
+                        <option value="bottoms">Pantaloneta</option>
+                        <option value="bottoms">Falda</option>
+                        <option value="one-pieces">Vestido</option>
+                        <option value="one-pieces">Enterizo</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -1105,11 +1127,6 @@
         form.append('height_cm', height);
         form.append('weight_kg', weight);
 
-        const chest = document.getElementById('chest').value;
-        const waist = document.getElementById('waist').value;
-        if (chest) form.append('chest_cm', chest);
-        if (waist) form.append('waist_cm', waist);
-
         try {
             const resp = await fetch('/api/estimate-size', { method: 'POST', body: form });
             const data = await resp.json();
@@ -1119,7 +1136,7 @@
 
             document.getElementById('size-display').textContent = data.estimated_size;
             document.getElementById('size-measures').textContent =
-                `Pecho: ${data.measurements.chest_cm}cm · Cintura: ${data.measurements.waist_cm}cm`;
+                `Estatura: ${data.measurements.height_cm}cm · Peso: ${data.measurements.weight_kg}kg`;
             document.getElementById('size-result').classList.add('visible');
 
             showToast(`Talla estimada: ${data.estimated_size}`, 'success');
@@ -1176,7 +1193,8 @@
                  data-id="${g.id}" data-category="${g.category}"
                  onclick="toggleGarment('${g.id}')">
                 <div class="garment-check">✓</div>
-                <img src="${g.image_url}" alt="${g.name}">
+                <button class="garment-delete" onclick="event.stopPropagation(); deleteGarment('${g.id}', '${g.name}')" title="Eliminar prenda">✕</button>
+                <img src="${g.image_url}" alt="${g.name}" onerror="this.parentElement.style.opacity='0.5'; this.alt='⚠ Imagen no disponible'">
                 <div class="garment-info">
                     <div class="name">${g.name}</div>
                     <div class="meta">
@@ -1567,6 +1585,29 @@
         toast.textContent = msg;
         toast.className = `toast visible ${type}`;
         setTimeout(() => toast.classList.remove('visible'), 3000);
+    }
+
+    // ============================
+    // DELETE GARMENT
+    // ============================
+    async function deleteGarment(id, name) {
+        if (!confirm(`¿Eliminar "${name}" del catálogo?`)) return;
+        try {
+            const resp = await fetch(`/api/garment/${id}`, { method: 'DELETE' });
+            const data = await resp.json();
+            if (data.success) {
+                catalog = catalog.filter(g => g.id !== id);
+                // Clear from outfit if selected
+                if (outfit.top === id) outfit.top = null;
+                if (outfit.bottom === id) outfit.bottom = null;
+                if (outfit.onepiece === id) outfit.onepiece = null;
+                renderGarments(catalog);
+                updateOutfitUI();
+                showToast('Prenda eliminada', 'success');
+            }
+        } catch(e) {
+            showToast('Error eliminando prenda', 'error');
+        }
     }
 
     // ============================

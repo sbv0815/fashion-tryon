@@ -180,6 +180,28 @@ def image_to_base64_url(filepath: str) -> str:
     return f"data:{mime};base64,{b64}"
 
 
+def ensure_garment_file(garment, db: Session) -> str:
+    """Ensure garment image exists as local file. Restore from DB if needed."""
+    if garment.image_path and Path(garment.image_path).exists():
+        return garment.image_path
+
+    # Restore from base64 in database
+    if garment.image_data:
+        import re
+        match = re.match(r'data:(image/\w+);base64,(.+)', garment.image_data)
+        if match:
+            mime_type = match.group(1)
+            img_bytes = base64.b64decode(match.group(2))
+            ext = ".jpg" if "jpeg" in mime_type else ".png"
+            restored_path = UPLOAD_DIR / f"restored_{garment.id}{ext}"
+            restored_path.write_bytes(img_bytes)
+            garment.image_path = str(restored_path)
+            db.commit()
+            return str(restored_path)
+
+    raise HTTPException(status_code=404, detail=f"Image for garment {garment.id} not found")
+
+
 # ============================================================
 # ROUTES - PAGES
 # ============================================================
@@ -202,12 +224,22 @@ async def upload_garment(
     price: float = Form(0), image: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
+    # Save file locally for FASHN API use
     filepath = await save_upload(image, prefix=f"garment_{gender}_{size}_")
+
+    # Also store as base64 in database for persistence across deploys
+    img_bytes = Path(filepath).read_bytes()
+    ext = Path(filepath).suffix.lower()
+    mime = "image/jpeg" if ext in [".jpg", ".jpeg"] else "image/png"
+    img_b64 = f"data:{mime};base64,{base64.b64encode(img_bytes).decode()}"
+
     garment_id = uuid.uuid4().hex[:12]
     garment = Garment(
         id=garment_id, name=name, category=category,
         gender=gender, size=size, price=price,
-        image_url=f"/{filepath}", image_path=filepath,
+        image_url=f"/api/garment-image/{garment_id}",
+        image_path=filepath,
+        image_data=img_b64,
     )
     db.add(garment)
     db.commit()
@@ -217,6 +249,39 @@ async def upload_garment(
         "gender": garment.gender, "size": garment.size, "price": garment.price,
         "image_url": garment.image_url,
     }}
+
+
+@app.get("/api/garment-image/{garment_id}")
+async def get_garment_image(garment_id: str, db: Session = Depends(get_db)):
+    """Serve garment image from database (persistent) or local file."""
+    garment = db.query(Garment).filter(Garment.id == garment_id).first()
+    if not garment:
+        raise HTTPException(status_code=404, detail="Garment not found")
+
+    # Try local file first (faster)
+    if garment.image_path and Path(garment.image_path).exists():
+        from fastapi.responses import FileResponse
+        return FileResponse(garment.image_path)
+
+    # Fall back to base64 from database
+    if garment.image_data:
+        import re
+        match = re.match(r'data:(image/\w+);base64,(.+)', garment.image_data)
+        if match:
+            mime_type = match.group(1)
+            img_bytes = base64.b64decode(match.group(2))
+
+            # Restore local file for FASHN API use
+            ext = ".jpg" if "jpeg" in mime_type else ".png"
+            restored_path = UPLOAD_DIR / f"restored_{garment_id}{ext}"
+            restored_path.write_bytes(img_bytes)
+            garment.image_path = str(restored_path)
+            db.commit()
+
+            from fastapi.responses import Response
+            return Response(content=img_bytes, media_type=mime_type)
+
+    raise HTTPException(status_code=404, detail="Image not found")
 
 
 @app.get("/api/catalog")
@@ -299,7 +364,8 @@ async def virtual_try_on(
 
     model_path = await save_upload(model_image, prefix="model_")
     model_b64 = image_to_base64_url(model_path)
-    garment_b64 = image_to_base64_url(garment.image_path)
+    garment_filepath = ensure_garment_file(garment, db)
+    garment_b64 = image_to_base64_url(garment_filepath)
 
     result = await fashn_run("tryon-v1.6", {
         "model_image": model_b64, "garment_image": garment_b64,
@@ -347,7 +413,7 @@ async def virtual_try_on_outfit(
         model_path = await save_upload(model_image, prefix="model_")
         result = await fashn_run("tryon-v1.6", {
             "model_image": image_to_base64_url(model_path),
-            "garment_image": image_to_base64_url(garment.image_path),
+            "garment_image": image_to_base64_url(ensure_garment_file(garment, db)),
             "category": "one-pieces", "mode": "balanced", "garment_photo_type": "flat-lay"
         })
         output_urls = result.get("output", [])
@@ -388,7 +454,7 @@ async def virtual_try_on_outfit(
             raise HTTPException(status_code=404, detail="Top not found")
         result_top = await fashn_run("tryon-v1.6", {
             "model_image": current_image_b64,
-            "garment_image": image_to_base64_url(top.image_path),
+            "garment_image": image_to_base64_url(ensure_garment_file(top, db)),
             "category": "tops", "mode": "balanced", "garment_photo_type": "flat-lay"
         })
         output_urls = result_top.get("output", [])
@@ -410,7 +476,7 @@ async def virtual_try_on_outfit(
             raise HTTPException(status_code=404, detail="Bottom not found")
         result_bottom = await fashn_run("tryon-v1.6", {
             "model_image": current_image_b64,
-            "garment_image": image_to_base64_url(bottom.image_path),
+            "garment_image": image_to_base64_url(ensure_garment_file(bottom, db)),
             "category": "bottoms", "mode": "balanced", "garment_photo_type": "flat-lay"
         })
         output_urls = result_bottom.get("output", [])
@@ -661,6 +727,17 @@ async def update_settings(
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+@app.delete("/api/admin/cleanup-garments")
+async def cleanup_garments(db: Session = Depends(get_db)):
+    """Remove garments that have no image_data (old uploads lost after deploy)."""
+    old_garments = db.query(Garment).filter(Garment.image_data == None).all()
+    count = len(old_garments)
+    for g in old_garments:
+        db.delete(g)
+    db.commit()
+    return {"success": True, "deleted": count, "message": f"Eliminadas {count} prendas sin imagen"}
 
 
 if __name__ == "__main__":

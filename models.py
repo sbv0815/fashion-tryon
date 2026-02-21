@@ -27,6 +27,8 @@ class Garment(Base):
     price = Column(Float, default=0)
     image_url = Column(Text, nullable=False)
     image_path = Column(Text, nullable=True)
+    image_data = Column(Text, nullable=True)  # base64 encoded image for persistence
+    store_id = Column(String(20), nullable=True)  # future: multi-store support
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
