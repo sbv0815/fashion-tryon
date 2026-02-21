@@ -85,6 +85,38 @@ def init_db():
         print(f"Database tables may already exist: {e}")
         pass
 
+    # Auto-migrate: add missing columns to existing tables
+    try:
+        from sqlalchemy import text, inspect
+        insp = inspect(engine)
+
+        # Check garments table for new columns
+        if 'garments' in insp.get_table_names():
+            existing_cols = [c['name'] for c in insp.get_columns('garments')]
+            with engine.connect() as conn:
+                if 'image_data' not in existing_cols:
+                    conn.execute(text("ALTER TABLE garments ADD COLUMN image_data TEXT"))
+                    conn.commit()
+                    print("Added image_data column to garments")
+                if 'store_id' not in existing_cols:
+                    conn.execute(text("ALTER TABLE garments ADD COLUMN store_id VARCHAR(20)"))
+                    conn.commit()
+                    print("Added store_id column to garments")
+
+        # Check for clients table
+        if 'clients' not in insp.get_table_names():
+            Base.metadata.tables['clients'].create(bind=engine)
+            print("Created clients table")
+        if 'usage_logs' not in insp.get_table_names():
+            Base.metadata.tables['usage_logs'].create(bind=engine)
+            print("Created usage_logs table")
+        if 'admin_settings' not in insp.get_table_names():
+            Base.metadata.tables['admin_settings'].create(bind=engine)
+            print("Created admin_settings table")
+
+    except Exception as e:
+        print(f"Migration note: {e}")
+
 
 def get_db():
     db = SessionLocal()
