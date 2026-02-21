@@ -296,6 +296,175 @@
             display: block;
         }
 
+        /* ===== PHOTO GUIDE ===== */
+        .photo-guide-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .guide-item {
+            padding: 1rem;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+        }
+        .guide-good { background: rgba(85, 170, 153, 0.08); border-color: rgba(85, 170, 153, 0.3); }
+        .guide-bad { background: rgba(204, 68, 68, 0.08); border-color: rgba(204, 68, 68, 0.3); }
+        .guide-icon { font-size: 1.5rem; margin-bottom: 0.3rem; }
+        .guide-label { font-weight: 600; font-size: 0.9rem; margin-bottom: 0.5rem; }
+        .guide-list { list-style: none; padding: 0; }
+        .guide-list li { font-size: 0.8rem; color: var(--text-secondary); padding: 3px 0; }
+        .guide-list li::before { content: "• "; color: var(--text-muted); }
+
+        /* ===== CAPTURE OPTIONS ===== */
+        .capture-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+        .capture-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1.8rem 1rem;
+            border: 2px dashed var(--border-light);
+            border-radius: var(--radius);
+            background: var(--bg-primary);
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            font-family: inherit;
+            color: var(--text-primary);
+        }
+        .capture-btn:hover, .capture-btn:active {
+            border-color: var(--accent);
+            background: var(--accent-glow);
+        }
+        .capture-icon { font-size: 2.2rem; margin-bottom: 0.5rem; }
+        .capture-label { font-weight: 600; font-size: 0.95rem; }
+        .capture-hint { font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.3rem; }
+
+        /* ===== PHOTO PREVIEW ===== */
+        .photo-preview-container {
+            margin-top: 1rem;
+            border: 2px solid var(--accent);
+            border-radius: var(--radius);
+            overflow: hidden;
+            background: var(--bg-primary);
+        }
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.6rem 1rem;
+            background: var(--accent-glow);
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+        .btn-retake {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--accent);
+            padding: 0.3rem 0.8rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .btn-retake:hover { background: var(--bg-card-hover); }
+        .photo-preview-img {
+            width: 100%;
+            max-height: 350px;
+            object-fit: contain;
+            display: block;
+        }
+
+        /* ===== VIDEO PREMIUM BADGE ===== */
+        .premium-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: linear-gradient(135deg, #c9a55a 0%, #e4c97b 100%);
+            color: #0a0a0a;
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        /* ===== MOBILE RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            header { padding: 0.8rem 1rem; }
+            .logo { font-size: 1.2rem; }
+            .credits-badge { font-size: 0.7rem; padding: 0.3rem 0.7rem; }
+
+            .steps-nav { padding: 1rem 0.5rem 0; gap: 0; }
+            .step-item .step-num { width: 28px; height: 28px; font-size: 0.75rem; }
+            .step-item .step-label { font-size: 0.65rem; }
+            .step-line { top: 14px; }
+
+            .container { padding: 0.5rem; }
+            .section { padding: 1rem; }
+            .section-title { font-size: 1.3rem; }
+            .section-subtitle { font-size: 0.8rem; }
+
+            .card { padding: 1rem; margin-bottom: 0.8rem; }
+            .card-title { font-size: 0.95rem; }
+
+            .gender-selector { gap: 0.5rem; }
+            .gender-option { padding: 1rem 0.5rem; }
+            .gender-option .icon { font-size: 1.8rem; }
+            .gender-option .label { font-size: 0.8rem; }
+
+            .form-grid { grid-template-columns: 1fr; gap: 0.5rem; }
+            .form-group.full { grid-column: 1; }
+
+            .garments-grid { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+            .garment-card img { height: 160px; }
+            .garment-info { padding: 0.5rem; }
+            .garment-info .name { font-size: 0.78rem; }
+            .garment-info .meta { font-size: 0.68rem; }
+
+            .photo-guide-grid { grid-template-columns: 1fr; gap: 0.5rem; }
+            .guide-item { padding: 0.8rem; }
+            .capture-options { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+            .capture-btn { padding: 1.2rem 0.5rem; }
+            .capture-icon { font-size: 1.8rem; }
+            .capture-label { font-size: 0.85rem; }
+            .photo-preview-img { max-height: 280px; }
+
+            .btn { padding: 0.75rem 1.2rem; font-size: 0.85rem; }
+            .btn-row { flex-direction: column; gap: 0.5rem; }
+            .btn-row .btn { width: 100%; text-align: center; }
+
+            .outfit-summary { flex-direction: column; }
+            .outfit-slot { min-width: auto; }
+
+            .results-display {
+                grid-template-columns: 1fr !important;
+            }
+            .result-panel img, .result-panel video {
+                max-height: 400px;
+            }
+
+            .size-big { font-size: 3rem; }
+
+            .modal { width: 95vw; max-height: 85vh; padding: 1rem; margin: 0 auto; }
+            .modal-overlay { padding: 0.5rem; }
+
+            .upload-zone { padding: 1.5rem 1rem; }
+            .upload-zone .icon { font-size: 1.8rem; }
+            .upload-zone .text { font-size: 0.8rem; }
+        }
+
+        @media (max-width: 400px) {
+            .capture-options { grid-template-columns: 1fr; }
+            .garments-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
         /* ===== GARMENT GRID ===== */
         .garments-grid {
             display: grid;
@@ -592,6 +761,7 @@
 <header>
     <div class="logo">FASHION<span>TryOn</span></div>
     <div class="credits-badge">Créditos FASHN: <strong id="credits-count">—</strong></div>
+    <a href="/admin" class="credits-badge" style="text-decoration:none; margin-left:4px; cursor:pointer;">⚙️ Admin</a>
 </header>
 
 <!-- STEPS NAVIGATION -->
@@ -723,17 +893,66 @@
     <!-- ==================== STEP 3: PHOTO ==================== -->
     <div class="section" id="step-3">
         <h2 class="section-title">Tu foto</h2>
-        <p class="section-subtitle">Sube una foto de cuerpo completo para probarte las prendas</p>
+        <p class="section-subtitle">Toma o sube una foto de cuerpo completo</p>
 
+        <!-- PHOTO GUIDE -->
+        <div class="card" id="photo-guide">
+            <div class="card-title">📋 Guía para la mejor foto</div>
+            <div class="photo-guide-grid">
+                <div class="guide-item guide-good">
+                    <div class="guide-icon">✅</div>
+                    <div class="guide-label">Así sí</div>
+                    <ul class="guide-list">
+                        <li>De cuerpo completo (cabeza a pies)</li>
+                        <li>De frente, postura natural</li>
+                        <li>Ropa ajustada al cuerpo</li>
+                        <li>Buena iluminación</li>
+                        <li>Fondo limpio o pared lisa</li>
+                    </ul>
+                </div>
+                <div class="guide-item guide-bad">
+                    <div class="guide-icon">❌</div>
+                    <div class="guide-label">Así no</div>
+                    <ul class="guide-list">
+                        <li>Foto cortada (sin piernas)</li>
+                        <li>De lado o sentado</li>
+                        <li>Ropa muy ancha u holgada</li>
+                        <li>Muy oscura o borrosa</li>
+                        <li>Fondo con mucho desorden</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- CAMERA / UPLOAD OPTIONS -->
         <div class="card">
-            <div class="card-title">Foto de cuerpo completo</div>
-            <p style="color:var(--text-secondary); font-size:0.85rem; margin-bottom:1rem;">
-                Sube una foto de frente, cuerpo completo, con ropa ajustada y fondo neutro para mejores resultados.
-            </p>
-            <div class="upload-zone" id="model-upload-zone" onclick="document.getElementById('model-photo').click()">
-                <input type="file" id="model-photo" accept="image/*" onchange="previewModelPhoto(this)">
-                <div class="icon">📸</div>
-                <div class="text">Haz clic o arrastra tu foto aquí</div>
+            <div class="card-title">📸 Captura tu foto</div>
+            <div class="capture-options">
+                <!-- Camera button (mobile) -->
+                <button class="capture-btn capture-camera" onclick="openCamera()">
+                    <div class="capture-icon">📷</div>
+                    <div class="capture-label">Tomar foto</div>
+                    <div class="capture-hint">Usa la cámara del celular</div>
+                </button>
+                <!-- Gallery button -->
+                <button class="capture-btn capture-gallery" onclick="openGallery()">
+                    <div class="capture-icon">🖼️</div>
+                    <div class="capture-label">Subir desde galería</div>
+                    <div class="capture-hint">Selecciona una foto existente</div>
+                </button>
+            </div>
+
+            <!-- Hidden inputs -->
+            <input type="file" id="model-photo-camera" accept="image/*" capture="user" onchange="previewModelPhoto(this)" style="display:none">
+            <input type="file" id="model-photo-gallery" accept="image/*" onchange="previewModelPhoto(this)" style="display:none">
+
+            <!-- Photo preview -->
+            <div id="model-preview-container" class="photo-preview-container" style="display:none">
+                <div class="preview-header">
+                    <span>Tu foto</span>
+                    <button class="btn-retake" onclick="retakePhoto()">🔄 Cambiar foto</button>
+                </div>
+                <img id="model-preview-img" class="photo-preview-img" alt="Tu foto">
             </div>
         </div>
 
@@ -1141,24 +1360,42 @@
     }
 
     // ============================
-    // STEP 3: MODEL PHOTO
+    // STEP 3: CAMERA & PHOTO
     // ============================
+    function openCamera() {
+        document.getElementById('model-photo-camera').click();
+    }
+
+    function openGallery() {
+        document.getElementById('model-photo-gallery').click();
+    }
+
     function previewModelPhoto(input) {
         if (input.files && input.files[0]) {
             modelPhotoFile = input.files[0];
             const reader = new FileReader();
             reader.onload = (e) => {
-                const zone = document.getElementById('model-upload-zone');
-                zone.classList.add('has-image');
-                zone.innerHTML = `
-                    <input type="file" id="model-photo" accept="image/*" onchange="previewModelPhoto(this)">
-                    <img src="${e.target.result}" alt="Tu foto">
-                `;
-                zone.querySelector('input').files = input.files;
+                document.getElementById('model-preview-img').src = e.target.result;
+                document.getElementById('model-preview-container').style.display = 'block';
+                // Hide capture buttons
+                document.querySelector('.capture-options').style.display = 'none';
+                // Hide guide
+                document.getElementById('photo-guide').style.display = 'none';
             };
             reader.readAsDataURL(input.files[0]);
             document.getElementById('btn-generate').disabled = false;
         }
+    }
+
+    function retakePhoto() {
+        modelPhotoFile = null;
+        document.getElementById('model-preview-container').style.display = 'none';
+        document.querySelector('.capture-options').style.display = 'grid';
+        document.getElementById('photo-guide').style.display = 'block';
+        document.getElementById('btn-generate').disabled = true;
+        // Reset file inputs
+        document.getElementById('model-photo-camera').value = '';
+        document.getElementById('model-photo-gallery').value = '';
     }
 
     // ============================
@@ -1238,23 +1475,29 @@
                     <img src="${data.result_image}" alt="Outfit result">
                     <div class="panel-footer">
                         <a href="${data.result_image}" download class="btn btn-secondary" style="font-size:0.8rem;">
-                            ⬇ Descargar
+                            ⬇ Descargar foto
                         </a>
-                        <button class="btn btn-outline" style="font-size:0.8rem;"
-                                onclick="generateVideo('${data.fashn_url}', this)">
-                            🎬 Generar desfile
-                        </button>
                     </div>
                 </div>
                 <div class="result-panel" id="video-panel-outfit">
-                    <div class="panel-header">🎬 Video desfile</div>
-                    <div style="padding:3rem; text-align:center; color:var(--text-muted);">
-                        <p>Haz clic en "Generar desfile" para crear el video</p>
+                    <div class="panel-header">🎬 Video desfile <span class="premium-badge">⭐ PREMIUM</span></div>
+                    <div style="padding:2rem; text-align:center;">
+                        <div style="font-size:2.5rem; margin-bottom:0.8rem;">🎬</div>
+                        <p style="color:var(--text-secondary); font-size:0.85rem; margin-bottom:0.5rem;">
+                            Genera un video de pasarela con tu outfit
+                        </p>
+                        <p style="color:var(--text-muted); font-size:0.75rem; margin-bottom:1rem;">
+                            Costo adicional: 3 créditos (720p)
+                        </p>
+                        <button class="btn btn-primary" style="font-size:0.85rem;"
+                                onclick="generateVideo('${data.fashn_url}', this)">
+                            ⭐ Generar video premium
+                        </button>
                     </div>
                 </div>
             </div>
             <div class="card" style="margin-top:0.5rem;">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
                     <div>
                         <strong>${garmentNames}</strong>
                         <span style="color:var(--text-secondary); margin-left:0.5rem;">
