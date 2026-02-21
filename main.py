@@ -1,5 +1,5 @@
 """
-Fashion Virtual Try-On Platform
+Fashion Virtual Try-On Platform + Admin Dashboard
 FastAPI backend with FASHN.ai API integration
 Production-ready with PostgreSQL database
 """
@@ -11,17 +11,19 @@ import httpx
 import asyncio
 from pathlib import Path
 from typing import Optional
+from datetime import datetime
 from fastapi import FastAPI, UploadFile, File, Form, Request, HTTPException, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from dotenv import load_dotenv
 
 load_dotenv()
 
-from models import init_db, get_db, Garment, TryOnResult
+from models import init_db, get_db, Garment, TryOnResult, Client, UsageLog, AdminSettings
 
 # ============================================================
 # CONFIGURATION
@@ -33,6 +35,13 @@ UPLOAD_DIR = Path("static/uploads")
 RESULTS_DIR = Path("static/results")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+
+PRICE_PER_CREDIT = {
+    "ondemand": 0.075,
+    "tier1": 0.0675,
+    "tier2": 0.06,
+    "tier3": 0.0488,
+}
 
 SIZE_CHART = {
     "mujer": {
@@ -65,10 +74,61 @@ templates = Jinja2Templates(directory="templates")
 @app.on_event("startup")
 def on_startup():
     init_db()
+    # Ensure admin settings exist
+    db = next(get_db())
+    try:
+        settings = db.query(AdminSettings).first()
+        if not settings:
+            db.add(AdminSettings(fashn_plan="tier1", cop_rate=4200))
+            db.commit()
+    finally:
+        db.close()
+
 
 # ============================================================
-# FASHN API HELPERS
+# HELPERS
 # ============================================================
+def get_settings(db: Session) -> AdminSettings:
+    settings = db.query(AdminSettings).first()
+    if not settings:
+        settings = AdminSettings(fashn_plan="tier1", cop_rate=4200)
+        db.add(settings)
+        db.commit()
+        db.refresh(settings)
+    return settings
+
+
+def log_usage(db: Session, client_id: str, usage_type: str, credits: int,
+              garments_desc: str = "", result_id: str = "", notes: str = ""):
+    """Automatically log usage and calculate costs."""
+    settings = get_settings(db)
+    cost_usd = credits * PRICE_PER_CREDIT.get(settings.fashn_plan, 0.0675)
+
+    client = db.query(Client).filter(Client.id == client_id).first()
+    charge_cop = 0
+    if client:
+        if usage_type == "tryon":
+            charge_cop = client.price_per_outfit
+        else:
+            charge_cop = client.price_per_video
+
+    log = UsageLog(
+        id=uuid.uuid4().hex[:12],
+        client_id=client_id,
+        usage_type=usage_type,
+        garments_desc=garments_desc,
+        credits_used=credits,
+        cost_usd=round(cost_usd, 4),
+        charge_cop=charge_cop,
+        result_id=result_id,
+        notes=notes,
+        created_at=datetime.utcnow(),
+    )
+    db.add(log)
+    db.commit()
+    return log
+
+
 async def fashn_run(model_name: str, inputs: dict, timeout: int = 120) -> dict:
     headers = {
         "Content-Type": "application/json",
@@ -127,18 +187,19 @@ def image_to_base64_url(filepath: str) -> str:
 async def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
+@app.get("/admin", response_class=HTMLResponse)
+async def admin_page(request: Request):
+    return templates.TemplateResponse("admin.html", {"request": request})
+
 
 # ============================================================
 # ROUTES - GARMENT CATALOG
 # ============================================================
 @app.post("/api/upload-garment")
 async def upload_garment(
-    name: str = Form(...),
-    category: str = Form(...),
-    gender: str = Form(...),
-    size: str = Form(...),
-    price: float = Form(0),
-    image: UploadFile = File(...),
+    name: str = Form(...), category: str = Form(...),
+    gender: str = Form(...), size: str = Form(...),
+    price: float = Form(0), image: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
     filepath = await save_upload(image, prefix=f"garment_{gender}_{size}_")
@@ -151,7 +212,6 @@ async def upload_garment(
     db.add(garment)
     db.commit()
     db.refresh(garment)
-
     return {"success": True, "garment": {
         "id": garment.id, "name": garment.name, "category": garment.category,
         "gender": garment.gender, "size": garment.size, "price": garment.price,
@@ -167,7 +227,6 @@ async def get_catalog(gender: Optional[str] = None, size: Optional[str] = None, 
     if size:
         query = query.filter(Garment.size == size)
     garments = query.order_by(Garment.created_at.desc()).all()
-
     return {"garments": [{
         "id": g.id, "name": g.name, "category": g.category,
         "gender": g.gender, "size": g.size, "price": g.price,
@@ -225,12 +284,13 @@ async def estimate_size(
 
 
 # ============================================================
-# ROUTES - VIRTUAL TRY-ON
+# ROUTES - VIRTUAL TRY-ON (with auto usage logging)
 # ============================================================
 @app.post("/api/try-on")
 async def virtual_try_on(
     model_image: UploadFile = File(...),
     garment_id: str = Form(...),
+    client_id: str = Form(""),
     db: Session = Depends(get_db)
 ):
     garment = db.query(Garment).filter(Garment.id == garment_id).first()
@@ -261,6 +321,10 @@ async def virtual_try_on(
     db.add(tryon)
     db.commit()
 
+    # Auto log usage
+    if client_id:
+        log_usage(db, client_id, "tryon", 1, garments_desc=garment.name, result_id=result_id, notes="Try-on individual")
+
     return {
         "success": True, "result_image": f"/static/results/tryon_{result_id}.png",
         "fashn_url": result_url,
@@ -272,7 +336,7 @@ async def virtual_try_on(
 async def virtual_try_on_outfit(
     model_image: UploadFile = File(...),
     top_id: str = Form(None), bottom_id: str = Form(None),
-    onepiece_id: str = Form(None),
+    onepiece_id: str = Form(None), client_id: str = Form(""),
     db: Session = Depends(get_db)
 ):
     if onepiece_id:
@@ -300,6 +364,9 @@ async def virtual_try_on_outfit(
         db.add(TryOnResult(id=result_id, garment_ids=onepiece_id, result_image_url=f"/static/results/outfit_{result_id}.png"))
         db.commit()
 
+        if client_id:
+            log_usage(db, client_id, "tryon", 1, garments_desc=garment.name, result_id=result_id, notes="One-piece")
+
         return {
             "success": True, "result_image": f"/static/results/outfit_{result_id}.png",
             "fashn_url": result_url,
@@ -313,12 +380,12 @@ async def virtual_try_on_outfit(
     current_image_b64 = image_to_base64_url(model_path)
     current_fashn_url = None
     garments_used = []
+    total_credits = 0
 
     if top_id:
         top = db.query(Garment).filter(Garment.id == top_id).first()
         if not top:
             raise HTTPException(status_code=404, detail="Top not found")
-
         result_top = await fashn_run("tryon-v1.6", {
             "model_image": current_image_b64,
             "garment_image": image_to_base64_url(top.image_path),
@@ -327,9 +394,9 @@ async def virtual_try_on_outfit(
         output_urls = result_top.get("output", [])
         if not output_urls:
             raise HTTPException(status_code=500, detail="Failed generating top")
-
         current_fashn_url = output_urls[0]
         garments_used.append({"id": top.id, "name": top.name, "category": top.category, "size": top.size, "price": top.price})
+        total_credits += 1
 
         intermediate_path = RESULTS_DIR / f"intermediate_{uuid.uuid4().hex[:8]}.png"
         async with httpx.AsyncClient() as client:
@@ -341,7 +408,6 @@ async def virtual_try_on_outfit(
         bottom = db.query(Garment).filter(Garment.id == bottom_id).first()
         if not bottom:
             raise HTTPException(status_code=404, detail="Bottom not found")
-
         result_bottom = await fashn_run("tryon-v1.6", {
             "model_image": current_image_b64,
             "garment_image": image_to_base64_url(bottom.image_path),
@@ -350,9 +416,9 @@ async def virtual_try_on_outfit(
         output_urls = result_bottom.get("output", [])
         if not output_urls:
             raise HTTPException(status_code=500, detail="Failed generating bottom")
-
         current_fashn_url = output_urls[0]
         garments_used.append({"id": bottom.id, "name": bottom.name, "category": bottom.category, "size": bottom.size, "price": bottom.price})
+        total_credits += 1
 
     result_id = uuid.uuid4().hex[:8]
     result_path = RESULTS_DIR / f"outfit_{result_id}.png"
@@ -363,6 +429,11 @@ async def virtual_try_on_outfit(
     db.add(TryOnResult(id=result_id, garment_ids=",".join([g["id"] for g in garments_used]), result_image_url=f"/static/results/outfit_{result_id}.png"))
     db.commit()
 
+    # Auto log usage
+    if client_id:
+        garment_names = " + ".join([g["name"] for g in garments_used])
+        log_usage(db, client_id, "tryon", total_credits, garments_desc=garment_names, result_id=result_id, notes=f"Outfit ({total_credits} prendas)")
+
     return {
         "success": True, "result_image": f"/static/results/outfit_{result_id}.png",
         "fashn_url": current_fashn_url, "garments_used": garments_used
@@ -370,15 +441,29 @@ async def virtual_try_on_outfit(
 
 
 # ============================================================
-# ROUTES - VIDEO & CREDITS
+# ROUTES - VIDEO (with auto usage logging)
 # ============================================================
 @app.post("/api/generate-video")
-async def generate_video(image_url: str = Form(...)):
+async def generate_video(
+    image_url: str = Form(...),
+    client_id: str = Form(""),
+    resolution: str = Form("720p"),
+    db: Session = Depends(get_db)
+):
     result = await fashn_run("image-to-video", {"image": image_url}, timeout=180)
     output = result.get("output", [])
     if not output:
         raise HTTPException(status_code=500, detail="No video generated")
-    return {"success": True, "video_url": output[0] if isinstance(output, list) else output}
+
+    video_url = output[0] if isinstance(output, list) else output
+
+    # Auto log usage
+    if client_id:
+        credit_map = {"480p": 1, "720p": 3, "1080p": 6}
+        credits = credit_map.get(resolution, 3)
+        log_usage(db, client_id, f"video-{resolution}", credits, notes=f"Video desfile {resolution}")
+
+    return {"success": True, "video_url": video_url}
 
 
 @app.get("/api/credits")
@@ -389,6 +474,188 @@ async def check_credits():
         if resp.status_code == 200:
             return resp.json()
         return {"error": "Could not fetch credits", "status": resp.status_code}
+
+
+# ============================================================
+# ADMIN API - CLIENTS
+# ============================================================
+@app.get("/api/admin/clients")
+async def get_clients(db: Session = Depends(get_db)):
+    clients = db.query(Client).filter(Client.active == True).order_by(Client.created_at.desc()).all()
+    result = []
+    for c in clients:
+        logs = db.query(UsageLog).filter(UsageLog.client_id == c.id).all()
+        total_credits = sum(l.credits_used for l in logs)
+        total_cost_usd = sum(l.cost_usd for l in logs)
+        total_charge_cop = sum(l.charge_cop for l in logs)
+        fotos = len([l for l in logs if l.usage_type == "tryon"])
+        videos = len([l for l in logs if l.usage_type.startswith("video")])
+
+        settings = get_settings(db)
+        cost_cop = total_cost_usd * settings.cop_rate
+
+        result.append({
+            "id": c.id, "name": c.name, "email": c.email, "phone": c.phone,
+            "price_per_outfit": c.price_per_outfit, "price_per_video": c.price_per_video,
+            "created_at": c.created_at.isoformat() if c.created_at else "",
+            "stats": {
+                "total_generations": len(logs), "fotos": fotos, "videos": videos,
+                "total_credits": total_credits, "cost_usd": round(total_cost_usd, 4),
+                "cost_cop": round(cost_cop), "charge_cop": round(total_charge_cop),
+                "profit_cop": round(total_charge_cop - cost_cop),
+            }
+        })
+    return {"clients": result}
+
+
+@app.post("/api/admin/clients")
+async def create_client(
+    name: str = Form(...), email: str = Form(""),
+    phone: str = Form(""), price_per_outfit: float = Form(2000),
+    price_per_video: float = Form(5000),
+    db: Session = Depends(get_db)
+):
+    client = Client(
+        id=uuid.uuid4().hex[:12], name=name, email=email, phone=phone,
+        price_per_outfit=price_per_outfit, price_per_video=price_per_video,
+    )
+    db.add(client)
+    db.commit()
+    db.refresh(client)
+    return {"success": True, "client": {
+        "id": client.id, "name": client.name, "email": client.email,
+        "price_per_outfit": client.price_per_outfit, "price_per_video": client.price_per_video,
+    }}
+
+
+@app.put("/api/admin/clients/{client_id}")
+async def update_client(
+    client_id: str,
+    name: str = Form(None), email: str = Form(None), phone: str = Form(None),
+    price_per_outfit: float = Form(None), price_per_video: float = Form(None),
+    db: Session = Depends(get_db)
+):
+    client = db.query(Client).filter(Client.id == client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    if name is not None: client.name = name
+    if email is not None: client.email = email
+    if phone is not None: client.phone = phone
+    if price_per_outfit is not None: client.price_per_outfit = price_per_outfit
+    if price_per_video is not None: client.price_per_video = price_per_video
+    db.commit()
+    return {"success": True}
+
+
+@app.delete("/api/admin/clients/{client_id}")
+async def delete_client(client_id: str, db: Session = Depends(get_db)):
+    client = db.query(Client).filter(Client.id == client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    client.active = False
+    db.commit()
+    return {"success": True}
+
+
+# ============================================================
+# ADMIN API - USAGE LOGS
+# ============================================================
+@app.get("/api/admin/usage")
+async def get_usage_logs(
+    client_id: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    query = db.query(UsageLog)
+    if client_id:
+        query = query.filter(UsageLog.client_id == client_id)
+    logs = query.order_by(UsageLog.created_at.desc()).limit(200).all()
+
+    settings = get_settings(db)
+
+    result = []
+    for l in logs:
+        client = db.query(Client).filter(Client.id == l.client_id).first()
+        result.append({
+            "id": l.id, "client_id": l.client_id,
+            "client_name": client.name if client else "Desconocido",
+            "usage_type": l.usage_type, "garments_desc": l.garments_desc,
+            "credits_used": l.credits_used, "cost_usd": l.cost_usd,
+            "cost_cop": round(l.cost_usd * settings.cop_rate),
+            "charge_cop": l.charge_cop, "notes": l.notes,
+            "created_at": l.created_at.isoformat() if l.created_at else "",
+        })
+    return {"logs": result}
+
+
+@app.post("/api/admin/usage")
+async def manual_log_usage(
+    client_id: str = Form(...), usage_type: str = Form(...),
+    credits_used: int = Form(1), garments_desc: str = Form(""),
+    notes: str = Form(""),
+    db: Session = Depends(get_db)
+):
+    log = log_usage(db, client_id, usage_type, credits_used,
+                    garments_desc=garments_desc, notes=notes)
+    return {"success": True, "log_id": log.id}
+
+
+@app.delete("/api/admin/usage/{log_id}")
+async def delete_usage_log(log_id: str, db: Session = Depends(get_db)):
+    log = db.query(UsageLog).filter(UsageLog.id == log_id).first()
+    if not log:
+        raise HTTPException(status_code=404, detail="Log not found")
+    db.delete(log)
+    db.commit()
+    return {"success": True}
+
+
+# ============================================================
+# ADMIN API - DASHBOARD STATS
+# ============================================================
+@app.get("/api/admin/dashboard")
+async def admin_dashboard_stats(db: Session = Depends(get_db)):
+    settings = get_settings(db)
+    logs = db.query(UsageLog).all()
+    clients = db.query(Client).filter(Client.active == True).all()
+
+    total_credits = sum(l.credits_used for l in logs)
+    total_cost_usd = sum(l.cost_usd for l in logs)
+    total_charge_cop = sum(l.charge_cop for l in logs)
+    total_cost_cop = total_cost_usd * settings.cop_rate
+    fotos = len([l for l in logs if l.usage_type == "tryon"])
+    videos = len([l for l in logs if l.usage_type.startswith("video")])
+
+    return {
+        "plan": settings.fashn_plan,
+        "cop_rate": settings.cop_rate,
+        "price_per_credit": PRICE_PER_CREDIT.get(settings.fashn_plan, 0.0675),
+        "total_clients": len(clients),
+        "total_generations": len(logs),
+        "total_fotos": fotos,
+        "total_videos": videos,
+        "total_credits": total_credits,
+        "total_cost_usd": round(total_cost_usd, 2),
+        "total_cost_cop": round(total_cost_cop),
+        "total_charge_cop": round(total_charge_cop),
+        "total_profit_cop": round(total_charge_cop - total_cost_cop),
+        "margin_pct": round(((total_charge_cop - total_cost_cop) / total_charge_cop * 100) if total_charge_cop > 0 else 0),
+    }
+
+
+# ============================================================
+# ADMIN API - SETTINGS
+# ============================================================
+@app.put("/api/admin/settings")
+async def update_settings(
+    fashn_plan: str = Form(None), cop_rate: float = Form(None),
+    db: Session = Depends(get_db)
+):
+    settings = get_settings(db)
+    if fashn_plan: settings.fashn_plan = fashn_plan
+    if cop_rate: settings.cop_rate = cop_rate
+    settings.updated_at = datetime.utcnow()
+    db.commit()
+    return {"success": True, "plan": settings.fashn_plan, "cop_rate": settings.cop_rate}
 
 
 @app.get("/health")
