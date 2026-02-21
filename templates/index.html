@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fashion Try-On Virtual</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #141414;
+            --bg-card: #1a1a1a;
+            --bg-card-hover: #222;
+            --accent: #c9a55a;
+            --accent-glow: rgba(201, 165, 90, 0.15);
+            --accent-light: #e4c97b;
+            --text-primary: #f0ece4;
+            --text-secondary: #8a8578;
+            --text-muted: #5a564e;
+            --border: #2a2824;
+            --border-light: #3a3630;
+            --danger: #c44;
+            --success: #5a9;
+            --radius: 12px;
+            --radius-sm: 8px;
+            --shadow: 0 4px 30px rgba(0,0,0,0.4);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ===== HEADER ===== */
+        header {
+            background: linear-gradient(180deg, var(--bg-secondary) 0%, transparent 100%);
+            padding: 1.5rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(20px);
+        }
+
+        .logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--accent);
+            letter-spacing: 2px;
+        }
+        .logo span { color: var(--text-primary); font-weight: 400; }
+
+        .credits-badge {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 0.4rem 1rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        .credits-badge strong { color: var(--accent); }
+
+        /* ===== NAVIGATION STEPS ===== */
+        .steps-nav {
+            display: flex;
+            justify-content: center;
+            gap: 0;
+            padding: 2rem 2rem 0;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .step-item {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.8rem 1.5rem;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s;
+            opacity: 0.4;
+        }
+        .step-item.active { opacity: 1; }
+        .step-item.completed { opacity: 0.7; }
+
+        .step-num {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .step-item.active .step-num {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: var(--bg-primary);
+        }
+        .step-item.completed .step-num {
+            background: var(--success);
+            border-color: var(--success);
+            color: white;
+        }
+
+        .step-label {
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .step-connector {
+            width: 40px;
+            height: 2px;
+            background: var(--border);
+            align-self: center;
+        }
+
+        /* ===== MAIN CONTAINER ===== */
+        .main-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* ===== SECTIONS ===== */
+        .section {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+        .section.active { display: block; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .section-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: 2rem;
+            font-weight: 300;
+        }
+
+        /* ===== CARDS ===== */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--accent);
+        }
+
+        /* ===== FORM ELEMENTS ===== */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.2rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+        .form-group.full { grid-column: 1 / -1; }
+
+        label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input, select {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 0.75rem 1rem;
+            color: var(--text-primary);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.95rem;
+            transition: border-color 0.3s;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        /* ===== GENDER SELECTOR ===== */
+        .gender-selector {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .gender-option {
+            flex: 1;
+            padding: 1.5rem;
+            border: 2px solid var(--border);
+            border-radius: var(--radius);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: var(--bg-card);
+        }
+        .gender-option:hover { border-color: var(--border-light); }
+        .gender-option.selected {
+            border-color: var(--accent);
+            background: var(--accent-glow);
+        }
+        .gender-option .icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+        .gender-option .label { font-weight: 600; font-size: 0.95rem; }
+
+        /* ===== SIZE RESULT ===== */
+        .size-result {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+            background: linear-gradient(135deg, var(--accent-glow), transparent);
+            border: 1px solid var(--accent);
+            border-radius: var(--radius);
+            margin-top: 1.5rem;
+        }
+        .size-result.visible { display: block; }
+
+        .size-big {
+            font-family: 'Playfair Display', serif;
+            font-size: 4rem;
+            font-weight: 700;
+            color: var(--accent);
+            line-height: 1;
+        }
+
+        .size-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+
+        /* ===== UPLOAD AREA ===== */
+        .upload-zone {
+            border: 2px dashed var(--border-light);
+            border-radius: var(--radius);
+            padding: 3rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        .upload-zone:hover {
+            border-color: var(--accent);
+            background: var(--accent-glow);
+        }
+        .upload-zone.has-image {
+            padding: 0;
+            border-style: solid;
+            border-color: var(--accent);
+        }
+        .upload-zone input { display: none; }
+        .upload-zone .icon { font-size: 2.5rem; margin-bottom: 0.5rem; opacity: 0.5; }
+        .upload-zone .text { color: var(--text-secondary); font-size: 0.9rem; }
+        .upload-zone img {
+            width: 100%;
+            max-height: 200px;
+            object-fit: contain;
+            display: block;
+        }
+
+        /* ===== GARMENT GRID ===== */
+        .garments-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 1rem;
+        }
+
+        .garment-card {
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+        .garment-card:hover {
+            border-color: var(--border-light);
+            transform: translateY(-2px);
+        }
+        .garment-card.selected {
+            border-color: var(--accent);
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        .garment-card img {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+            display: block;
+            pointer-events: none;
+        }
+
+        .garment-info {
+            padding: 0.8rem;
+            pointer-events: none;
+        }
+        .garment-info .name {
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-bottom: 0.2rem;
+        }
+        .garment-info .meta {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+        .garment-info .price {
+            color: var(--accent);
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .garment-check {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 28px;
+            height: 28px;
+            background: var(--accent);
+            border-radius: 50%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            color: var(--bg-primary);
+            font-weight: 700;
+        }
+        .garment-card.selected .garment-check { display: flex; }
+
+        /* ===== OUTFIT SLOTS ===== */
+        .outfit-slot {
+            flex: 1;
+            min-width: 150px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 0.8rem 1rem;
+            text-align: center;
+        }
+        .outfit-slot.filled {
+            border-color: var(--accent);
+            background: var(--accent-glow);
+        }
+        .outfit-slot-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.3rem;
+        }
+        .outfit-slot-content {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+        .outfit-slot.filled .outfit-slot-content {
+            color: var(--text-primary);
+        }
+
+        /* ===== BUTTONS ===== */
+        .btn {
+            padding: 0.85rem 2rem;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: var(--bg-primary);
+        }
+        .btn-primary:hover {
+            background: var(--accent-light);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(201, 165, 90, 0.3);
+        }
+        .btn-primary:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-primary);
+            border: 1px solid var(--border-light);
+        }
+        .btn-secondary:hover { border-color: var(--text-secondary); }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--accent);
+            border: 1px solid var(--accent);
+        }
+        .btn-outline:hover {
+            background: var(--accent-glow);
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            justify-content: flex-end;
+        }
+
+        /* ===== RESULTS ===== */
+        .results-display {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .result-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .result-panel .panel-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .result-panel img, .result-panel video {
+            width: 100%;
+            display: block;
+        }
+
+        .result-panel .panel-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* ===== LOADER ===== */
+        .loader-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(10,10,10,0.9);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        .loader-overlay.visible { display: flex; }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loader-text {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        /* ===== ADD GARMENT MODAL ===== */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(10,10,10,0.85);
+            z-index: 500;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-overlay.visible { display: flex; }
+
+        .modal {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            width: 90%;
+            max-width: 550px;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 2rem;
+            box-shadow: var(--shadow);
+        }
+
+        .modal-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.3rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* ===== EMPTY STATE ===== */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-muted);
+        }
+        .empty-state .icon { font-size: 3rem; margin-bottom: 1rem; }
+
+        /* ===== TOAST ===== */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 1rem 1.5rem;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            z-index: 2000;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.4s;
+        }
+        .toast.visible {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        .toast.success { border-color: var(--success); }
+        .toast.error { border-color: var(--danger); }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .form-grid { grid-template-columns: 1fr; }
+            .results-display { grid-template-columns: 1fr; }
+            .steps-nav { flex-wrap: wrap; gap: 0.5rem; }
+            .step-connector { display: none; }
+            .gender-selector { flex-direction: column; }
+            .garments-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+    <div class="logo">FASHION<span>TryOn</span></div>
+    <div class="credits-badge">Créditos FASHN: <strong id="credits-count">—</strong></div>
+</header>
+
+<!-- STEPS NAVIGATION -->
+<div class="steps-nav">
+    <div class="step-item active" data-step="1" onclick="goToStep(1)">
+        <div class="step-num">1</div>
+        <span class="step-label">Tu perfil</span>
+    </div>
+    <div class="step-connector"></div>
+    <div class="step-item" data-step="2" onclick="goToStep(2)">
+        <div class="step-num">2</div>
+        <span class="step-label">Elegir prendas</span>
+    </div>
+    <div class="step-connector"></div>
+    <div class="step-item" data-step="3" onclick="goToStep(3)">
+        <div class="step-num">3</div>
+        <span class="step-label">Tu foto</span>
+    </div>
+    <div class="step-connector"></div>
+    <div class="step-item" data-step="4" onclick="goToStep(4)">
+        <div class="step-num">4</div>
+        <span class="step-label">Resultado</span>
+    </div>
+</div>
+
+<div class="main-container">
+
+    <!-- ==================== STEP 1: PROFILE ==================== -->
+    <div class="section active" id="step-1">
+        <h2 class="section-title">¿Cómo eres?</h2>
+        <p class="section-subtitle">Selecciona tu género y medidas para encontrar tu talla ideal</p>
+
+        <div class="card">
+            <div class="card-title">Género</div>
+            <div class="gender-selector">
+                <div class="gender-option" data-gender="mujer" onclick="selectGender('mujer')">
+                    <div class="icon">👩</div>
+                    <div class="label">Mujer</div>
+                </div>
+                <div class="gender-option" data-gender="hombre" onclick="selectGender('hombre')">
+                    <div class="icon">👨</div>
+                    <div class="label">Hombre</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Medidas</div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Estatura (cm)</label>
+                    <input type="number" id="height" placeholder="165" min="100" max="220">
+                </div>
+                <div class="form-group">
+                    <label>Peso (kg)</label>
+                    <input type="number" id="weight" placeholder="65" min="30" max="200">
+                </div>
+                <div class="form-group">
+                    <label>Pecho (cm) — opcional</label>
+                    <input type="number" id="chest" placeholder="Opcional">
+                </div>
+                <div class="form-group">
+                    <label>Cintura (cm) — opcional</label>
+                    <input type="number" id="waist" placeholder="Opcional">
+                </div>
+            </div>
+
+            <div class="size-result" id="size-result">
+                <div class="size-label">Tu talla recomendada</div>
+                <div class="size-big" id="size-display">M</div>
+                <div class="size-label" id="size-measures"></div>
+            </div>
+        </div>
+
+        <div class="btn-row">
+            <button class="btn btn-primary" onclick="calculateSize()">
+                Calcular talla y continuar →
+            </button>
+        </div>
+    </div>
+
+    <!-- ==================== STEP 2: GARMENTS ==================== -->
+    <div class="section" id="step-2">
+        <h2 class="section-title">Arma tu outfit</h2>
+        <p class="section-subtitle">Selecciona una prenda superior, inferior, o un vestido/enterizo completo</p>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:0.5rem;">
+            <div style="display:flex; gap:0.5rem;">
+                <button class="btn btn-secondary filter-btn active" data-filter="all" onclick="filterGarments('all')">Todas</button>
+                <button class="btn btn-secondary filter-btn" data-filter="tops" onclick="filterGarments('tops')">Tops</button>
+                <button class="btn btn-secondary filter-btn" data-filter="bottoms" onclick="filterGarments('bottoms')">Bottoms</button>
+                <button class="btn btn-secondary filter-btn" data-filter="one-pieces" onclick="filterGarments('one-pieces')">Vestidos</button>
+            </div>
+            <button class="btn btn-outline" onclick="openAddGarment()">
+                + Agregar prenda
+            </button>
+        </div>
+
+        <!-- Outfit selection summary -->
+        <div class="card" id="outfit-summary" style="display:none; margin-bottom:1.5rem;">
+            <div class="card-title">🧥 Tu outfit</div>
+            <div style="display:flex; gap:1.5rem; align-items:center; flex-wrap:wrap;">
+                <div id="outfit-top-slot" class="outfit-slot">
+                    <div class="outfit-slot-label">👕 Superior</div>
+                    <div class="outfit-slot-content">Sin seleccionar</div>
+                </div>
+                <div style="font-size:1.5rem; color:var(--text-muted);">+</div>
+                <div id="outfit-bottom-slot" class="outfit-slot">
+                    <div class="outfit-slot-label">👖 Inferior</div>
+                    <div class="outfit-slot-content">Sin seleccionar</div>
+                </div>
+                <div style="margin-left:auto;">
+                    <button class="btn btn-secondary" onclick="clearOutfit()" style="font-size:0.8rem;">✕ Limpiar</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="garments-grid" id="garments-grid">
+        </div>
+
+        <div class="btn-row">
+            <button class="btn btn-secondary" onclick="goToStep(1)">← Atrás</button>
+            <button class="btn btn-primary" id="btn-to-step3" disabled onclick="goToStep(3)">
+                Continuar con outfit →
+            </button>
+        </div>
+    </div>
+
+    <!-- ==================== STEP 3: PHOTO ==================== -->
+    <div class="section" id="step-3">
+        <h2 class="section-title">Tu foto</h2>
+        <p class="section-subtitle">Sube una foto de cuerpo completo para probarte las prendas</p>
+
+        <div class="card">
+            <div class="card-title">Foto de cuerpo completo</div>
+            <p style="color:var(--text-secondary); font-size:0.85rem; margin-bottom:1rem;">
+                Sube una foto de frente, cuerpo completo, con ropa ajustada y fondo neutro para mejores resultados.
+            </p>
+            <div class="upload-zone" id="model-upload-zone" onclick="document.getElementById('model-photo').click()">
+                <input type="file" id="model-photo" accept="image/*" onchange="previewModelPhoto(this)">
+                <div class="icon">📸</div>
+                <div class="text">Haz clic o arrastra tu foto aquí</div>
+            </div>
+        </div>
+
+        <div class="btn-row">
+            <button class="btn btn-secondary" onclick="goToStep(2)">← Atrás</button>
+            <button class="btn btn-primary" id="btn-generate" disabled onclick="generateTryOn()">
+                ✨ Generar prueba virtual
+            </button>
+        </div>
+    </div>
+
+    <!-- ==================== STEP 4: RESULTS ==================== -->
+    <div class="section" id="step-4">
+        <h2 class="section-title">Tu look virtual</h2>
+        <p class="section-subtitle">Así te verías con las prendas seleccionadas</p>
+
+        <div id="results-container"></div>
+
+        <div class="btn-row">
+            <button class="btn btn-secondary" onclick="goToStep(2)">← Probar otras prendas</button>
+            <button class="btn btn-outline" onclick="goToStep(1)">🔄 Empezar de nuevo</button>
+        </div>
+    </div>
+</div>
+
+<!-- ADD GARMENT MODAL -->
+<div class="modal-overlay" id="add-garment-modal">
+    <div class="modal">
+        <div class="modal-title">Agregar prenda al catálogo</div>
+        <form id="garment-form" onsubmit="submitGarment(event)">
+            <div class="form-grid">
+                <div class="form-group full">
+                    <label>Nombre de la prenda</label>
+                    <input type="text" id="g-name" placeholder="Ej: Camiseta estampada" required>
+                </div>
+                <div class="form-group">
+                    <label>Categoría</label>
+                    <select id="g-category" required>
+                        <option value="tops">Tops / Camisetas</option>
+                        <option value="bottoms">Pantalones / Faldas</option>
+                        <option value="one-pieces">Vestidos / Enterizos</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Género</label>
+                    <select id="g-gender" required>
+                        <option value="mujer">Mujer</option>
+                        <option value="hombre">Hombre</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Talla</label>
+                    <select id="g-size" required>
+                        <option value="S">S</option>
+                        <option value="M">M</option>
+                        <option value="L">L</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Precio (COP)</label>
+                    <input type="number" id="g-price" placeholder="59900" min="0">
+                </div>
+                <div class="form-group full">
+                    <label>Foto de la prenda (fondo blanco)</label>
+                    <div class="upload-zone" id="garment-upload-zone" onclick="document.getElementById('g-image').click()" style="padding:1.5rem;">
+                        <input type="file" id="g-image" accept="image/*" onchange="previewGarmentUpload(this)" required>
+                        <div class="icon">📷</div>
+                        <div class="text">Clic para subir foto de la prenda</div>
+                    </div>
+                </div>
+            </div>
+            <div class="btn-row">
+                <button type="button" class="btn btn-secondary" onclick="closeAddGarment()">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Guardar prenda</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- LOADER -->
+<div class="loader-overlay" id="loader">
+    <div class="spinner"></div>
+    <div class="loader-text" id="loader-text">Generando tu prueba virtual...</div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+    // ============================
+    // STATE
+    // ============================
+    let currentStep = 1;
+    let userProfile = { gender: null, size: null, measurements: {} };
+    let outfit = { top: null, bottom: null, onepiece: null };
+    let modelPhotoFile = null;
+    let catalog = [];
+
+    // ============================
+    // NAVIGATION
+    // ============================
+    function goToStep(step) {
+        // Validation
+        if (step === 2 && !userProfile.size) {
+            showToast('Primero calcula tu talla', 'error');
+            return;
+        }
+        if (step === 3 && !outfit.top && !outfit.bottom && !outfit.onepiece) {
+            showToast('Selecciona al menos una prenda', 'error');
+            return;
+        }
+
+        currentStep = step;
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.getElementById(`step-${step}`).classList.add('active');
+
+        document.querySelectorAll('.step-item').forEach(s => {
+            const sStep = parseInt(s.dataset.step);
+            s.classList.remove('active', 'completed');
+            if (sStep === step) s.classList.add('active');
+            else if (sStep < step) s.classList.add('completed');
+        });
+
+        if (step === 2) loadCatalog();
+    }
+
+    // ============================
+    // STEP 1: PROFILE & SIZE
+    // ============================
+    function selectGender(gender) {
+        userProfile.gender = gender;
+        document.querySelectorAll('.gender-option').forEach(o => o.classList.remove('selected'));
+        document.querySelector(`[data-gender="${gender}"]`).classList.add('selected');
+    }
+
+    async function calculateSize() {
+        if (!userProfile.gender) {
+            showToast('Selecciona tu género', 'error');
+            return;
+        }
+        const height = parseFloat(document.getElementById('height').value);
+        const weight = parseFloat(document.getElementById('weight').value);
+        if (!height || !weight) {
+            showToast('Ingresa tu estatura y peso', 'error');
+            return;
+        }
+
+        const form = new FormData();
+        form.append('gender', userProfile.gender);
+        form.append('height_cm', height);
+        form.append('weight_kg', weight);
+
+        const chest = document.getElementById('chest').value;
+        const waist = document.getElementById('waist').value;
+        if (chest) form.append('chest_cm', chest);
+        if (waist) form.append('waist_cm', waist);
+
+        try {
+            const resp = await fetch('/api/estimate-size', { method: 'POST', body: form });
+            const data = await resp.json();
+
+            userProfile.size = data.estimated_size;
+            userProfile.measurements = data.measurements;
+
+            document.getElementById('size-display').textContent = data.estimated_size;
+            document.getElementById('size-measures').textContent =
+                `Pecho: ${data.measurements.chest_cm}cm · Cintura: ${data.measurements.waist_cm}cm`;
+            document.getElementById('size-result').classList.add('visible');
+
+            showToast(`Talla estimada: ${data.estimated_size}`, 'success');
+
+            setTimeout(() => goToStep(2), 800);
+        } catch (e) {
+            showToast('Error calculando talla', 'error');
+        }
+    }
+
+    // ============================
+    // STEP 2: GARMENTS
+    // ============================
+    async function loadCatalog() {
+        try {
+            // Load ALL garments for this gender (don't filter by size so user sees everything)
+            const resp = await fetch(`/api/catalog?gender=${userProfile.gender}`);
+            const data = await resp.json();
+            catalog = data.garments;
+
+            // If nothing found for this gender, try loading all
+            if (catalog.length === 0) {
+                const respAll = await fetch('/api/catalog');
+                const dataAll = await respAll.json();
+                catalog = dataAll.garments;
+            }
+
+            renderGarments(catalog);
+        } catch(e) {
+            console.error(e);
+        }
+    }
+
+    function renderGarments(items) {
+        const grid = document.getElementById('garments-grid');
+
+        if (items.length === 0) {
+            grid.innerHTML = `
+                <div class="empty-state">
+                    <div class="icon">👗</div>
+                    <p>Aún no hay prendas en el catálogo.</p>
+                    <p style="margin-top:0.5rem; font-size:0.85rem;">Haz clic en "Agregar prenda" para subir la primera.</p>
+                </div>
+            `;
+            return;
+        }
+
+        grid.innerHTML = items.map(g => {
+            const sizeMatch = g.size === userProfile.size;
+            const isSelected = g.id === outfit.top || g.id === outfit.bottom || g.id === outfit.onepiece;
+            const catIcon = g.category === 'tops' ? '👕' : g.category === 'bottoms' ? '👖' : '👗';
+            return `
+            <div class="garment-card ${isSelected ? 'selected' : ''}"
+                 data-id="${g.id}" data-category="${g.category}"
+                 onclick="toggleGarment('${g.id}')">
+                <div class="garment-check">✓</div>
+                <img src="${g.image_url}" alt="${g.name}">
+                <div class="garment-info">
+                    <div class="name">${g.name}</div>
+                    <div class="meta">
+                        ${catIcon}
+                        <span style="color:${sizeMatch ? 'var(--success)' : 'var(--text-secondary)'}; font-weight:${sizeMatch ? '600' : '400'};">
+                            ${g.size} ${sizeMatch ? '✓ Tu talla' : ''}
+                        </span>
+                    </div>
+                    ${g.price ? `<div class="price">$${Number(g.price).toLocaleString('es-CO')}</div>` : ''}
+                </div>
+            </div>
+        `}).join('');
+    }
+
+    function toggleGarment(id) {
+        const garment = catalog.find(g => g.id === id);
+        if (!garment) {
+            console.error('Garment not found:', id);
+            return;
+        }
+
+        console.log('Toggling garment:', garment.name, garment.category);
+        const category = garment.category;
+
+        if (category === 'one-pieces') {
+            // One-piece clears top and bottom
+            if (outfit.onepiece === id) {
+                outfit.onepiece = null;
+            } else {
+                outfit.onepiece = id;
+                outfit.top = null;
+                outfit.bottom = null;
+            }
+        } else if (category === 'tops') {
+            if (outfit.top === id) {
+                outfit.top = null;
+            } else {
+                outfit.top = id;
+                outfit.onepiece = null; // Clear onepiece if selecting top
+            }
+        } else if (category === 'bottoms') {
+            if (outfit.bottom === id) {
+                outfit.bottom = null;
+            } else {
+                outfit.bottom = id;
+                outfit.onepiece = null; // Clear onepiece if selecting bottom
+            }
+        }
+
+        updateOutfitUI();
+    }
+
+    function clearOutfit() {
+        outfit = { top: null, bottom: null, onepiece: null };
+        updateOutfitUI();
+    }
+
+    function updateOutfitUI() {
+        const allSelected = [outfit.top, outfit.bottom, outfit.onepiece].filter(Boolean);
+
+        // Update card selections
+        document.querySelectorAll('.garment-card').forEach(c => {
+            c.classList.toggle('selected', allSelected.includes(c.dataset.id));
+        });
+
+        // Update outfit summary
+        const summary = document.getElementById('outfit-summary');
+        const hasSelection = allSelected.length > 0;
+        summary.style.display = hasSelection ? 'block' : 'none';
+
+        const topSlot = document.getElementById('outfit-top-slot');
+        const bottomSlot = document.getElementById('outfit-bottom-slot');
+
+        if (outfit.onepiece) {
+            const g = catalog.find(g => g.id === outfit.onepiece);
+            topSlot.classList.add('filled');
+            topSlot.querySelector('.outfit-slot-label').textContent = '👗 Vestido/Enterizo';
+            topSlot.querySelector('.outfit-slot-content').textContent = g?.name || '';
+            bottomSlot.style.display = 'none';
+        } else {
+            bottomSlot.style.display = '';
+            topSlot.querySelector('.outfit-slot-label').textContent = '👕 Superior';
+
+            if (outfit.top) {
+                const g = catalog.find(g => g.id === outfit.top);
+                topSlot.classList.add('filled');
+                topSlot.querySelector('.outfit-slot-content').textContent = g?.name || '';
+            } else {
+                topSlot.classList.remove('filled');
+                topSlot.querySelector('.outfit-slot-content').textContent = 'Sin seleccionar';
+            }
+
+            if (outfit.bottom) {
+                const g = catalog.find(g => g.id === outfit.bottom);
+                bottomSlot.classList.add('filled');
+                bottomSlot.querySelector('.outfit-slot-content').textContent = g?.name || '';
+            } else {
+                bottomSlot.classList.remove('filled');
+                bottomSlot.querySelector('.outfit-slot-content').textContent = 'Sin seleccionar';
+            }
+        }
+
+        // Enable/disable continue button
+        document.getElementById('btn-to-step3').disabled = allSelected.length === 0;
+    }
+
+    function filterGarments(category) {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        document.querySelector(`[data-filter="${category}"]`).classList.add('active');
+
+        if (category === 'all') renderGarments(catalog);
+        else renderGarments(catalog.filter(g => g.category === category));
+    }
+
+    // Add garment modal
+    function openAddGarment() {
+        document.getElementById('add-garment-modal').classList.add('visible');
+        // Pre-fill gender
+        if (userProfile.gender) {
+            document.getElementById('g-gender').value = userProfile.gender;
+        }
+        if (userProfile.size) {
+            document.getElementById('g-size').value = userProfile.size;
+        }
+    }
+
+    function closeAddGarment() {
+        document.getElementById('add-garment-modal').classList.remove('visible');
+        document.getElementById('garment-form').reset();
+        // Reset upload zone
+        const zone = document.getElementById('garment-upload-zone');
+        zone.classList.remove('has-image');
+        zone.innerHTML = `
+            <input type="file" id="g-image" accept="image/*" onchange="previewGarmentUpload(this)" required>
+            <div class="icon">📷</div>
+            <div class="text">Clic para subir foto de la prenda</div>
+        `;
+    }
+
+    function previewGarmentUpload(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const zone = document.getElementById('garment-upload-zone');
+                zone.classList.add('has-image');
+                zone.innerHTML = `
+                    <input type="file" id="g-image" accept="image/*" onchange="previewGarmentUpload(this)" required>
+                    <img src="${e.target.result}" alt="Preview">
+                `;
+                zone.querySelector('input').files = input.files;
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    async function submitGarment(event) {
+        event.preventDefault();
+        const form = new FormData();
+        form.append('name', document.getElementById('g-name').value);
+        form.append('category', document.getElementById('g-category').value);
+        form.append('gender', document.getElementById('g-gender').value);
+        form.append('size', document.getElementById('g-size').value);
+        form.append('price', document.getElementById('g-price').value || 0);
+        form.append('image', document.getElementById('g-image').files[0]);
+
+        try {
+            showLoader('Subiendo prenda...');
+            const resp = await fetch('/api/upload-garment', { method: 'POST', body: form });
+            const data = await resp.json();
+            hideLoader();
+
+            if (data.success) {
+                showToast(`"${data.garment.name}" agregada al catálogo`, 'success');
+                closeAddGarment();
+                loadCatalog();
+            }
+        } catch(e) {
+            hideLoader();
+            showToast('Error subiendo prenda', 'error');
+        }
+    }
+
+    // ============================
+    // STEP 3: MODEL PHOTO
+    // ============================
+    function previewModelPhoto(input) {
+        if (input.files && input.files[0]) {
+            modelPhotoFile = input.files[0];
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const zone = document.getElementById('model-upload-zone');
+                zone.classList.add('has-image');
+                zone.innerHTML = `
+                    <input type="file" id="model-photo" accept="image/*" onchange="previewModelPhoto(this)">
+                    <img src="${e.target.result}" alt="Tu foto">
+                `;
+                zone.querySelector('input').files = input.files;
+            };
+            reader.readAsDataURL(input.files[0]);
+            document.getElementById('btn-generate').disabled = false;
+        }
+    }
+
+    // ============================
+    // STEP 4: GENERATE
+    // ============================
+    async function generateTryOn() {
+        if (!modelPhotoFile) return;
+        if (!outfit.top && !outfit.bottom && !outfit.onepiece) return;
+
+        const isOutfit = (outfit.top || outfit.bottom) && !outfit.onepiece;
+        const isSingle = outfit.onepiece;
+
+        if (isOutfit) {
+            // Full outfit mode: top + bottom via chained API
+            let steps = [];
+            if (outfit.top) steps.push(catalog.find(g => g.id === outfit.top)?.name || 'top');
+            if (outfit.bottom) steps.push(catalog.find(g => g.id === outfit.bottom)?.name || 'bottom');
+            showLoader(`Generando outfit completo: ${steps.join(' + ')}... Esto puede tomar 30-60 segundos`);
+
+            const form = new FormData();
+            form.append('model_image', modelPhotoFile);
+            if (outfit.top) form.append('top_id', outfit.top);
+            if (outfit.bottom) form.append('bottom_id', outfit.bottom);
+
+            try {
+                const resp = await fetch('/api/try-on-outfit', { method: 'POST', body: form });
+                const data = await resp.json();
+                hideLoader();
+
+                if (data.success) {
+                    renderOutfitResult(data);
+                    goToStep(4);
+                } else {
+                    showToast('Error generando outfit', 'error');
+                }
+            } catch(e) {
+                hideLoader();
+                showToast('Error: ' + e.message, 'error');
+            }
+        } else if (isSingle) {
+            // Single garment (onepiece or just one item)
+            const garmentId = outfit.onepiece;
+            const garment = catalog.find(g => g.id === garmentId);
+            showLoader(`Probándote "${garment?.name}"... 15-30 segundos`);
+
+            const form = new FormData();
+            form.append('model_image', modelPhotoFile);
+            form.append('onepiece_id', garmentId);
+
+            try {
+                const resp = await fetch('/api/try-on-outfit', { method: 'POST', body: form });
+                const data = await resp.json();
+                hideLoader();
+
+                if (data.success) {
+                    renderOutfitResult(data);
+                    goToStep(4);
+                } else {
+                    showToast('Error generando prueba', 'error');
+                }
+            } catch(e) {
+                hideLoader();
+                showToast('Error: ' + e.message, 'error');
+            }
+        }
+    }
+
+    function renderOutfitResult(data) {
+        const container = document.getElementById('results-container');
+        const garmentNames = data.garments_used.map(g => g.name).join(' + ');
+        const totalPrice = data.garments_used.reduce((sum, g) => sum + (g.price || 0), 0);
+
+        container.innerHTML = `
+            <div class="results-display">
+                <div class="result-panel">
+                    <div class="panel-header">📸 Tu outfit completo</div>
+                    <img src="${data.result_image}" alt="Outfit result">
+                    <div class="panel-footer">
+                        <a href="${data.result_image}" download class="btn btn-secondary" style="font-size:0.8rem;">
+                            ⬇ Descargar
+                        </a>
+                        <button class="btn btn-outline" style="font-size:0.8rem;"
+                                onclick="generateVideo('${data.fashn_url}', this)">
+                            🎬 Generar desfile
+                        </button>
+                    </div>
+                </div>
+                <div class="result-panel" id="video-panel-outfit">
+                    <div class="panel-header">🎬 Video desfile</div>
+                    <div style="padding:3rem; text-align:center; color:var(--text-muted);">
+                        <p>Haz clic en "Generar desfile" para crear el video</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card" style="margin-top:0.5rem;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <strong>${garmentNames}</strong>
+                        <span style="color:var(--text-secondary); margin-left:0.5rem;">
+                            ${data.garments_used.map(g => g.size).join(' / ')}
+                        </span>
+                    </div>
+                    ${totalPrice > 0 ? `<div style="color:var(--accent); font-weight:600;">Total: $${Number(totalPrice).toLocaleString('es-CO')}</div>` : ''}
+                </div>
+            </div>
+        `;
+    }
+
+    async function generateVideo(imageUrl, btn) {
+        btn.disabled = true;
+        btn.textContent = '⏳ Generando...';
+        showLoader('Generando video de desfile... Esto puede tomar 1-2 minutos');
+
+        try {
+            const form = new FormData();
+            form.append('image_url', imageUrl);
+            const resp = await fetch('/api/generate-video', { method: 'POST', body: form });
+            const data = await resp.json();
+
+            hideLoader();
+
+            if (data.success && data.video_url) {
+                // Find the video panel and inject video
+                const panels = document.querySelectorAll('.result-panel');
+                // Replace nearby video placeholder
+                btn.closest('.results-display').querySelector('[id^="video-panel"]').innerHTML = `
+                    <div class="panel-header">🎬 Video desfile</div>
+                    <video controls autoplay loop style="width:100%;">
+                        <source src="${data.video_url}" type="video/mp4">
+                    </video>
+                    <div class="panel-footer">
+                        <a href="${data.video_url}" download class="btn btn-secondary" style="font-size:0.8rem;">
+                            ⬇ Descargar video
+                        </a>
+                    </div>
+                `;
+                showToast('Video generado exitosamente', 'success');
+            }
+        } catch(e) {
+            hideLoader();
+            showToast('Error generando video', 'error');
+            btn.disabled = false;
+            btn.textContent = '🎬 Generar desfile';
+        }
+    }
+
+    // ============================
+    // UI HELPERS
+    // ============================
+    function showLoader(text) {
+        document.getElementById('loader-text').textContent = text;
+        document.getElementById('loader').classList.add('visible');
+    }
+    function updateLoader(text) {
+        document.getElementById('loader-text').textContent = text;
+    }
+    function hideLoader() {
+        document.getElementById('loader').classList.remove('visible');
+    }
+
+    function showToast(msg, type = '') {
+        const toast = document.getElementById('toast');
+        toast.textContent = msg;
+        toast.className = `toast visible ${type}`;
+        setTimeout(() => toast.classList.remove('visible'), 3000);
+    }
+
+    // ============================
+    // INIT
+    // ============================
+    async function init() {
+        try {
+            const resp = await fetch('/api/credits');
+            const data = await resp.json();
+            // Handle different response formats
+            let credits = data.credits ?? data.balance ?? data.remaining ?? null;
+            if (typeof credits === 'object' && credits !== null) {
+                credits = credits.remaining ?? credits.balance ?? credits.total ?? JSON.stringify(credits);
+            }
+            document.getElementById('credits-count').textContent = credits ?? '—';
+        } catch(e) {
+            document.getElementById('credits-count').textContent = '—';
+        }
+    }
+    init();
+</script>
+</body>
+</html>
