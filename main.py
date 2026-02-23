@@ -207,7 +207,14 @@ def ensure_garment_file(garment, db: Session) -> str:
 # ============================================================
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
+    """Admin/management view"""
     return templates.TemplateResponse("index.html", {"request": request})
+
+
+@app.get("/tienda", response_class=HTMLResponse)
+async def store_view(request: Request):
+    """Client-facing store view - no admin elements"""
+    return templates.TemplateResponse("store.html", {"request": request})
 
 @app.get("/admin", response_class=HTMLResponse)
 async def admin_page(request: Request):
