@@ -139,6 +139,7 @@
     <!-- SIDEBAR -->
     <div class="sidebar">
         <div class="nav-item active" onclick="showTab('overview')" data-tab="overview">📊 Resumen</div>
+        <div class="nav-item" onclick="showTab('qrcodes')" data-tab="qrcodes">📱 QR Codes</div>
         <div class="nav-item" onclick="showTab('clients')" data-tab="clients">👥 Clientes</div>
         <div class="nav-item" onclick="showTab('billing')" data-tab="billing">💰 Facturación</div>
         <div class="nav-item" onclick="showTab('activity')" data-tab="activity">📋 Actividad</div>
@@ -176,6 +177,32 @@
                     <div class="info-row"><span class="info-label">Video 720p</span><span class="info-value" style="color:var(--accent)">3 créditos</span></div>
                     <div class="info-row"><span class="info-label">Video 1080p</span><span class="info-value" style="color:var(--accent)">6 créditos</span></div>
                     <div class="info-row"><span class="info-label">Video 10s (2x)</span><span class="info-value" style="color:var(--accent)">x2 costo</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ QR CODES ═══ -->
+        <div id="tab-qrcodes" class="hidden">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+                <h2 style="margin-bottom:0">📱 Códigos QR</h2>
+                <div style="display:flex;gap:10px;">
+                    <a href="/api/garments/qr-all" download class="btn btn-primary" style="text-decoration:none;">⬇️ Descargar todos los QR</a>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">QR por prenda</div>
+                <p style="font-size:13px;color:var(--text-mid);margin-bottom:16px;">Cada QR lleva al cliente directo a probarse esa prenda. Descarga individual o todos juntos para imprimir.</p>
+                <div id="qr-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;"></div>
+            </div>
+
+            <div class="section" style="margin-top:20px;">
+                <div class="section-title">📋 Instrucciones</div>
+                <div style="font-size:13px;color:var(--text-mid);line-height:1.6;">
+                    <p><strong>1.</strong> Descarga los QR (individual o todos)</p>
+                    <p><strong>2.</strong> Imprímelos y colócalos en las etiquetas o perchas de cada prenda</p>
+                    <p><strong>3.</strong> El cliente escanea con su celular → ve la prenda → se toma foto → prueba virtual</p>
+                    <p style="margin-top:10px;"><strong>💡 Tip:</strong> La URL de tu tienda para clientes es: <a href="/tienda" target="_blank" style="color:var(--accent);">/tienda</a></p>
                 </div>
             </div>
         </div>
@@ -312,6 +339,7 @@ function showTab(tab) {
     if (tab === 'clients') loadClients();
     if (tab === 'billing') loadBilling();
     if (tab === 'activity') loadActivity();
+    if (tab === 'qrcodes') loadQRCodes();
 }
 
 function showModal(id) {
@@ -336,6 +364,37 @@ async function api(url, method = 'GET', body = null) {
 
 // ============================================================
 // OVERVIEW
+// ============================================================
+async function loadQRCodes() {
+    const data = await api('/api/catalog');
+    const garments = data.garments || data || [];
+    const grid = document.getElementById('qr-grid');
+
+    if (!garments.length) {
+        grid.innerHTML = '<p style="color:var(--text-mid);">No hay prendas. Agrega prendas desde el catálogo principal.</p>';
+        return;
+    }
+
+    grid.innerHTML = garments.map(g => {
+        const icon = g.category==='tops'?'👕':g.category==='bottoms'?'👖':'👗';
+        const catLabel = g.category==='tops'?'Superior':g.category==='bottoms'?'Inferior':'Completo';
+        return `
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;text-align:center;">
+            <a href="/api/garment/${g.id}/qr" download="qr_${g.name}.png" style="display:block;">
+                <img src="/api/garment/${g.id}/qr" style="width:100%;height:auto;cursor:pointer;" alt="QR ${g.name}">
+            </a>
+            <div style="padding:10px;">
+                <div style="font-weight:600;font-size:13px;">${icon} ${g.name}</div>
+                <div style="font-size:11px;color:var(--text-mid);margin-top:2px;">${catLabel} · ${g.size} · ${g.gender}</div>
+                <div style="display:flex;gap:6px;margin-top:8px;">
+                    <a href="/api/garment/${g.id}/qr" download="qr_${g.name}.png" class="btn btn-primary" style="flex:1;text-decoration:none;font-size:11px;padding:6px;">⬇️ Descargar</a>
+                    <a href="/prenda/${g.id}" target="_blank" class="btn" style="flex:1;background:var(--card);border:1px solid var(--border);color:var(--text);font-size:11px;padding:6px;text-decoration:none;">👁️ Ver landing</a>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
 // ============================================================
 async function loadDashboard() {
     dashData = await api('/api/admin/dashboard');
