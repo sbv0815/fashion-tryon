@@ -108,7 +108,7 @@ def log_usage(db: Session, client_id: str, usage_type: str, credits: int,
     charge_cop = 0
     if client:
         if usage_type == "tryon":
-            charge_cop = client.price_per_outfit
+            charge_cop = client.price_per_outfit * credits
         else:
             charge_cop = client.price_per_video
 
@@ -668,6 +668,10 @@ async def virtual_try_on(
     if not garment:
         raise HTTPException(status_code=404, detail="Garment not found")
 
+    # Auto-resolve client_id from garment's store
+    if not client_id and garment.store_id:
+        client_id = garment.store_id
+
     model_path = await save_upload(model_image, prefix="model_")
     model_b64 = image_to_base64_url(model_path)
     garment_filepath = ensure_garment_file(garment, db)
@@ -716,6 +720,10 @@ async def virtual_try_on_outfit(
         if not garment:
             raise HTTPException(status_code=404, detail="One-piece not found")
 
+        # Auto-resolve client_id from garment's store
+        if not client_id and garment.store_id:
+            client_id = garment.store_id
+
         model_path = await save_upload(model_image, prefix="model_")
         result = await fashn_run("tryon-v1.6", {
             "model_image": image_to_base64_url(model_path),
@@ -747,6 +755,14 @@ async def virtual_try_on_outfit(
 
     if not top_id and not bottom_id:
         raise HTTPException(status_code=400, detail="Select at least one garment")
+
+    # Auto-resolve client_id from garment's store
+    if not client_id:
+        check_id = top_id or bottom_id
+        if check_id:
+            check_garment = db.query(Garment).filter(Garment.id == check_id).first()
+            if check_garment and check_garment.store_id:
+                client_id = check_garment.store_id
 
     model_path = await save_upload(model_image, prefix="model_")
     current_image_b64 = image_to_base64_url(model_path)
