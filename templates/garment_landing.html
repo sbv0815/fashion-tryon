@@ -203,11 +203,12 @@
 
     <!-- CAPTURE BUTTONS (hidden until startTryOn) -->
     <div id="capture-section" style="display:none;">
+        <div class="cta-title" style="margin-bottom:0.5rem;">📷 Tu foto</div>
+        <div class="cta-subtitle">Foto de cuerpo completo para la prueba virtual</div>
         <button class="btn-tryon" onclick="openCamera()">📷 Tomar foto</button>
         <button class="btn-gallery" onclick="document.getElementById('gallery-input').click()">🖼️ Elegir de galería</button>
     </div>
     <input type="file" id="gallery-input" accept="image/*" onchange="handlePhoto(this)" style="display:none;">
-    </div>
 
     <!-- PHOTO PREVIEW -->
     <div class="preview-section" id="preview-section">
@@ -256,25 +257,26 @@
 <script>
     const GARMENT_ID = '{{ garment.id }}';
     const GARMENT_CATEGORY = '{{ garment.category }}';
+    const GARMENT_GENDER = '{{ garment.gender }}';
     const STORE_ID = '{{ garment.store_id or "" }}';
     let photoFile = null;
     let camStream = null;
     let frontCam = false;
-    let comboId = null;       // selected complementary garment
-    let comboGarments = [];   // available complementary garments
+    let comboId = null;
+    let comboGarments = [];
 
-    // Combo: load complementary garments
+    // Combo: load complementary garments (same store, same gender)
     async function showCombo() {
         document.getElementById('cta-section').style.display = 'none';
         document.getElementById('combo-section').style.display = 'block';
 
         if (comboGarments.length) { renderCombo(); return; }
 
-        // Fetch store catalog, filter complementary category
         const complementary = GARMENT_CATEGORY === 'tops' ? 'bottoms' : 'tops';
         const storeParam = STORE_ID ? `&store_id=${STORE_ID}` : '';
+        const genderParam = GARMENT_GENDER ? `&gender=${GARMENT_GENDER}` : '';
         try {
-            const r = await fetch(`/api/catalog?${storeParam}`);
+            const r = await fetch(`/api/catalog?${storeParam}${genderParam}`);
             const data = await r.json();
             const all = data.garments || [];
             comboGarments = all.filter(g => g.category === complementary && g.id !== GARMENT_ID);
