@@ -409,7 +409,7 @@ async def get_catalog(gender: Optional[str] = None, size: Optional[str] = None, 
         "id": g.id, "name": g.name, "category": g.category,
         "gender": g.gender, "size": g.size, "price": g.price,
         "image_url": g.image_url, "reference": g.reference,
-        "store_id": g.store_id,
+        "store_id": g.store_id, "tryon_enabled": g.tryon_enabled if g.tryon_enabled else False,
     } for g in garments], "store_name": store_name}
 
 
@@ -439,7 +439,7 @@ async def update_garment(
     garment_id: str,
     name: str = Form(None), category: str = Form(None),
     size: str = Form(None), price: float = Form(None),
-    gender: str = Form(None),
+    gender: str = Form(None), tryon_enabled: str = Form(None),
     db: Session = Depends(get_db)
 ):
     garment = db.query(Garment).filter(Garment.id == garment_id).first()
@@ -450,8 +450,10 @@ async def update_garment(
     if size: garment.size = size
     if price is not None: garment.price = price
     if gender: garment.gender = gender
+    if tryon_enabled is not None:
+        garment.tryon_enabled = tryon_enabled.lower() in ('true', '1', 'yes')
     db.commit()
-    return {"success": True, "garment": {"id": garment.id, "name": garment.name, "category": garment.category}}
+    return {"success": True, "garment": {"id": garment.id, "name": garment.name, "category": garment.category, "tryon_enabled": garment.tryon_enabled}}
 
 
 # ============================================================

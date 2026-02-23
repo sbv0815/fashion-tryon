@@ -47,6 +47,7 @@ class Garment(Base):
     reference = Column(String(100), nullable=True)  # product reference/SKU
     color = Column(String(50), nullable=True)
     material = Column(String(100), nullable=True)
+    tryon_enabled = Column(Boolean, default=False)  # Only enabled garments allow virtual try-on
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -137,6 +138,10 @@ def init_db():
                     conn.execute(text("ALTER TABLE garments ADD COLUMN material VARCHAR(100)"))
                     conn.commit()
                     print("Added material column to garments")
+                if 'tryon_enabled' not in existing_cols:
+                    conn.execute(text("ALTER TABLE garments ADD COLUMN tryon_enabled BOOLEAN DEFAULT FALSE"))
+                    conn.commit()
+                    print("Added tryon_enabled column to garments")
 
         # Check for other tables
         if 'clients' not in insp.get_table_names():

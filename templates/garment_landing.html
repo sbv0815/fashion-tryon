@@ -171,6 +171,7 @@
     </div>
 
     <!-- CTA -->
+    {% if garment.tryon_enabled %}
     <div class="cta-section" id="cta-section">
         <div class="cta-title">¿Cómo te quedaría?</div>
         <div class="cta-subtitle">Pruébate esta prenda sola o combínala con otra</div>
@@ -181,6 +182,15 @@
         </button>
         {% endif %}
     </div>
+    {% else %}
+    <div class="cta-section" id="cta-section">
+        <div class="cta-title">📋 Información del producto</div>
+        <div class="cta-subtitle">Escanea otros códigos QR con el ícono ✨ para probártelos virtualmente</div>
+        {% if store_name %}
+        <button class="btn-gallery" onclick="window.location.href=STORE_ID ? '/tienda?store='+STORE_ID : '/tienda'">👗 Ver catálogo de {{ store_name }}</button>
+        {% endif %}
+    </div>
+    {% endif %}
 
     <!-- COMBO: select complementary garment -->
     <div class="combo-section" id="combo-section">
@@ -286,7 +296,7 @@
             const r = await fetch(`/api/catalog${query}`);
             const data = await r.json();
             const all = data.garments || [];
-            comboGarments = all.filter(g => g.category === complementary && g.id !== GARMENT_ID);
+            comboGarments = all.filter(g => g.category === complementary && g.id !== GARMENT_ID && g.tryon_enabled);
             renderCombo();
         } catch(e) { }
     }

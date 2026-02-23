@@ -447,13 +447,14 @@
         grid.innerHTML = items.map(g => {
             const sel = g.id===outfit.top || g.id===outfit.bottom || g.id===outfit.onepiece;
             const icon = g.category==='tops'?'👕':g.category==='bottoms'?'👖':'👗';
+            const canTry = g.tryon_enabled;
             return `
-            <div class="garment ${sel?'selected':''}" onclick="toggle('${g.id}')">
-                <div class="check">✓</div>
-                <img src="${g.image_url}" alt="${g.name}">
+            <div class="garment ${sel?'selected':''} ${canTry?'':'no-tryon'}" onclick="${canTry ? `toggle('${g.id}')` : ''}">
+                ${canTry ? '<div class="check">✓</div>' : ''}
+                <img src="${g.image_url}" alt="${g.name}" style="${canTry?'':'opacity:0.6'}">
                 <div class="info">
                     <div class="name">${g.name}</div>
-                    <div class="meta">${icon} ${g.size}</div>
+                    <div class="meta">${icon} ${g.size}${canTry?' · ✨':''}</div>
                     ${g.price ? `<div class="price">$${Number(g.price).toLocaleString('es-CO')}</div>` : ''}
                 </div>
             </div>`;
