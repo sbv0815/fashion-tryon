@@ -1544,10 +1544,11 @@
         // NOW stop camera (after drawing)
         stopCameraStream();
 
-        // Convert to file
+        // Convert to blob and store it
         canvas.toBlob(blob => {
-            if (blob && blob.size > 0) {
-                modelPhotoFile = new File([blob], 'photo.jpg', { type: 'image/jpeg' });
+            if (blob && blob.size > 100) {
+                // Store as blob, not File - more compatible with Android FormData
+                modelPhotoFile = blob;
                 const url = URL.createObjectURL(blob);
                 document.getElementById('model-preview-img').src = url;
                 showPhotoPreview();
@@ -1710,7 +1711,7 @@
             startProgress(estTime, steps);
 
             const form = new FormData();
-            form.append('model_image', modelPhotoFile);
+            form.append('model_image', modelPhotoFile, 'photo.jpg');
             if (outfit.top) form.append('top_id', outfit.top);
             if (outfit.bottom) form.append('bottom_id', outfit.bottom);
 
@@ -1753,7 +1754,7 @@
             startProgress(8, [garment?.name || 'Prenda']);
 
             const form = new FormData();
-            form.append('model_image', modelPhotoFile);
+            form.append('model_image', modelPhotoFile, 'photo.jpg');
             form.append('onepiece_id', garmentId);
 
             try {
