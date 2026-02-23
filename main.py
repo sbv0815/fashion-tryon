@@ -369,7 +369,7 @@ async def virtual_try_on(
 
     result = await fashn_run("tryon-v1.6", {
         "model_image": model_b64, "garment_image": garment_b64,
-        "category": garment.category, "mode": "balanced", "garment_photo_type": "flat-lay"
+        "category": garment.category, "mode": "performance", "garment_photo_type": "auto"
     })
 
     output_urls = result.get("output", [])
@@ -414,7 +414,7 @@ async def virtual_try_on_outfit(
         result = await fashn_run("tryon-v1.6", {
             "model_image": image_to_base64_url(model_path),
             "garment_image": image_to_base64_url(ensure_garment_file(garment, db)),
-            "category": "one-pieces", "mode": "balanced", "garment_photo_type": "flat-lay"
+            "category": "one-pieces", "mode": "performance", "garment_photo_type": "auto"
         })
         output_urls = result.get("output", [])
         if not output_urls:
@@ -455,7 +455,7 @@ async def virtual_try_on_outfit(
         result_top = await fashn_run("tryon-v1.6", {
             "model_image": current_image_b64,
             "garment_image": image_to_base64_url(ensure_garment_file(top, db)),
-            "category": "tops", "mode": "balanced", "garment_photo_type": "flat-lay"
+            "category": "tops", "mode": "performance", "garment_photo_type": "auto"
         })
         output_urls = result_top.get("output", [])
         if not output_urls:
@@ -477,7 +477,7 @@ async def virtual_try_on_outfit(
         result_bottom = await fashn_run("tryon-v1.6", {
             "model_image": current_image_b64,
             "garment_image": image_to_base64_url(ensure_garment_file(bottom, db)),
-            "category": "bottoms", "mode": "balanced", "garment_photo_type": "flat-lay"
+            "category": "bottoms", "mode": "performance", "garment_photo_type": "auto"
         })
         output_urls = result_bottom.get("output", [])
         if not output_urls:
