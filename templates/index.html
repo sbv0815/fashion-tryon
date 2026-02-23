@@ -716,6 +716,28 @@
             font-size: 0.95rem;
         }
 
+        .loader-content {
+            text-align: center;
+            max-width: 300px;
+        }
+
+        .loader-progress {
+            width: 100%;
+            height: 4px;
+            background: var(--border);
+            border-radius: 4px;
+            margin-top: 16px;
+            overflow: hidden;
+        }
+
+        .loader-progress-bar {
+            height: 100%;
+            background: var(--accent);
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
         /* ===== ADD GARMENT MODAL ===== */
         .modal-overlay {
             display: none;
@@ -950,26 +972,34 @@
         </div>
 
         <!-- CAMERA / UPLOAD OPTIONS -->
-        <div class="card">
-            <div class="card-title">📸 Captura tu foto</div>
-            <div class="capture-options">
-                <!-- Camera button (mobile) -->
-                <button class="capture-btn capture-camera" onclick="openCamera()">
-                    <div class="capture-icon">📷</div>
-                    <div class="capture-label">Tomar foto</div>
-                    <div class="capture-hint">Usa la cámara del celular</div>
+        <div class="card" id="camera-card">
+            <div class="card-title">📸 Tu foto de cuerpo completo</div>
+
+            <!-- Option buttons -->
+            <div id="capture-options" style="display:flex; gap:0.75rem; margin-bottom:1rem;">
+                <button class="btn btn-primary" onclick="startLiveCamera()" style="flex:1; padding:1rem;">
+                    📷 Abrir cámara
                 </button>
-                <!-- Gallery button -->
-                <button class="capture-btn capture-gallery" onclick="openGallery()">
-                    <div class="capture-icon">🖼️</div>
-                    <div class="capture-label">Subir desde galería</div>
-                    <div class="capture-hint">Selecciona una foto existente</div>
+                <button class="btn btn-secondary" onclick="document.getElementById('model-photo-gallery').click()" style="flex:1; padding:1rem;">
+                    🖼️ Galería
                 </button>
             </div>
 
-            <!-- Hidden inputs -->
-            <input type="file" id="model-photo-camera" accept="image/*" capture="environment" onchange="previewModelPhoto(this)" style="display:none">
-            <input type="file" id="model-photo-gallery" accept="image/*" onchange="previewModelPhoto(this)" style="display:none">
+            <!-- Gallery input (no capture attribute) -->
+            <input type="file" id="model-photo-gallery" accept="image/*" onchange="handleGalleryPhoto(this)" style="display:none">
+
+            <!-- Live camera viewfinder -->
+            <div id="camera-viewfinder" style="display:none; position:relative; border-radius:var(--radius); overflow:hidden; background:#000;">
+                <video id="camera-video" autoplay playsinline muted style="width:100%; max-height:70vh; object-fit:cover;"></video>
+                <div style="position:absolute; bottom:0; left:0; right:0; padding:1rem; background:linear-gradient(transparent, rgba(0,0,0,0.8)); display:flex; justify-content:center; gap:1rem;">
+                    <button onclick="switchCamera()" class="btn btn-secondary" style="padding:0.7rem 1.2rem; font-size:0.85rem;">🔄 Voltear</button>
+                    <button onclick="capturePhoto()" class="btn btn-primary" style="padding:0.7rem 2rem; font-size:1rem; font-weight:700;">📸 Capturar</button>
+                    <button onclick="cancelCamera()" class="btn btn-secondary" style="padding:0.7rem 1.2rem; font-size:0.85rem;">✕ Cancelar</button>
+                </div>
+            </div>
+
+            <!-- Hidden canvas for capture -->
+            <canvas id="camera-canvas" style="display:none;"></canvas>
 
             <!-- Photo preview -->
             <div id="model-preview-container" class="photo-preview-container" style="display:none">
@@ -1065,8 +1095,14 @@
 
 <!-- LOADER -->
 <div class="loader-overlay" id="loader">
-    <div class="spinner"></div>
-    <div class="loader-text" id="loader-text">Generando tu prueba virtual...</div>
+    <div class="loader-content">
+        <div class="spinner"></div>
+        <div class="loader-text" id="loader-text">Generando tu prueba virtual...</div>
+        <div class="loader-progress">
+            <div class="loader-progress-bar" id="loader-bar"></div>
+        </div>
+        <div class="loader-step" id="loader-step" style="font-size:0.75rem; color:#8a8578; margin-top:8px;"></div>
+    </div>
 </div>
 
 <!-- TOAST -->
@@ -1081,6 +1117,38 @@
     let outfit = { top: null, bottom: null, onepiece: null };
     let modelPhotoFile = null;
     let catalog = [];
+
+    // Restore state after camera returns (Android kills PWA sometimes)
+    function saveState() {
+        try {
+            sessionStorage.setItem('ft_state', JSON.stringify({
+                step: currentStep,
+                profile: userProfile,
+                outfit: outfit
+            }));
+        } catch(e) {}
+    }
+
+    function restoreState() {
+        try {
+            const saved = sessionStorage.getItem('ft_state');
+            if (saved) {
+                const s = JSON.parse(saved);
+                userProfile = s.profile || userProfile;
+                outfit = s.outfit || outfit;
+                if (s.step && s.step > 1) {
+                    // Restore to previous step (go to step 2 if was on 3, since photo is lost)
+                    const restoreStep = s.step >= 3 ? 3 : s.step;
+                    setTimeout(() => {
+                        goToStep(restoreStep);
+                        if (restoreStep === 3) {
+                            showToast('Toma tu foto nuevamente', '');
+                        }
+                    }, 300);
+                }
+            }
+        } catch(e) {}
+    }
 
     // ============================
     // NAVIGATION
@@ -1108,6 +1176,7 @@
         });
 
         if (step === 2) loadCatalog();
+        saveState();
     }
 
     // ============================
@@ -1389,90 +1458,138 @@
     // ============================
     // STEP 3: CAMERA & PHOTO
     // ============================
-    function openCamera() {
-        const input = document.getElementById('model-photo-camera');
-        input.value = '';
-        input.click();
+    // ============================
+    // CAMERA: Live viewfinder (no input[capture] - avoids Android PWA crash)
+    // ============================
+    let cameraStream = null;
+    let useFrontCamera = false;
+
+    async function startLiveCamera() {
+        try {
+            // Stop any existing stream
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(t => t.stop());
+            }
+
+            const constraints = {
+                video: {
+                    facingMode: useFrontCamera ? 'user' : 'environment',
+                    width: { ideal: 1280 },
+                    height: { ideal: 1920 }
+                },
+                audio: false
+            };
+
+            cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+            const video = document.getElementById('camera-video');
+            video.srcObject = cameraStream;
+            await video.play();
+
+            document.getElementById('capture-options').style.display = 'none';
+            document.getElementById('photo-guide').style.display = 'none';
+            document.getElementById('camera-viewfinder').style.display = 'block';
+
+        } catch(err) {
+            console.error('Camera error:', err);
+            if (err.name === 'NotAllowedError') {
+                showToast('Permite el acceso a la cámara en los permisos del navegador', 'error');
+            } else {
+                showToast('No se pudo abrir la cámara. Usa la galería.', 'error');
+            }
+        }
     }
 
-    function openGallery() {
-        const input = document.getElementById('model-photo-gallery');
-        input.value = '';
-        input.click();
+    function switchCamera() {
+        useFrontCamera = !useFrontCamera;
+        startLiveCamera();
     }
 
-    function previewModelPhoto(input) {
+    function capturePhoto() {
+        const video = document.getElementById('camera-video');
+        const canvas = document.getElementById('camera-canvas');
+
+        // Use video dimensions for best quality
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+
+        // Stop camera
+        stopCameraStream();
+
+        // Convert to file
+        canvas.toBlob(blob => {
+            if (blob) {
+                modelPhotoFile = new File([blob], 'photo.jpg', { type: 'image/jpeg' });
+                const url = URL.createObjectURL(blob);
+                document.getElementById('model-preview-img').src = url;
+                showPhotoPreview();
+                showToast('Foto capturada ✓', 'success');
+            }
+        }, 'image/jpeg', 0.85);
+    }
+
+    function cancelCamera() {
+        stopCameraStream();
+        document.getElementById('camera-viewfinder').style.display = 'none';
+        document.getElementById('capture-options').style.display = 'flex';
+        document.getElementById('photo-guide').style.display = 'block';
+    }
+
+    function stopCameraStream() {
+        if (cameraStream) {
+            cameraStream.getTracks().forEach(t => t.stop());
+            cameraStream = null;
+        }
+        document.getElementById('camera-video').srcObject = null;
+        document.getElementById('camera-viewfinder').style.display = 'none';
+    }
+
+    // Gallery handler (file input, no capture attribute)
+    function handleGalleryPhoto(input) {
         if (!input.files || !input.files[0]) return;
-
         const file = input.files[0];
         if (!file.type.startsWith('image/')) {
-            showToast('Por favor selecciona una imagen', 'error');
+            showToast('Selecciona una imagen', 'error');
             return;
         }
-
         showToast('Procesando foto...', '');
-
-        // Compress image for mobile cameras (they produce 8-15MB files)
-        compressImage(file, 1200, 0.85).then(compressedFile => {
-            modelPhotoFile = compressedFile;
-            const url = URL.createObjectURL(compressedFile);
-            document.getElementById('model-preview-img').src = url;
-            document.getElementById('model-preview-container').style.display = 'block';
-            document.querySelector('.capture-options').style.display = 'none';
-            document.getElementById('photo-guide').style.display = 'none';
-            document.getElementById('btn-generate').disabled = false;
+        compressImage(file, 1200, 0.85).then(compressed => {
+            modelPhotoFile = compressed;
+            document.getElementById('model-preview-img').src = URL.createObjectURL(compressed);
+            showPhotoPreview();
             showToast('Foto lista ✓', 'success');
-        }).catch(err => {
-            console.error('Compress error:', err);
-            // Fallback: use original file
+        }).catch(() => {
             modelPhotoFile = file;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                document.getElementById('model-preview-img').src = e.target.result;
-                document.getElementById('model-preview-container').style.display = 'block';
-                document.querySelector('.capture-options').style.display = 'none';
-                document.getElementById('photo-guide').style.display = 'none';
-                document.getElementById('btn-generate').disabled = false;
-            };
-            reader.readAsDataURL(file);
+            document.getElementById('model-preview-img').src = URL.createObjectURL(file);
+            showPhotoPreview();
             showToast('Foto cargada ✓', 'success');
         });
+    }
+
+    function showPhotoPreview() {
+        document.getElementById('model-preview-container').style.display = 'block';
+        document.getElementById('capture-options').style.display = 'none';
+        document.getElementById('camera-viewfinder').style.display = 'none';
+        document.getElementById('photo-guide').style.display = 'none';
+        document.getElementById('btn-generate').disabled = false;
     }
 
     function compressImage(file, maxDim, quality) {
         return new Promise((resolve, reject) => {
             const img = new Image();
             img.onload = () => {
-                let w = img.width;
-                let h = img.height;
-
-                // Scale down if too large
+                let w = img.width, h = img.height;
                 if (w > maxDim || h > maxDim) {
-                    if (w > h) {
-                        h = Math.round(h * maxDim / w);
-                        w = maxDim;
-                    } else {
-                        w = Math.round(w * maxDim / h);
-                        h = maxDim;
-                    }
+                    if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+                    else { w = Math.round(w * maxDim / h); h = maxDim; }
                 }
-
                 const canvas = document.createElement('canvas');
-                canvas.width = w;
-                canvas.height = h;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, w, h);
-
+                canvas.width = w; canvas.height = h;
+                canvas.getContext('2d').drawImage(img, 0, 0, w, h);
                 canvas.toBlob(blob => {
-                    if (blob) {
-                        const compressed = new File([blob], file.name || 'photo.jpg', { type: 'image/jpeg' });
-                        console.log(`Compressed: ${(file.size/1024/1024).toFixed(1)}MB → ${(compressed.size/1024/1024).toFixed(1)}MB`);
-                        resolve(compressed);
-                    } else {
-                        reject(new Error('toBlob failed'));
-                    }
+                    if (blob) resolve(new File([blob], 'photo.jpg', { type: 'image/jpeg' }));
+                    else reject(new Error('toBlob failed'));
                 }, 'image/jpeg', quality);
-
                 URL.revokeObjectURL(img.src);
             };
             img.onerror = () => reject(new Error('Image load failed'));
@@ -1482,17 +1599,58 @@
 
     function retakePhoto() {
         modelPhotoFile = null;
+        stopCameraStream();
         document.getElementById('model-preview-container').style.display = 'none';
-        document.querySelector('.capture-options').style.display = 'grid';
+        document.getElementById('capture-options').style.display = 'flex';
         document.getElementById('photo-guide').style.display = 'block';
         document.getElementById('btn-generate').disabled = true;
-        document.getElementById('model-photo-camera').value = '';
         document.getElementById('model-photo-gallery').value = '';
     }
 
     // ============================
     // STEP 4: GENERATE
     // ============================
+    let progressTimer = null;
+
+    function startProgress(totalSeconds, steps) {
+        let elapsed = 0;
+        const bar = document.getElementById('loader-bar');
+        const stepEl = document.getElementById('loader-step');
+        bar.style.width = '5%';
+
+        progressTimer = setInterval(() => {
+            elapsed += 0.5;
+            const pct = Math.min(95, (elapsed / totalSeconds) * 100);
+            bar.style.width = pct + '%';
+
+            // Show step messages
+            if (steps.length === 2) {
+                if (elapsed < totalSeconds * 0.45) {
+                    stepEl.textContent = `👕 Probando ${steps[0]}...`;
+                } else if (elapsed < totalSeconds * 0.9) {
+                    stepEl.textContent = `👖 Probando ${steps[1]}...`;
+                } else {
+                    stepEl.textContent = '✨ Finalizando...';
+                }
+            } else {
+                if (elapsed < totalSeconds * 0.7) {
+                    stepEl.textContent = `👗 Probando ${steps[0]}...`;
+                } else {
+                    stepEl.textContent = '✨ Finalizando...';
+                }
+            }
+        }, 500);
+    }
+
+    function stopProgress() {
+        if (progressTimer) clearInterval(progressTimer);
+        progressTimer = null;
+        const bar = document.getElementById('loader-bar');
+        bar.style.width = '100%';
+        document.getElementById('loader-step').textContent = '✅ ¡Listo!';
+        setTimeout(hideLoader, 400);
+    }
+
     async function generateTryOn() {
         if (!modelPhotoFile) return;
         if (!outfit.top && !outfit.bottom && !outfit.onepiece) return;
@@ -1501,11 +1659,13 @@
         const isSingle = outfit.onepiece;
 
         if (isOutfit) {
-            // Full outfit mode: top + bottom via chained API
             let steps = [];
-            if (outfit.top) steps.push(catalog.find(g => g.id === outfit.top)?.name || 'top');
-            if (outfit.bottom) steps.push(catalog.find(g => g.id === outfit.bottom)?.name || 'bottom');
-            showLoader(`Generando outfit completo: ${steps.join(' + ')}... Esto puede tomar 30-60 segundos`);
+            if (outfit.top) steps.push(catalog.find(g => g.id === outfit.top)?.name || 'Superior');
+            if (outfit.bottom) steps.push(catalog.find(g => g.id === outfit.bottom)?.name || 'Inferior');
+
+            const estTime = steps.length * 8;
+            showLoader(`Generando tu outfit...`);
+            startProgress(estTime, steps);
 
             const form = new FormData();
             form.append('model_image', modelPhotoFile);
@@ -1515,23 +1675,25 @@
             try {
                 const resp = await fetch('/api/try-on-outfit', { method: 'POST', body: form });
                 const data = await resp.json();
-                hideLoader();
+                stopProgress();
 
                 if (data.success) {
                     renderOutfitResult(data);
                     goToStep(4);
                 } else {
-                    showToast('Error generando outfit', 'error');
+                    hideLoader();
+                    showToast('Error: ' + (data.detail || 'Error generando outfit'), 'error');
                 }
             } catch(e) {
+                stopProgress();
                 hideLoader();
                 showToast('Error: ' + e.message, 'error');
             }
         } else if (isSingle) {
-            // Single garment (onepiece or just one item)
             const garmentId = outfit.onepiece;
             const garment = catalog.find(g => g.id === garmentId);
-            showLoader(`Probándote "${garment?.name}"... 15-30 segundos`);
+            showLoader(`Probándote "${garment?.name}"...`);
+            startProgress(8, [garment?.name || 'Prenda']);
 
             const form = new FormData();
             form.append('model_image', modelPhotoFile);
@@ -1540,15 +1702,17 @@
             try {
                 const resp = await fetch('/api/try-on-outfit', { method: 'POST', body: form });
                 const data = await resp.json();
-                hideLoader();
+                stopProgress();
 
                 if (data.success) {
                     renderOutfitResult(data);
                     goToStep(4);
                 } else {
-                    showToast('Error generando prueba', 'error');
+                    hideLoader();
+                    showToast('Error: ' + (data.detail || 'Error generando prueba'), 'error');
                 }
             } catch(e) {
+                stopProgress();
                 hideLoader();
                 showToast('Error: ' + e.message, 'error');
             }
@@ -1699,6 +1863,7 @@
         } catch(e) {
             document.getElementById('credits-count').textContent = '—';
         }
+        restoreState();
     }
     init();
 
