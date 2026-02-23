@@ -578,16 +578,18 @@ async function loadClientGarments(clientId) {
 
     grid.innerHTML = garments.map(g => {
         const icon = g.category==='tops'?'👕':g.category==='bottoms'?'👖':'👗';
+        const catLabel = g.category==='tops'?'Superior':g.category==='bottoms'?'Inferior':'Completo';
         return `
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
             <img src="${g.image_url}" style="width:100%;height:130px;object-fit:cover;background:#111;">
             <div style="padding:8px 10px;">
                 <div style="font-weight:600;font-size:12px;">${icon} ${g.name}</div>
-                <div style="font-size:11px;color:var(--text-mid);margin-top:2px;">${g.size} · ${g.category}${g.reference ? ' · '+g.reference : ''}</div>
+                <div style="font-size:11px;color:var(--text-mid);margin-top:2px;">${g.size} · ${catLabel}${g.reference ? ' · '+g.reference : ''}</div>
                 ${g.price ? `<div style="font-size:12px;color:var(--accent);font-weight:600;margin-top:2px;">$${Number(g.price).toLocaleString('es-CO')}</div>` : ''}
                 <div style="display:flex;gap:4px;margin-top:6px;">
                     <a href="/api/garment/${g.id}/qr" download="qr_${g.name}.png" style="flex:1;text-align:center;padding:4px;background:var(--blue-soft);color:var(--blue);border:1px solid var(--blue);border-radius:6px;font-size:10px;text-decoration:none;cursor:pointer;">📱 QR</a>
                     <a href="/prenda/${g.id}" target="_blank" style="flex:1;text-align:center;padding:4px;background:var(--card);border:1px solid var(--border);border-radius:6px;font-size:10px;text-decoration:none;color:var(--text);cursor:pointer;">👁️ Ver</a>
+                    <button onclick="editGarmentCategory('${g.id}','${g.category}')" style="flex:0.7;padding:4px;background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent);border-radius:6px;font-size:10px;cursor:pointer;">✏️</button>
                     <button onclick="deleteGarment('${g.id}')" style="flex:0.5;padding:4px;background:var(--red-soft);color:var(--red);border:1px solid var(--red);border-radius:6px;font-size:10px;cursor:pointer;">✕</button>
                 </div>
             </div>
@@ -638,6 +640,20 @@ async function uploadGarmentToClient() {
 async function deleteGarment(id) {
     if (!confirm('¿Eliminar esta prenda?')) return;
     await api(`/api/garment/${id}`, 'DELETE');
+    loadClientGarments(selectedClientId);
+}
+
+async function editGarmentCategory(id, currentCat) {
+    const options = {'tops':'👕 Superior (tops)', 'bottoms':'👖 Inferior (bottoms)', 'one-pieces':'👗 Completo (one-pieces)'};
+    const labels = Object.entries(options).map(([k,v]) => `${k === currentCat ? '✅ ' : ''}${v}`).join('\n');
+    const newCat = prompt(`Categoría actual: ${options[currentCat] || currentCat}\n\nEscribe la nueva categoría:\n- tops\n- bottoms\n- one-pieces`);
+    if (!newCat || !['tops','bottoms','one-pieces'].includes(newCat.trim())) {
+        if (newCat !== null) alert('Categoría inválida. Usa: tops, bottoms, o one-pieces');
+        return;
+    }
+    const form = new FormData();
+    form.append('category', newCat.trim());
+    await fetch(`/api/garment/${id}`, {method:'PUT', body: form});
     loadClientGarments(selectedClientId);
 }
 

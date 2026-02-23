@@ -265,7 +265,7 @@
     let comboId = null;
     let comboGarments = [];
 
-    // Combo: load complementary garments (same store if available, same gender)
+    // Combo: load complementary garments (same store, same gender)
     async function showCombo() {
         document.getElementById('cta-section').style.display = 'none';
         document.getElementById('combo-section').style.display = 'block';
@@ -283,15 +283,6 @@
             const data = await r.json();
             const all = data.garments || [];
             comboGarments = all.filter(g => g.category === complementary && g.id !== GARMENT_ID);
-
-            // If store filtered returned nothing, try without store filter (same gender)
-            if (!comboGarments.length && STORE_ID) {
-                const genderQuery = GARMENT_GENDER ? `?gender=${GARMENT_GENDER}` : '';
-                const r2 = await fetch(`/api/catalog${genderQuery}`);
-                const data2 = await r2.json();
-                const all2 = data2.garments || [];
-                comboGarments = all2.filter(g => g.category === complementary && g.id !== GARMENT_ID);
-            }
             renderCombo();
         } catch(e) { }
     }
