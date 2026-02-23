@@ -1686,7 +1686,16 @@
         setTimeout(hideLoader, 400);
     }
 
+    function resetGenerateButton() {
+        const btn = document.getElementById('btn-generate');
+        btn.disabled = false;
+        btn.textContent = '✨ Generar prueba virtual';
+    }
+
     async function generateTryOn() {
+        const btn = document.getElementById('btn-generate');
+        if (btn.disabled) return;
+
         if (!modelPhotoFile) {
             showToast('Primero toma o sube una foto', 'error');
             return;
@@ -1700,6 +1709,10 @@
             showToast('Selecciona al menos una prenda', 'error');
             return;
         }
+
+        // Disable button to prevent multiple taps
+        btn.disabled = true;
+        btn.textContent = '⏳ Generando...';
 
         const isOutfit = (outfit.top || outfit.bottom) && !outfit.onepiece;
         const isSingle = outfit.onepiece;
@@ -1892,6 +1905,7 @@
     }
     function hideLoader() {
         document.getElementById('loader').classList.remove('visible');
+        resetGenerateButton();
     }
 
     function showToast(msg, type = '') {
