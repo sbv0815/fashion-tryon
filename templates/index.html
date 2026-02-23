@@ -1524,7 +1524,13 @@
         const video = document.getElementById('camera-video');
         const canvas = document.getElementById('camera-canvas');
 
-        // Scale down to max 1200px for faster upload
+        // Validate video has actual content
+        if (!video.videoWidth || !video.videoHeight) {
+            showToast('La cámara no está lista, espera un momento', 'error');
+            return;
+        }
+
+        // Draw FIRST, before stopping camera
         let w = video.videoWidth, h = video.videoHeight;
         const maxDim = 1200;
         if (w > maxDim || h > maxDim) {
@@ -1535,17 +1541,20 @@
         canvas.height = h;
         canvas.getContext('2d').drawImage(video, 0, 0, w, h);
 
-        // Stop camera
+        // NOW stop camera (after drawing)
         stopCameraStream();
 
-        // Convert to compressed file
+        // Convert to file
         canvas.toBlob(blob => {
-            if (blob) {
+            if (blob && blob.size > 0) {
                 modelPhotoFile = new File([blob], 'photo.jpg', { type: 'image/jpeg' });
                 const url = URL.createObjectURL(blob);
                 document.getElementById('model-preview-img').src = url;
                 showPhotoPreview();
-                showToast('Foto capturada ✓', 'success');
+                showToast(`Foto capturada ✓ (${(blob.size/1024).toFixed(0)}KB)`, 'success');
+            } else {
+                showToast('Error capturando foto. Intenta de nuevo.', 'error');
+                document.getElementById('capture-options').style.display = 'flex';
             }
         }, 'image/jpeg', 0.85);
     }
@@ -1674,8 +1683,19 @@
     }
 
     async function generateTryOn() {
-        if (!modelPhotoFile) return;
-        if (!outfit.top && !outfit.bottom && !outfit.onepiece) return;
+        if (!modelPhotoFile) {
+            showToast('Primero toma o sube una foto', 'error');
+            return;
+        }
+        if (!modelPhotoFile.size || modelPhotoFile.size < 100) {
+            showToast('La foto no se capturó bien. Toma otra foto.', 'error');
+            retakePhoto();
+            return;
+        }
+        if (!outfit.top && !outfit.bottom && !outfit.onepiece) {
+            showToast('Selecciona al menos una prenda', 'error');
+            return;
+        }
 
         const isOutfit = (outfit.top || outfit.bottom) && !outfit.onepiece;
         const isSingle = outfit.onepiece;
@@ -1699,6 +1719,14 @@
                 const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 min timeout
                 const resp = await fetch('/api/try-on-outfit', { method: 'POST', body: form, signal: controller.signal });
                 clearTimeout(timeoutId);
+
+                if (!resp.ok) {
+                    const errText = await resp.text();
+                    stopProgress(); hideLoader();
+                    showToast(`Error ${resp.status}: ${errText.substring(0, 150)}`, 'error');
+                    return;
+                }
+
                 const data = await resp.json();
                 stopProgress();
 
@@ -1713,9 +1741,9 @@
                 stopProgress();
                 hideLoader();
                 if (e.name === 'AbortError') {
-                    showToast('La generación tardó demasiado. Intenta con una foto más pequeña.', 'error');
+                    showToast('La generación tardó demasiado. Intenta de nuevo.', 'error');
                 } else {
-                    showToast('Error de conexión. Verifica tu internet e intenta de nuevo.', 'error');
+                    showToast('Error: ' + e.message, 'error');
                 }
             }
         } else if (isSingle) {
@@ -1733,6 +1761,14 @@
                 const timeoutId = setTimeout(() => controller.abort(), 180000);
                 const resp = await fetch('/api/try-on-outfit', { method: 'POST', body: form, signal: controller.signal });
                 clearTimeout(timeoutId);
+
+                if (!resp.ok) {
+                    const errText = await resp.text();
+                    stopProgress(); hideLoader();
+                    showToast(`Error ${resp.status}: ${errText.substring(0, 150)}`, 'error');
+                    return;
+                }
+
                 const data = await resp.json();
                 stopProgress();
 
@@ -1749,7 +1785,7 @@
                 if (e.name === 'AbortError') {
                     showToast('La generación tardó demasiado. Intenta de nuevo.', 'error');
                 } else {
-                    showToast('Error de conexión. Verifica tu internet e intenta de nuevo.', 'error');
+                    showToast('Error: ' + e.message, 'error');
                 }
             }
         }
