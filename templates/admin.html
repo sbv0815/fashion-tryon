@@ -653,9 +653,15 @@ async function deleteGarment(id) {
 }
 
 async function toggleTryon(id, enable) {
-    const form = new FormData();
-    form.append('tryon_enabled', enable ? 'true' : 'false');
-    await fetch(`/api/garment/${id}`, {method:'PUT', body: form});
+    try {
+        const form = new FormData();
+        form.append('tryon_enabled', enable ? 'true' : 'false');
+        const resp = await fetch(`/api/garment/${id}`, {method:'PUT', body: form});
+        const data = await resp.json();
+        if (!data.success) alert('Error: ' + JSON.stringify(data));
+    } catch(e) {
+        alert('Error toggle: ' + e.message);
+    }
     loadClientGarments(selectedClientId);
 }
 
