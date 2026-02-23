@@ -318,6 +318,26 @@ async def delete_garment(garment_id: str, db: Session = Depends(get_db)):
     return {"success": True}
 
 
+@app.put("/api/garment/{garment_id}")
+async def update_garment(
+    garment_id: str,
+    name: str = Form(None), category: str = Form(None),
+    size: str = Form(None), price: float = Form(None),
+    gender: str = Form(None),
+    db: Session = Depends(get_db)
+):
+    garment = db.query(Garment).filter(Garment.id == garment_id).first()
+    if not garment:
+        raise HTTPException(status_code=404, detail="Garment not found")
+    if name: garment.name = name
+    if category: garment.category = category
+    if size: garment.size = size
+    if price is not None: garment.price = price
+    if gender: garment.gender = gender
+    db.commit()
+    return {"success": True, "garment": {"id": garment.id, "name": garment.name, "category": garment.category}}
+
+
 # ============================================================
 # QR CODE GENERATION
 # ============================================================
@@ -583,7 +603,8 @@ async def virtual_try_on_outfit(
         result_top = await fashn_run("tryon-v1.6", {
             "model_image": current_image_b64,
             "garment_image": image_to_base64_url(ensure_garment_file(top, db)),
-            "category": "tops", "mode": "performance", "garment_photo_type": "auto"
+            "category": top.category if top.category in ["tops","bottoms","one-pieces"] else "tops",
+            "mode": "performance", "garment_photo_type": "auto"
         })
         output_urls = result_top.get("output", [])
         if not output_urls:
@@ -605,7 +626,8 @@ async def virtual_try_on_outfit(
         result_bottom = await fashn_run("tryon-v1.6", {
             "model_image": current_image_b64,
             "garment_image": image_to_base64_url(ensure_garment_file(bottom, db)),
-            "category": "bottoms", "mode": "performance", "garment_photo_type": "auto"
+            "category": bottom.category if bottom.category in ["tops","bottoms","one-pieces"] else "bottoms",
+            "mode": "performance", "garment_photo_type": "auto"
         })
         output_urls = result_bottom.get("output", [])
         if not output_urls:
