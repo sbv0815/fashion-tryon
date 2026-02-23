@@ -176,15 +176,15 @@
         <button class="btn-tryon" onclick="startTryOn()">📷 Probar solo esta prenda</button>
         {% if garment.category != 'one-pieces' %}
         <button class="btn-gallery" onclick="showCombo()" id="btn-combo">
-            {% if garment.category == 'tops' %}👖 Combinar con pantalón{% else %}👕 Combinar con camisa{% endif %}
+            {% if garment.category == 'tops' %}👖 Combinar con prenda inferior{% else %}👕 Combinar con prenda superior{% endif %}
         </button>
         {% endif %}
     </div>
 
     <!-- COMBO: select complementary garment -->
     <div class="combo-section" id="combo-section">
-        <div class="combo-title">
-            {% if garment.category == 'tops' %}👖 Escoge un pantalón{% else %}👕 Escoge una camisa{% endif %}
+        <div class="combo-title" id="combo-title">
+            {% if garment.category == 'tops' %}👖 Escoge prenda inferior{% else %}👕 Escoge prenda superior{% endif %}
         </div>
         <div class="combo-sub">De {{ store_name or 'esta tienda' }}</div>
         <div class="combo-grid" id="combo-grid"></div>
@@ -265,7 +265,7 @@
     let comboId = null;
     let comboGarments = [];
 
-    // Combo: load complementary garments (same store, same gender)
+    // Combo: load complementary garments (same store if available, same gender)
     async function showCombo() {
         document.getElementById('cta-section').style.display = 'none';
         document.getElementById('combo-section').style.display = 'block';
@@ -273,13 +273,25 @@
         if (comboGarments.length) { renderCombo(); return; }
 
         const complementary = GARMENT_CATEGORY === 'tops' ? 'bottoms' : 'tops';
-        const storeParam = STORE_ID ? `&store_id=${STORE_ID}` : '';
-        const genderParam = GARMENT_GENDER ? `&gender=${GARMENT_GENDER}` : '';
+        let params = [];
+        if (GARMENT_GENDER) params.push(`gender=${GARMENT_GENDER}`);
+        if (STORE_ID) params.push(`store_id=${STORE_ID}`);
+        const query = params.length ? '?' + params.join('&') : '';
+
         try {
-            const r = await fetch(`/api/catalog?${storeParam}${genderParam}`);
+            const r = await fetch(`/api/catalog${query}`);
             const data = await r.json();
             const all = data.garments || [];
             comboGarments = all.filter(g => g.category === complementary && g.id !== GARMENT_ID);
+
+            // If store filtered returned nothing, try without store filter (same gender)
+            if (!comboGarments.length && STORE_ID) {
+                const genderQuery = GARMENT_GENDER ? `?gender=${GARMENT_GENDER}` : '';
+                const r2 = await fetch(`/api/catalog${genderQuery}`);
+                const data2 = await r2.json();
+                const all2 = data2.garments || [];
+                comboGarments = all2.filter(g => g.category === complementary && g.id !== GARMENT_ID);
+            }
             renderCombo();
         } catch(e) { }
     }
