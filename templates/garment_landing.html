@@ -127,6 +127,23 @@
         .btn-retry { background:transparent; border:1px solid var(--border); color:var(--text); }
         .btn-browse { background:transparent; border:1px solid var(--accent); color:var(--accent); font-weight:600; }
 
+        /* Combo section */
+        .combo-section { display:none; margin-top:1rem; }
+        .combo-title { font-family:'Playfair Display',serif; font-size:1.1rem; font-weight:600; margin-bottom:0.5rem; }
+        .combo-sub { font-size:0.8rem; color:var(--text2); margin-bottom:0.75rem; }
+        .combo-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:0.5rem; }
+        .combo-item { background:var(--card); border:2px solid var(--border); border-radius:10px; overflow:hidden; cursor:pointer; transition:all 0.2s; position:relative; }
+        .combo-item.selected { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); }
+        .combo-item img { width:100%; height:100px; object-fit:cover; }
+        .combo-item .ci-info { padding:4px 6px; }
+        .combo-item .ci-name { font-size:0.7rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .combo-item .ci-price { font-size:0.7rem; color:var(--accent); }
+        .combo-item .ci-check { position:absolute;top:4px;right:4px;width:20px;height:20px;background:var(--accent);border-radius:50%;display:none;align-items:center;justify-content:center;color:#0a0a0a;font-size:0.65rem;font-weight:700; }
+        .combo-item.selected .ci-check { display:flex; }
+        .combo-selected { display:none; margin-top:0.75rem; padding:0.6rem 0.8rem; background:rgba(201,165,90,0.1); border:1px solid var(--accent); border-radius:10px; font-size:0.8rem; }
+        .combo-selected.visible { display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; }
+        .combo-tag { background:var(--accent); color:#0a0a0a; padding:2px 8px; border-radius:12px; font-size:0.75rem; font-weight:600; }
+
         .powered { text-align:center; color:var(--text2); font-size:0.75rem; margin-top:2rem; padding-bottom:1rem; }
     </style>
 </head>
@@ -155,10 +172,41 @@
     <!-- CTA -->
     <div class="cta-section" id="cta-section">
         <div class="cta-title">¿Cómo te quedaría?</div>
-        <div class="cta-subtitle">Tómate una foto de cuerpo completo y mira cómo te queda esta prenda</div>
-        <button class="btn-tryon" onclick="openCamera()">📷 Tomar foto y probar</button>
-        <button class="btn-gallery" onclick="document.getElementById('gallery-input').click()">🖼️ Elegir foto de galería</button>
-        <input type="file" id="gallery-input" accept="image/*" onchange="handlePhoto(this)">
+        <div class="cta-subtitle">Pruébate esta prenda sola o combínala con otra</div>
+        <button class="btn-tryon" onclick="startTryOn()">📷 Probar solo esta prenda</button>
+        {% if garment.category != 'one-pieces' %}
+        <button class="btn-gallery" onclick="showCombo()" id="btn-combo">
+            {% if garment.category == 'tops' %}👖 Combinar con pantalón{% else %}👕 Combinar con camisa{% endif %}
+        </button>
+        {% endif %}
+    </div>
+
+    <!-- COMBO: select complementary garment -->
+    <div class="combo-section" id="combo-section">
+        <div class="combo-title">
+            {% if garment.category == 'tops' %}👖 Escoge un pantalón{% else %}👕 Escoge una camisa{% endif %}
+        </div>
+        <div class="combo-sub">De {{ store_name or 'esta tienda' }}</div>
+        <div class="combo-grid" id="combo-grid"></div>
+        <div class="combo-selected" id="combo-selected">
+            <span>Tu outfit:</span>
+            <span class="combo-tag" id="combo-tag-main">
+                {% if garment.category == 'tops' %}👕{% else %}👖{% endif %} {{ garment.name }}
+            </span>
+            <span class="combo-tag" id="combo-tag-extra"></span>
+        </div>
+        <div style="display:flex;gap:0.75rem;margin-top:0.75rem;">
+            <button class="btn-retry" onclick="hideCombo()">← Atrás</button>
+            <button class="btn-tryon" id="btn-combo-go" disabled onclick="startTryOn()">📷 Probar outfit</button>
+        </div>
+    </div>
+
+    <!-- CAPTURE BUTTONS (hidden until startTryOn) -->
+    <div id="capture-section" style="display:none;">
+        <button class="btn-tryon" onclick="openCamera()">📷 Tomar foto</button>
+        <button class="btn-gallery" onclick="document.getElementById('gallery-input').click()">🖼️ Elegir de galería</button>
+    </div>
+    <input type="file" id="gallery-input" accept="image/*" onchange="handlePhoto(this)" style="display:none;">
     </div>
 
     <!-- PHOTO PREVIEW -->
@@ -212,6 +260,72 @@
     let photoFile = null;
     let camStream = null;
     let frontCam = false;
+    let comboId = null;       // selected complementary garment
+    let comboGarments = [];   // available complementary garments
+
+    // Combo: load complementary garments
+    async function showCombo() {
+        document.getElementById('cta-section').style.display = 'none';
+        document.getElementById('combo-section').style.display = 'block';
+
+        if (comboGarments.length) { renderCombo(); return; }
+
+        // Fetch store catalog, filter complementary category
+        const complementary = GARMENT_CATEGORY === 'tops' ? 'bottoms' : 'tops';
+        const storeParam = STORE_ID ? `&store_id=${STORE_ID}` : '';
+        try {
+            const r = await fetch(`/api/catalog?${storeParam}`);
+            const data = await r.json();
+            const all = data.garments || [];
+            comboGarments = all.filter(g => g.category === complementary && g.id !== GARMENT_ID);
+            renderCombo();
+        } catch(e) { }
+    }
+
+    function renderCombo() {
+        const grid = document.getElementById('combo-grid');
+        if (!comboGarments.length) {
+            grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:1rem;color:var(--text2);font-size:0.8rem;">No hay prendas complementarias disponibles</div>';
+            return;
+        }
+        grid.innerHTML = comboGarments.map(g => {
+            const icon = g.category === 'tops' ? '👕' : '👖';
+            const sel = g.id === comboId;
+            return `<div class="combo-item ${sel?'selected':''}" onclick="selectCombo('${g.id}')">
+                <div class="ci-check">✓</div>
+                <img src="${g.image_url}" alt="${g.name}">
+                <div class="ci-info"><div class="ci-name">${g.name}</div>${g.price?`<div class="ci-price">$${Number(g.price).toLocaleString('es-CO')}</div>`:''}</div>
+            </div>`;
+        }).join('');
+    }
+
+    function selectCombo(id) {
+        comboId = comboId === id ? null : id;
+        renderCombo();
+        const bar = document.getElementById('combo-selected');
+        const btn = document.getElementById('btn-combo-go');
+        if (comboId) {
+            const g = comboGarments.find(x => x.id === comboId);
+            const icon = g.category === 'tops' ? '👕' : '👖';
+            document.getElementById('combo-tag-extra').textContent = `${icon} ${g.name}`;
+            bar.classList.add('visible');
+            btn.disabled = false;
+        } else {
+            bar.classList.remove('visible');
+            btn.disabled = true;
+        }
+    }
+
+    function hideCombo() {
+        document.getElementById('combo-section').style.display = 'none';
+        document.getElementById('cta-section').style.display = 'block';
+    }
+
+    function startTryOn() {
+        document.getElementById('cta-section').style.display = 'none';
+        document.getElementById('combo-section').style.display = 'none';
+        document.getElementById('capture-section').style.display = 'block';
+    }
 
     // Camera
     async function openCamera() {
@@ -282,6 +396,8 @@
     function showPreview(src) {
         document.getElementById('preview-img').src = src;
         document.getElementById('cta-section').style.display = 'none';
+        document.getElementById('combo-section').style.display = 'none';
+        document.getElementById('capture-section').style.display = 'none';
         document.getElementById('preview-section').style.display = 'block';
         document.getElementById('result-section').style.display = 'none';
     }
@@ -291,9 +407,9 @@
         document.getElementById('preview-section').style.display = 'none';
         document.getElementById('result-section').style.display = 'none';
         document.getElementById('loader').classList.remove('visible');
-        document.getElementById('cta-section').style.display = 'block';
+        document.getElementById('capture-section').style.display = 'block';
         document.getElementById('btn-gen').disabled = false;
-        document.getElementById('btn-gen').textContent = '✨ Ver cómo me queda';
+        document.getElementById('btn-gen').textContent = comboId ? '✨ Probar outfit' : '✨ Ver cómo me queda';
     }
 
     // Generate with auto-retry
@@ -318,9 +434,19 @@
 
         const form = new FormData();
         form.append('model_image', photoFile);
-        if (GARMENT_CATEGORY === 'one-pieces') form.append('onepiece_id', GARMENT_ID);
-        else if (GARMENT_CATEGORY === 'tops') form.append('top_id', GARMENT_ID);
-        else form.append('bottom_id', GARMENT_ID);
+
+        // Main garment
+        if (GARMENT_CATEGORY === 'one-pieces') {
+            form.append('onepiece_id', GARMENT_ID);
+        } else if (GARMENT_CATEGORY === 'tops') {
+            form.append('top_id', GARMENT_ID);
+            // Add combo bottom if selected
+            if (comboId) form.append('bottom_id', comboId);
+        } else {
+            form.append('bottom_id', GARMENT_ID);
+            // Add combo top if selected
+            if (comboId) form.append('top_id', comboId);
+        }
 
         try {
             const controller = new AbortController();
