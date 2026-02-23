@@ -23,7 +23,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from models import init_db, get_db, Garment, TryOnResult, Client, UsageLog, AdminSettings
+from models import init_db, get_db, Garment, TryOnResult, Client, UsageLog, AdminSettings, Store
 
 # ============================================================
 # CONFIGURATION
@@ -216,9 +216,99 @@ async def store_view(request: Request):
     """Client-facing store view - no admin elements"""
     return templates.TemplateResponse("store.html", {"request": request})
 
+
+@app.get("/tienda/{store_slug}", response_class=HTMLResponse)
+async def store_branded_view(store_slug: str, request: Request, db: Session = Depends(get_db)):
+    """Client-facing branded store for a specific company."""
+    store = db.query(Store).filter(Store.slug == store_slug, Store.active == True).first()
+    if not store:
+        raise HTTPException(status_code=404, detail="Tienda no encontrada")
+    return templates.TemplateResponse("store_branded.html", {"request": request, "store": store})
+
+
 @app.get("/admin", response_class=HTMLResponse)
 async def admin_page(request: Request):
     return templates.TemplateResponse("admin.html", {"request": request})
+
+
+# ============================================================
+# ROUTES - STORES (COMPANIES)
+# ============================================================
+@app.post("/api/store")
+async def create_store(
+    name: str = Form(...), slug: str = Form(...),
+    phone: str = Form(""), email: str = Form(""),
+    address: str = Form(""), primary_color: str = Form("#c9a55a"),
+    logo: UploadFile = File(None),
+    db: Session = Depends(get_db)
+):
+    import re
+    slug = re.sub(r'[^a-z0-9-]', '', slug.lower().replace(' ', '-'))
+    existing = db.query(Store).filter(Store.slug == slug).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Slug ya existe")
+
+    store_id = uuid.uuid4().hex[:12]
+    logo_path = None
+    if logo and logo.filename:
+        ext = Path(logo.filename).suffix or ".png"
+        logo_path = str(UPLOAD_DIR / f"logo_{store_id}{ext}")
+        content = await logo.read()
+        Path(logo_path).write_bytes(content)
+
+    store = Store(
+        id=store_id, name=name, slug=slug,
+        phone=phone, email=email, address=address,
+        primary_color=primary_color,
+        logo_path=logo_path,
+        logo_url=f"/api/store-logo/{store_id}" if logo_path else None
+    )
+    db.add(store)
+    db.commit()
+    return {"success": True, "store": {"id": store.id, "name": store.name, "slug": store.slug}}
+
+
+@app.get("/api/stores")
+async def list_stores(db: Session = Depends(get_db)):
+    stores = db.query(Store).order_by(Store.created_at.desc()).all()
+    return [{"id": s.id, "name": s.name, "slug": s.slug, "phone": s.phone,
+             "email": s.email, "primary_color": s.primary_color,
+             "logo_url": s.logo_url, "active": s.active,
+             "garment_count": db.query(Garment).filter(Garment.store_id == s.id).count(),
+             "store_url": f"/tienda/{s.slug}",
+             } for s in stores]
+
+
+@app.get("/api/store-logo/{store_id}")
+async def get_store_logo(store_id: str, db: Session = Depends(get_db)):
+    store = db.query(Store).filter(Store.id == store_id).first()
+    if not store or not store.logo_path or not Path(store.logo_path).exists():
+        raise HTTPException(status_code=404, detail="Logo not found")
+    from fastapi.responses import FileResponse
+    return FileResponse(store.logo_path)
+
+
+@app.delete("/api/store/{store_id}")
+async def delete_store(store_id: str, db: Session = Depends(get_db)):
+    store = db.query(Store).filter(Store.id == store_id).first()
+    if not store:
+        raise HTTPException(status_code=404, detail="Store not found")
+    db.delete(store)
+    db.commit()
+    return {"success": True}
+
+
+@app.get("/api/catalog/{store_id}")
+async def get_store_catalog(store_id: str, gender: Optional[str] = None, db: Session = Depends(get_db)):
+    """Get catalog for a specific store."""
+    query = db.query(Garment).filter(Garment.store_id == store_id)
+    if gender:
+        query = query.filter(Garment.gender == gender)
+    garments = query.order_by(Garment.created_at.desc()).all()
+    return {"garments": [{"id": g.id, "name": g.name, "category": g.category,
+        "gender": g.gender, "size": g.size, "price": g.price,
+        "image_url": g.image_url, "reference": g.reference, "color": g.color,
+    } for g in garments]}
 
 
 # ============================================================
@@ -229,6 +319,8 @@ async def upload_garment(
     name: str = Form(...), category: str = Form(...),
     gender: str = Form(...), size: str = Form(...),
     price: float = Form(0), image: UploadFile = File(...),
+    store_id: str = Form(""), reference: str = Form(""),
+    color: str = Form(""), material: str = Form(""),
     db: Session = Depends(get_db)
 ):
     # Save file locally for FASHN API use
@@ -247,6 +339,10 @@ async def upload_garment(
         image_url=f"/api/garment-image/{garment_id}",
         image_path=filepath,
         image_data=img_b64,
+        store_id=store_id if store_id else None,
+        reference=reference if reference else None,
+        color=color if color else None,
+        material=material if material else None,
     )
     db.add(garment)
     db.commit()
@@ -391,9 +487,12 @@ async def get_garment_qr(garment_id: str, request: Request, db: Session = Depend
 
 
 @app.get("/api/garments/qr-all")
-async def get_all_qr_codes(request: Request, db: Session = Depends(get_db)):
-    """Generate a printable sheet with all garment QR codes."""
-    garments = db.query(Garment).all()
+async def get_all_qr_codes(request: Request, store_id: Optional[str] = None, db: Session = Depends(get_db)):
+    """Generate a printable sheet with QR codes. Optionally filter by store."""
+    query = db.query(Garment)
+    if store_id:
+        query = query.filter(Garment.store_id == store_id)
+    garments = query.all()
     if not garments:
         raise HTTPException(status_code=404, detail="No garments found")
 
@@ -403,23 +502,39 @@ async def get_all_qr_codes(request: Request, db: Session = Depends(get_db)):
 
     base_url = str(request.base_url).rstrip('/')
 
-    # Each QR is 250x290 (250 qr + 40 label)
-    qr_w, qr_h = 250, 290
+    # Get store name for title
+    store_name = ""
+    if store_id:
+        store = db.query(Store).filter(Store.id == store_id).first()
+        if store:
+            store_name = store.name
+
+    # Each QR is 250x310
+    qr_w, qr_h = 250, 310
     cols = 3
     rows = (len(garments) + cols - 1) // cols
-    sheet = Image.new('RGB', (cols * qr_w + 40, rows * qr_h + 40), '#ffffff')
+    title_h = 60 if store_name else 0
+    sheet = Image.new('RGB', (cols * qr_w + 40, rows * qr_h + 40 + title_h), '#ffffff')
     draw = ImageDraw.Draw(sheet)
 
     try:
         font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 14)
+        font_bold = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20)
+        font_small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 11)
     except:
-        font = ImageFont.load_default()
+        font = font_bold = font_small = ImageFont.load_default()
+
+    # Store title
+    if store_name:
+        bbox = draw.textbbox((0, 0), store_name, font=font_bold)
+        tw = bbox[2] - bbox[0]
+        draw.text(((cols * qr_w + 40 - tw) // 2, 15), store_name, fill="#1a1a1a", font=font_bold)
 
     for i, g in enumerate(garments):
         col = i % cols
         row = i // cols
         x = 20 + col * qr_w
-        y = 20 + row * qr_h
+        y = 20 + row * qr_h + title_h
 
         qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_H, box_size=6, border=2)
         qr.add_data(f"{base_url}/prenda/{g.id}")
@@ -427,20 +542,33 @@ async def get_all_qr_codes(request: Request, db: Session = Depends(get_db)):
         qr_img = qr.make_image(fill_color="#1a1a1a", back_color="#ffffff").resize((220, 220))
         sheet.paste(qr_img, (x + 15, y))
 
-        # Label
+        # Labels
         text = g.name[:25]
         bbox = draw.textbbox((0, 0), text, font=font)
         tw = bbox[2] - bbox[0]
         draw.text((x + (qr_w - tw) // 2, y + 225), text, fill="#1a1a1a", font=font)
-        draw.text((x + (qr_w - 40) // 2, y + 245), f"{g.size} · {g.category}", fill="#666666", font=font)
+
+        meta = f"{g.size} · {g.category}"
+        if g.reference:
+            meta += f" · Ref: {g.reference}"
+        bbox2 = draw.textbbox((0, 0), meta, font=font_small)
+        tw2 = bbox2[2] - bbox2[0]
+        draw.text((x + (qr_w - tw2) // 2, y + 248), meta, fill="#666666", font=font_small)
+
+        if g.price and g.price > 0:
+            price_text = f"${g.price:,.0f}"
+            bbox3 = draw.textbbox((0, 0), price_text, font=font)
+            tw3 = bbox3[2] - bbox3[0]
+            draw.text((x + (qr_w - tw3) // 2, y + 268), price_text, fill="#1a7a3a", font=font)
 
     buf = BytesIO()
     sheet.save(buf, format='PNG')
     buf.seek(0)
 
+    filename = f"qr_codes_{store_name or 'all'}.png".replace(' ', '_')
     from fastapi.responses import StreamingResponse
     return StreamingResponse(buf, media_type="image/png",
-        headers={"Content-Disposition": "attachment; filename=qr_codes_all.png"})
+        headers={"Content-Disposition": f"attachment; filename={filename}"})
 
 
 # ============================================================

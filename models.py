@@ -17,6 +17,21 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 
+class Store(Base):
+    __tablename__ = "stores"
+    id = Column(String(20), primary_key=True)
+    name = Column(String(200), nullable=False)
+    slug = Column(String(100), nullable=False, unique=True)  # URL-friendly name: /tienda/slug
+    logo_url = Column(Text, nullable=True)
+    logo_path = Column(Text, nullable=True)
+    primary_color = Column(String(10), default="#c9a55a")  # brand color
+    phone = Column(String(50), nullable=True)
+    email = Column(String(200), nullable=True)
+    address = Column(Text, nullable=True)
+    active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class Garment(Base):
     __tablename__ = "garments"
     id = Column(String(20), primary_key=True)
@@ -28,7 +43,10 @@ class Garment(Base):
     image_url = Column(Text, nullable=False)
     image_path = Column(Text, nullable=True)
     image_data = Column(Text, nullable=True)  # base64 encoded image for persistence
-    store_id = Column(String(20), nullable=True)  # future: multi-store support
+    store_id = Column(String(20), nullable=True)  # links to Store
+    reference = Column(String(100), nullable=True)  # product reference/SKU
+    color = Column(String(50), nullable=True)
+    material = Column(String(100), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -85,10 +103,15 @@ def init_db():
         print(f"Database tables may already exist: {e}")
         pass
 
-    # Auto-migrate: add missing columns to existing tables
+    # Auto-migrate: add missing columns/tables
     try:
         from sqlalchemy import text, inspect
         insp = inspect(engine)
+
+        # Create stores table if not exists
+        if 'stores' not in insp.get_table_names():
+            Base.metadata.tables['stores'].create(bind=engine)
+            print("Created stores table")
 
         # Check garments table for new columns
         if 'garments' in insp.get_table_names():
@@ -102,8 +125,20 @@ def init_db():
                     conn.execute(text("ALTER TABLE garments ADD COLUMN store_id VARCHAR(20)"))
                     conn.commit()
                     print("Added store_id column to garments")
+                if 'reference' not in existing_cols:
+                    conn.execute(text("ALTER TABLE garments ADD COLUMN reference VARCHAR(100)"))
+                    conn.commit()
+                    print("Added reference column to garments")
+                if 'color' not in existing_cols:
+                    conn.execute(text("ALTER TABLE garments ADD COLUMN color VARCHAR(50)"))
+                    conn.commit()
+                    print("Added color column to garments")
+                if 'material' not in existing_cols:
+                    conn.execute(text("ALTER TABLE garments ADD COLUMN material VARCHAR(100)"))
+                    conn.commit()
+                    print("Added material column to garments")
 
-        # Check for clients table
+        # Check for other tables
         if 'clients' not in insp.get_table_names():
             Base.metadata.tables['clients'].create(bind=engine)
             print("Created clients table")
