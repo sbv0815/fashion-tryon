@@ -388,8 +388,10 @@ async def get_garment_image(garment_id: str, db: Session = Depends(get_db)):
 
 
 @app.get("/api/catalog")
-async def get_catalog(gender: Optional[str] = None, size: Optional[str] = None, db: Session = Depends(get_db)):
+async def get_catalog(gender: Optional[str] = None, size: Optional[str] = None, store_id: Optional[str] = None, db: Session = Depends(get_db)):
     query = db.query(Garment)
+    if store_id:
+        query = query.filter(Garment.store_id == store_id)
     if gender:
         query = query.filter(Garment.gender == gender)
     if size:
@@ -398,7 +400,8 @@ async def get_catalog(gender: Optional[str] = None, size: Optional[str] = None, 
     return {"garments": [{
         "id": g.id, "name": g.name, "category": g.category,
         "gender": g.gender, "size": g.size, "price": g.price,
-        "image_url": g.image_url,
+        "image_url": g.image_url, "reference": g.reference,
+        "store_id": g.store_id,
     } for g in garments]}
 
 

@@ -224,6 +224,21 @@
             </div>
             <div class="stats-grid" id="clientDetailStats"></div>
             <div class="grid-2" id="clientDetailInfo"></div>
+
+            <!-- GARMENTS SECTION -->
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-title">📦 Catálogo de prendas</div>
+                    <div style="display:flex;gap:8px;">
+                        <button class="btn btn-primary btn-sm" onclick="showModal('addGarmentClient')">+ Subir prenda</button>
+                        <button class="btn btn-sm" style="background:var(--blue-soft);color:var(--blue);border:1px solid var(--blue);" onclick="downloadAllQR()">📱 QR de todas</button>
+                        <a id="storeLinkBtn" href="#" target="_blank" class="btn btn-sm" style="background:var(--green-soft);color:var(--green);border:1px solid var(--green);text-decoration:none;">👁️ Ver tienda</a>
+                    </div>
+                </div>
+                <div id="clientGarments" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-top:12px;"></div>
+            </div>
+
+            <!-- USAGE HISTORY -->
             <div class="section">
                 <div class="section-header">
                     <div class="section-title">Historial de uso</div>
@@ -306,6 +321,62 @@
         <div class="form-group"><div class="form-label">Prendas</div><input id="usageGarments" placeholder="Camiseta verde + Jean negro"></div>
         <div class="form-group"><div class="form-label">Notas (opcional)</div><input id="usageNotes" placeholder="Outfit completo..."></div>
         <button class="btn btn-primary" style="width:100%;margin-top:8px;padding:12px;font-size:15px" onclick="createUsage()">Registrar</button>
+    </div>
+</div>
+
+<!-- MODAL: ADD GARMENT TO CLIENT -->
+<div id="modal-addGarmentClient" class="modal-overlay hidden" onclick="if(event.target===this)closeModal()">
+    <div class="modal" style="max-width:500px;">
+        <div class="modal-header">
+            <div class="modal-title">Subir prenda</div>
+            <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="form-group"><div class="form-label">Nombre de la prenda</div><input id="gcName" placeholder="Camiseta negra básica"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div class="form-group"><div class="form-label">Categoría</div>
+                <select id="gcCategory">
+                    <option value="" disabled selected>Seleccionar...</option>
+                    <optgroup label="👕 Superior">
+                        <option value="tops">Camiseta</option>
+                        <option value="tops">Camisa</option>
+                        <option value="tops">Buzo / Saco</option>
+                        <option value="tops">Blusa</option>
+                    </optgroup>
+                    <optgroup label="👖 Inferior">
+                        <option value="bottoms">Pantalón</option>
+                        <option value="bottoms">Pantaloneta</option>
+                        <option value="bottoms">Falda</option>
+                    </optgroup>
+                    <optgroup label="👗 Completo">
+                        <option value="one-pieces">Vestido</option>
+                        <option value="one-pieces">Enterizo</option>
+                    </optgroup>
+                </select>
+            </div>
+            <div class="form-group"><div class="form-label">Género</div>
+                <select id="gcGender">
+                    <option value="mujer">Mujer</option>
+                    <option value="hombre">Hombre</option>
+                    <option value="unisex">Unisex</option>
+                </select>
+            </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+            <div class="form-group"><div class="form-label">Talla</div>
+                <select id="gcSize"><option>XS</option><option>S</option><option selected>M</option><option>L</option><option>XL</option></select>
+            </div>
+            <div class="form-group"><div class="form-label">Precio (COP)</div><input id="gcPrice" type="number" value="0" placeholder="0"></div>
+            <div class="form-group"><div class="form-label">Referencia</div><input id="gcRef" placeholder="REF-001"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div class="form-group"><div class="form-label">Color</div><input id="gcColor" placeholder="Negro"></div>
+            <div class="form-group"><div class="form-label">Material</div><input id="gcMaterial" placeholder="Algodón"></div>
+        </div>
+        <div class="form-group">
+            <div class="form-label">Foto de la prenda</div>
+            <input type="file" id="gcImage" accept="image/*" style="padding:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;width:100%;color:var(--text);">
+        </div>
+        <button class="btn btn-primary" style="width:100%;margin-top:8px;padding:12px;font-size:15px" onclick="uploadGarmentToClient()">📦 Subir prenda</button>
     </div>
 </div>
 
@@ -487,6 +558,91 @@ async function showClientDetail(clientId) {
     `).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text-mid);padding:20px">Sin registros</td></tr>';
 
     showTab('client-detail');
+
+    // Load garments for this client
+    loadClientGarments(clientId);
+
+    // Set store link (using client ID as store_id)
+    document.getElementById('storeLinkBtn').href = `/tienda?store=${clientId}`;
+}
+
+async function loadClientGarments(clientId) {
+    const data = await api(`/api/catalog?store_id=${clientId}`);
+    const garments = data.garments || [];
+    const grid = document.getElementById('clientGarments');
+
+    if (!garments.length) {
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--text-mid);font-size:13px;">Sin prendas. Haz clic en "Subir prenda" para agregar productos de este cliente.</div>';
+        return;
+    }
+
+    grid.innerHTML = garments.map(g => {
+        const icon = g.category==='tops'?'👕':g.category==='bottoms'?'👖':'👗';
+        return `
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+            <img src="${g.image_url}" style="width:100%;height:130px;object-fit:cover;background:#111;">
+            <div style="padding:8px 10px;">
+                <div style="font-weight:600;font-size:12px;">${icon} ${g.name}</div>
+                <div style="font-size:11px;color:var(--text-mid);margin-top:2px;">${g.size} · ${g.category}${g.reference ? ' · '+g.reference : ''}</div>
+                ${g.price ? `<div style="font-size:12px;color:var(--accent);font-weight:600;margin-top:2px;">$${Number(g.price).toLocaleString('es-CO')}</div>` : ''}
+                <div style="display:flex;gap:4px;margin-top:6px;">
+                    <a href="/api/garment/${g.id}/qr" download="qr_${g.name}.png" style="flex:1;text-align:center;padding:4px;background:var(--blue-soft);color:var(--blue);border:1px solid var(--blue);border-radius:6px;font-size:10px;text-decoration:none;cursor:pointer;">📱 QR</a>
+                    <a href="/prenda/${g.id}" target="_blank" style="flex:1;text-align:center;padding:4px;background:var(--card);border:1px solid var(--border);border-radius:6px;font-size:10px;text-decoration:none;color:var(--text);cursor:pointer;">👁️ Ver</a>
+                    <button onclick="deleteGarment('${g.id}')" style="flex:0.5;padding:4px;background:var(--red-soft);color:var(--red);border:1px solid var(--red);border-radius:6px;font-size:10px;cursor:pointer;">✕</button>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+async function uploadGarmentToClient() {
+    const fileInput = document.getElementById('gcImage');
+    if (!fileInput.files || !fileInput.files[0]) { alert('Selecciona una foto'); return; }
+    const name = document.getElementById('gcName').value;
+    const cat = document.getElementById('gcCategory').value;
+    if (!name || !cat) { alert('Nombre y categoría son obligatorios'); return; }
+
+    const form = new FormData();
+    form.append('name', name);
+    form.append('category', cat);
+    form.append('gender', document.getElementById('gcGender').value);
+    form.append('size', document.getElementById('gcSize').value);
+    form.append('price', document.getElementById('gcPrice').value || '0');
+    form.append('image', fileInput.files[0]);
+    form.append('store_id', selectedClientId);
+    form.append('reference', document.getElementById('gcRef').value || '');
+    form.append('color', document.getElementById('gcColor').value || '');
+    form.append('material', document.getElementById('gcMaterial').value || '');
+
+    try {
+        const resp = await fetch('/api/upload-garment', { method: 'POST', body: form });
+        const data = await resp.json();
+        if (data.success) {
+            closeModal();
+            // Clear form
+            document.getElementById('gcName').value = '';
+            document.getElementById('gcRef').value = '';
+            document.getElementById('gcColor').value = '';
+            document.getElementById('gcMaterial').value = '';
+            document.getElementById('gcPrice').value = '0';
+            fileInput.value = '';
+            loadClientGarments(selectedClientId);
+        } else {
+            alert('Error: ' + (data.detail || 'Error subiendo prenda'));
+        }
+    } catch(e) {
+        alert('Error de conexión');
+    }
+}
+
+async function deleteGarment(id) {
+    if (!confirm('¿Eliminar esta prenda?')) return;
+    await api(`/api/garment/${id}`, 'DELETE');
+    loadClientGarments(selectedClientId);
+}
+
+function downloadAllQR() {
+    window.open(`/api/garments/qr-all?store_id=${selectedClientId}`, '_blank');
 }
 
 // ============================================================
