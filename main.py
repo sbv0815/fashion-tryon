@@ -136,7 +136,7 @@ async def fashn_run(model_name: str, inputs: dict, timeout: int = 120) -> dict:
     }
     payload = {"model_name": model_name, "inputs": inputs}
 
-    async with httpx.AsyncClient(timeout=30) as client:
+    async with httpx.AsyncClient(timeout=120) as client:
         resp = await client.post(f"{FASHN_BASE_URL}/run", json=payload, headers=headers)
         if resp.status_code != 200:
             raise HTTPException(status_code=resp.status_code, detail=f"FASHN API error: {resp.text}")
@@ -158,7 +158,7 @@ async def fashn_run(model_name: str, inputs: dict, timeout: int = 120) -> dict:
                 error_msg = status_data.get("error", {}).get("message", "Unknown error")
                 raise HTTPException(status_code=500, detail=f"FASHN generation failed: {error_msg}")
 
-            await asyncio.sleep(2)
+            await asyncio.sleep(1.5)
 
         raise HTTPException(status_code=504, detail="FASHN API timeout")
 

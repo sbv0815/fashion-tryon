@@ -1524,15 +1524,21 @@
         const video = document.getElementById('camera-video');
         const canvas = document.getElementById('camera-canvas');
 
-        // Use video dimensions for best quality
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        canvas.getContext('2d').drawImage(video, 0, 0);
+        // Scale down to max 1200px for faster upload
+        let w = video.videoWidth, h = video.videoHeight;
+        const maxDim = 1200;
+        if (w > maxDim || h > maxDim) {
+            if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+            else { w = Math.round(w * maxDim / h); h = maxDim; }
+        }
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext('2d').drawImage(video, 0, 0, w, h);
 
         // Stop camera
         stopCameraStream();
 
-        // Convert to file
+        // Convert to compressed file
         canvas.toBlob(blob => {
             if (blob) {
                 modelPhotoFile = new File([blob], 'photo.jpg', { type: 'image/jpeg' });
@@ -1689,7 +1695,10 @@
             if (outfit.bottom) form.append('bottom_id', outfit.bottom);
 
             try {
-                const resp = await fetch('/api/try-on-outfit', { method: 'POST', body: form });
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 min timeout
+                const resp = await fetch('/api/try-on-outfit', { method: 'POST', body: form, signal: controller.signal });
+                clearTimeout(timeoutId);
                 const data = await resp.json();
                 stopProgress();
 
@@ -1703,7 +1712,11 @@
             } catch(e) {
                 stopProgress();
                 hideLoader();
-                showToast('Error: ' + e.message, 'error');
+                if (e.name === 'AbortError') {
+                    showToast('La generación tardó demasiado. Intenta con una foto más pequeña.', 'error');
+                } else {
+                    showToast('Error de conexión. Verifica tu internet e intenta de nuevo.', 'error');
+                }
             }
         } else if (isSingle) {
             const garmentId = outfit.onepiece;
@@ -1716,7 +1729,10 @@
             form.append('onepiece_id', garmentId);
 
             try {
-                const resp = await fetch('/api/try-on-outfit', { method: 'POST', body: form });
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 180000);
+                const resp = await fetch('/api/try-on-outfit', { method: 'POST', body: form, signal: controller.signal });
+                clearTimeout(timeoutId);
                 const data = await resp.json();
                 stopProgress();
 
@@ -1730,7 +1746,11 @@
             } catch(e) {
                 stopProgress();
                 hideLoader();
-                showToast('Error: ' + e.message, 'error');
+                if (e.name === 'AbortError') {
+                    showToast('La generación tardó demasiado. Intenta de nuevo.', 'error');
+                } else {
+                    showToast('Error de conexión. Verifica tu internet e intenta de nuevo.', 'error');
+                }
             }
         }
     }
