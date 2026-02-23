@@ -206,7 +206,7 @@
 <body>
 
 <div class="header">
-    <h1>✨ Probador Virtual</h1>
+    <h1 id="header-title">✨ Probador Virtual</h1>
 </div>
 
 <div class="container">
@@ -255,7 +255,7 @@
     <!-- STEP 2: GARMENTS -->
     <div class="section" id="step-2">
         <div class="section-title">Escoge tu ropa</div>
-        <div class="section-sub">Selecciona una prenda superior, inferior, o un vestido</div>
+        <div class="section-sub" id="step2-sub">Selecciona una prenda superior, inferior, o un vestido</div>
 
         <div class="filters" id="filters">
             <button class="filter-btn active" onclick="filter('all')">Todas</button>
@@ -368,9 +368,13 @@
     async function loadStoreInfo() {
         if (!STORE_ID) return;
         try {
-            const r = await fetch(`/api/catalog?store_id=${STORE_ID}`);
-            const d = await r.json();
-            // Try to get store name from first garment or stores API
+            const r = await fetch(`/api/store-info/${STORE_ID}`);
+            if (r.ok) {
+                const d = await r.json();
+                storeName = d.name;
+                document.getElementById('header-title').textContent = d.name;
+                document.title = d.name + ' - Probador Virtual';
+            }
         } catch(e) {}
     }
     loadStoreInfo();
@@ -425,6 +429,11 @@
             const r = await fetch(`/api/catalog?gender=${g}${storeParam}`);
             const data = await r.json();
             catalog = data.garments || data;
+            if (data.store_name) {
+                storeName = data.store_name;
+                document.getElementById('header-title').textContent = data.store_name;
+                document.getElementById('step2-sub').textContent = `Catálogo de ${data.store_name}`;
+            }
             renderGarments(catalog);
         } catch(e) {}
     }
@@ -618,7 +627,8 @@
             if(data.success) {
                 document.getElementById('result-img').src = data.result_image;
                 const names = data.garments_used.map(g=>g.name).join(' + ');
-                document.getElementById('result-garments').textContent = names;
+                const storeLabel = storeName ? storeName + ' — ' : '';
+                document.getElementById('result-garments').textContent = storeLabel + names;
                 goStep(4);
             } else {
                 if (retryCount < 2) {

@@ -397,12 +397,29 @@ async def get_catalog(gender: Optional[str] = None, size: Optional[str] = None, 
     if size:
         query = query.filter(Garment.size == size)
     garments = query.order_by(Garment.created_at.desc()).all()
+
+    # Get store name if filtered
+    store_name = None
+    if store_id:
+        client = db.query(Client).filter(Client.id == store_id).first()
+        if client:
+            store_name = client.name
+
     return {"garments": [{
         "id": g.id, "name": g.name, "category": g.category,
         "gender": g.gender, "size": g.size, "price": g.price,
         "image_url": g.image_url, "reference": g.reference,
         "store_id": g.store_id,
-    } for g in garments]}
+    } for g in garments], "store_name": store_name}
+
+
+@app.get("/api/store-info/{store_id}")
+async def get_store_info(store_id: str, db: Session = Depends(get_db)):
+    """Get store/client name for display."""
+    client = db.query(Client).filter(Client.id == store_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Tienda no encontrada")
+    return {"id": client.id, "name": client.name, "phone": client.phone, "email": client.email}
 
 
 @app.delete("/api/garment/{garment_id}")
@@ -584,9 +601,17 @@ async def garment_landing(garment_id: str, request: Request, db: Session = Depen
     if not garment:
         raise HTTPException(status_code=404, detail="Prenda no encontrada")
 
+    # Get store/client name
+    store_name = ""
+    if garment.store_id:
+        client = db.query(Client).filter(Client.id == garment.store_id).first()
+        if client:
+            store_name = client.name
+
     return templates.TemplateResponse("garment_landing.html", {
         "request": request,
         "garment": garment,
+        "store_name": store_name,
     })
 
 

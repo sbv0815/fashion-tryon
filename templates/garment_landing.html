@@ -138,6 +138,9 @@
         <img src="/api/garment-image/{{ garment.id }}" alt="{{ garment.name }}">
         <span class="garment-badge">{{ garment.size }}</span>
         <div class="garment-info">
+            {% if store_name %}
+            <div style="font-size:0.75rem;color:var(--accent);font-weight:500;margin-bottom:2px;">{{ store_name }}</div>
+            {% endif %}
             <div class="garment-name">{{ garment.name }}</div>
             <div class="garment-meta">
                 {% if garment.category == 'tops' %}👕{% elif garment.category == 'bottoms' %}👖{% else %}👗{% endif %}
