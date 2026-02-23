@@ -1524,13 +1524,12 @@
         const video = document.getElementById('camera-video');
         const canvas = document.getElementById('camera-canvas');
 
-        // Validate video has actual content
         if (!video.videoWidth || !video.videoHeight) {
             showToast('La cámara no está lista, espera un momento', 'error');
             return;
         }
 
-        // Draw FIRST, before stopping camera
+        // Draw before stopping
         let w = video.videoWidth, h = video.videoHeight;
         const maxDim = 1200;
         if (w > maxDim || h > maxDim) {
@@ -1540,24 +1539,28 @@
         canvas.width = w;
         canvas.height = h;
         canvas.getContext('2d').drawImage(video, 0, 0, w, h);
-
-        // NOW stop camera (after drawing)
         stopCameraStream();
 
-        // Convert to blob and store it
-        canvas.toBlob(blob => {
-            if (blob && blob.size > 100) {
-                // Store as blob, not File - more compatible with Android FormData
-                modelPhotoFile = blob;
-                const url = URL.createObjectURL(blob);
-                document.getElementById('model-preview-img').src = url;
-                showPhotoPreview();
-                showToast(`Foto capturada ✓ (${(blob.size/1024).toFixed(0)}KB)`, 'success');
-            } else {
-                showToast('Error capturando foto. Intenta de nuevo.', 'error');
-                document.getElementById('capture-options').style.display = 'flex';
-            }
-        }, 'image/jpeg', 0.85);
+        // Convert canvas to data URL, then to a real File (same as gallery)
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        const byteString = atob(dataUrl.split(',')[1]);
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+        for (let i = 0; i < byteString.length; i++) {
+            ia[i] = byteString.charCodeAt(i);
+        }
+        const blob = new Blob([ab], { type: 'image/jpeg' });
+        const file = new File([blob], 'camera_photo.jpg', { type: 'image/jpeg', lastModified: Date.now() });
+
+        if (file.size > 100) {
+            modelPhotoFile = file;
+            document.getElementById('model-preview-img').src = dataUrl;
+            showPhotoPreview();
+            showToast(`Foto capturada ✓ (${(file.size/1024).toFixed(0)}KB)`, 'success');
+        } else {
+            showToast('Error capturando foto. Intenta de nuevo.', 'error');
+            document.getElementById('capture-options').style.display = 'flex';
+        }
     }
 
     function cancelCamera() {
@@ -1711,7 +1714,7 @@
             startProgress(estTime, steps);
 
             const form = new FormData();
-            form.append('model_image', modelPhotoFile, 'photo.jpg');
+            form.append('model_image', modelPhotoFile);
             if (outfit.top) form.append('top_id', outfit.top);
             if (outfit.bottom) form.append('bottom_id', outfit.bottom);
 
@@ -1754,7 +1757,7 @@
             startProgress(8, [garment?.name || 'Prenda']);
 
             const form = new FormData();
-            form.append('model_image', modelPhotoFile, 'photo.jpg');
+            form.append('model_image', modelPhotoFile);
             form.append('onepiece_id', garmentId);
 
             try {
