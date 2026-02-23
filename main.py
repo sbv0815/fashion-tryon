@@ -312,6 +312,127 @@ async def delete_garment(garment_id: str, db: Session = Depends(get_db)):
 
 
 # ============================================================
+# QR CODE GENERATION
+# ============================================================
+@app.get("/api/garment/{garment_id}/qr")
+async def get_garment_qr(garment_id: str, request: Request, db: Session = Depends(get_db)):
+    """Generate QR code for a garment that links to its try-on page."""
+    garment = db.query(Garment).filter(Garment.id == garment_id).first()
+    if not garment:
+        raise HTTPException(status_code=404, detail="Garment not found")
+
+    import qrcode
+    from io import BytesIO
+
+    # Build URL to garment landing page
+    base_url = str(request.base_url).rstrip('/')
+    garment_url = f"{base_url}/prenda/{garment_id}"
+
+    # Generate QR
+    qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_H, box_size=10, border=2)
+    qr.add_data(garment_url)
+    qr.make(fit=True)
+
+    img = qr.make_image(fill_color="#1a1a1a", back_color="#ffffff")
+
+    # Add garment name as label below QR
+    from PIL import Image, ImageDraw, ImageFont
+    qr_size = img.size[0]
+    label_height = 50
+    final = Image.new('RGB', (qr_size, qr_size + label_height), '#ffffff')
+    final.paste(img, (0, 0))
+
+    draw = ImageDraw.Draw(final)
+    try:
+        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20)
+    except:
+        font = ImageFont.load_default()
+
+    text = garment.name[:30]
+    bbox = draw.textbbox((0, 0), text, font=font)
+    tw = bbox[2] - bbox[0]
+    x = (qr_size - tw) // 2
+    draw.text((x, qr_size + 10), text, fill="#1a1a1a", font=font)
+
+    buf = BytesIO()
+    final.save(buf, format='PNG')
+    buf.seek(0)
+
+    from fastapi.responses import StreamingResponse
+    return StreamingResponse(buf, media_type="image/png",
+        headers={"Content-Disposition": f"attachment; filename=qr_{garment.name}_{garment_id}.png"})
+
+
+@app.get("/api/garments/qr-all")
+async def get_all_qr_codes(request: Request, db: Session = Depends(get_db)):
+    """Generate a printable sheet with all garment QR codes."""
+    garments = db.query(Garment).all()
+    if not garments:
+        raise HTTPException(status_code=404, detail="No garments found")
+
+    import qrcode
+    from PIL import Image, ImageDraw, ImageFont
+    from io import BytesIO
+
+    base_url = str(request.base_url).rstrip('/')
+
+    # Each QR is 250x290 (250 qr + 40 label)
+    qr_w, qr_h = 250, 290
+    cols = 3
+    rows = (len(garments) + cols - 1) // cols
+    sheet = Image.new('RGB', (cols * qr_w + 40, rows * qr_h + 40), '#ffffff')
+    draw = ImageDraw.Draw(sheet)
+
+    try:
+        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 14)
+    except:
+        font = ImageFont.load_default()
+
+    for i, g in enumerate(garments):
+        col = i % cols
+        row = i // cols
+        x = 20 + col * qr_w
+        y = 20 + row * qr_h
+
+        qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_H, box_size=6, border=2)
+        qr.add_data(f"{base_url}/prenda/{g.id}")
+        qr.make(fit=True)
+        qr_img = qr.make_image(fill_color="#1a1a1a", back_color="#ffffff").resize((220, 220))
+        sheet.paste(qr_img, (x + 15, y))
+
+        # Label
+        text = g.name[:25]
+        bbox = draw.textbbox((0, 0), text, font=font)
+        tw = bbox[2] - bbox[0]
+        draw.text((x + (qr_w - tw) // 2, y + 225), text, fill="#1a1a1a", font=font)
+        draw.text((x + (qr_w - 40) // 2, y + 245), f"{g.size} · {g.category}", fill="#666666", font=font)
+
+    buf = BytesIO()
+    sheet.save(buf, format='PNG')
+    buf.seek(0)
+
+    from fastapi.responses import StreamingResponse
+    return StreamingResponse(buf, media_type="image/png",
+        headers={"Content-Disposition": "attachment; filename=qr_codes_all.png"})
+
+
+# ============================================================
+# GARMENT LANDING PAGE (from QR scan)
+# ============================================================
+@app.get("/prenda/{garment_id}")
+async def garment_landing(garment_id: str, request: Request, db: Session = Depends(get_db)):
+    """Landing page when someone scans a garment QR code."""
+    garment = db.query(Garment).filter(Garment.id == garment_id).first()
+    if not garment:
+        raise HTTPException(status_code=404, detail="Prenda no encontrada")
+
+    return templates.TemplateResponse("garment_landing.html", {
+        "request": request,
+        "garment": garment,
+    })
+
+
+# ============================================================
 # ROUTES - SIZE ESTIMATION
 # ============================================================
 @app.post("/api/estimate-size")

@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{{ garment.name }} - Prueba Virtual</title>
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#c9a55a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0a; --card: #141414; --border: #2a2520;
+            --accent: #c9a55a; --text: #f0ece4; --text2: #8a8578;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+
+        .container { max-width:480px; margin:0 auto; padding:1rem; }
+
+        .garment-hero {
+            position:relative; border-radius:16px; overflow:hidden;
+            background:var(--card); border:1px solid var(--border);
+            margin-bottom:1.5rem;
+        }
+        .garment-hero img {
+            width:100%; height:auto; max-height:50vh; object-fit:contain;
+            background:#1a1a1a;
+        }
+        .garment-badge {
+            position:absolute; top:12px; right:12px;
+            background:var(--accent); color:#0a0a0a;
+            padding:4px 12px; border-radius:20px;
+            font-weight:600; font-size:0.8rem;
+        }
+
+        .garment-info { padding:1.5rem; }
+        .garment-name {
+            font-family:'Playfair Display',serif;
+            font-size:1.6rem; font-weight:700; margin-bottom:0.5rem;
+        }
+        .garment-meta { color:var(--text2); font-size:0.9rem; margin-bottom:0.5rem; }
+        .garment-price { font-size:1.3rem; font-weight:600; color:var(--accent); }
+
+        .cta-section {
+            background:var(--card); border:1px solid var(--border);
+            border-radius:16px; padding:1.5rem; text-align:center;
+            margin-bottom:1.5rem;
+        }
+        .cta-title {
+            font-family:'Playfair Display',serif;
+            font-size:1.2rem; margin-bottom:0.5rem;
+        }
+        .cta-subtitle { color:var(--text2); font-size:0.85rem; margin-bottom:1.2rem; }
+
+        .btn-tryon {
+            display:block; width:100%; padding:16px;
+            background:var(--accent); color:#0a0a0a;
+            border:none; border-radius:12px; cursor:pointer;
+            font-family:inherit; font-size:1.1rem; font-weight:700;
+            margin-bottom:0.75rem;
+        }
+        .btn-tryon:active { transform:scale(0.98); }
+
+        .btn-gallery {
+            display:block; width:100%; padding:14px;
+            background:transparent; color:var(--text);
+            border:1px solid var(--border); border-radius:12px;
+            cursor:pointer; font-family:inherit; font-size:0.95rem;
+        }
+
+        input[type="file"] { display:none; }
+
+        /* Camera viewfinder */
+        .camera-fullscreen {
+            display:none; position:fixed; top:0; left:0; right:0; bottom:0;
+            z-index:999; background:#000;
+        }
+        .camera-fullscreen video { width:100%; height:100%; object-fit:cover; }
+        .camera-guide {
+            position:absolute; top:3%; left:5%; right:5%; bottom:12%;
+            border:2px dashed rgba(201,165,90,0.5); border-radius:12px;
+            pointer-events:none;
+        }
+        .camera-guide-text {
+            position:absolute; top:0.5%; left:0; right:0; text-align:center;
+            color:rgba(255,255,255,0.8); font-size:0.85rem;
+            text-shadow:0 1px 4px rgba(0,0,0,0.8); pointer-events:none;
+        }
+        .camera-buttons {
+            position:absolute; bottom:0; left:0; right:0;
+            padding:1.5rem 1rem 2.5rem;
+            background:linear-gradient(transparent, rgba(0,0,0,0.85));
+            display:flex; justify-content:space-around; align-items:center;
+        }
+        .cam-btn {
+            background:rgba(255,255,255,0.15); border:2px solid rgba(255,255,255,0.3);
+            color:#fff; padding:14px 20px; border-radius:50px; cursor:pointer;
+            font-family:inherit; font-size:1rem; font-weight:600;
+            min-width:80px; text-align:center;
+        }
+        .cam-btn-capture {
+            background:var(--accent); border:3px solid #fff; color:#0a0a0a;
+            padding:20px 30px; font-size:1.2rem; font-weight:700;
+            min-width:120px; box-shadow:0 4px 15px rgba(0,0,0,0.4);
+        }
+
+        /* Preview & result */
+        .preview-section { display:none; text-align:center; margin-bottom:1.5rem; }
+        .preview-section img { max-width:100%; max-height:50vh; border-radius:12px; }
+        .preview-actions { display:flex; gap:0.75rem; margin-top:1rem; }
+        .preview-actions button { flex:1; padding:14px; border-radius:12px; cursor:pointer; font-family:inherit; font-weight:600; }
+
+        .result-section { display:none; text-align:center; }
+        .result-section img { max-width:100%; border-radius:12px; margin-bottom:1rem; }
+
+        .loader { display:none; text-align:center; padding:2rem; }
+        .loader.visible { display:block; }
+        .spinner { width:50px; height:50px; border:3px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite; margin:0 auto 1rem; }
+        @keyframes spin { to { transform:rotate(360deg); } }
+        .progress-bar { width:100%; height:4px; background:var(--border); border-radius:4px; margin-top:12px; overflow:hidden; }
+        .progress-fill { height:100%; background:var(--accent); width:0%; transition:width 0.5s; }
+
+        .share-buttons { display:flex; gap:0.75rem; margin-top:1rem; }
+        .share-buttons button { flex:1; padding:12px; border-radius:12px; cursor:pointer; font-family:inherit; font-size:0.9rem; }
+        .btn-whatsapp { background:#25D366; border:none; color:#fff; font-weight:600; }
+        .btn-retry { background:transparent; border:1px solid var(--border); color:var(--text); }
+        .btn-browse { background:transparent; border:1px solid var(--accent); color:var(--accent); font-weight:600; }
+
+        .powered { text-align:center; color:var(--text2); font-size:0.75rem; margin-top:2rem; padding-bottom:1rem; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- GARMENT INFO -->
+    <div class="garment-hero" id="garment-section">
+        <img src="/api/garment-image/{{ garment.id }}" alt="{{ garment.name }}">
+        <span class="garment-badge">{{ garment.size }}</span>
+        <div class="garment-info">
+            <div class="garment-name">{{ garment.name }}</div>
+            <div class="garment-meta">
+                {% if garment.category == 'tops' %}👕{% elif garment.category == 'bottoms' %}👖{% else %}👗{% endif %}
+                {{ garment.category | capitalize }} · Talla {{ garment.size }}
+            </div>
+            {% if garment.price %}
+            <div class="garment-price">${{ "{:,.0f}".format(garment.price) }} COP</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- CTA -->
+    <div class="cta-section" id="cta-section">
+        <div class="cta-title">¿Cómo te quedaría?</div>
+        <div class="cta-subtitle">Tómate una foto de cuerpo completo y mira cómo te queda esta prenda</div>
+        <button class="btn-tryon" onclick="openCamera()">📷 Tomar foto y probar</button>
+        <button class="btn-gallery" onclick="document.getElementById('gallery-input').click()">🖼️ Elegir foto de galería</button>
+        <input type="file" id="gallery-input" accept="image/*" onchange="handlePhoto(this)">
+    </div>
+
+    <!-- PHOTO PREVIEW -->
+    <div class="preview-section" id="preview-section">
+        <img id="preview-img" alt="Tu foto">
+        <div class="preview-actions">
+            <button onclick="retake()" class="btn-retry">🔄 Otra foto</button>
+            <button onclick="generate()" class="btn-tryon" id="btn-gen">✨ Ver cómo me queda</button>
+        </div>
+    </div>
+
+    <!-- LOADER -->
+    <div class="loader" id="loader">
+        <div class="spinner"></div>
+        <div id="loader-text" style="color:var(--text2);">Generando tu prueba virtual...</div>
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+        <div id="loader-step" style="font-size:0.75rem; color:var(--text2); margin-top:8px;"></div>
+    </div>
+
+    <!-- RESULT -->
+    <div class="result-section" id="result-section">
+        <h2 style="font-family:'Playfair Display',serif; margin-bottom:1rem;">¡Así te queda!</h2>
+        <img id="result-img" alt="Resultado">
+        <div class="share-buttons">
+            <button class="btn-whatsapp" onclick="shareWhatsApp()">💬 Compartir</button>
+            <button class="btn-retry" onclick="retake()">🔄 Otra foto</button>
+        </div>
+        <button class="btn-browse" onclick="window.location.href='/'" style="width:100%; margin-top:0.75rem;">👗 Ver más prendas</button>
+    </div>
+
+    <div class="powered">Powered by Fashion TryOn ✨</div>
+</div>
+
+<!-- CAMERA FULLSCREEN -->
+<div class="camera-fullscreen" id="camera-view">
+    <video id="cam-video" autoplay playsinline muted></video>
+    <div class="camera-guide"></div>
+    <div class="camera-guide-text">Ubica tu cuerpo completo dentro del recuadro</div>
+    <div class="camera-buttons">
+        <button class="cam-btn" onclick="switchCam()">🔄<br><span style="font-size:0.75rem;">Voltear</span></button>
+        <button class="cam-btn cam-btn-capture" onclick="capture()">📸 Capturar</button>
+        <button class="cam-btn" onclick="closeCamera()">✕<br><span style="font-size:0.75rem;">Cerrar</span></button>
+    </div>
+</div>
+<canvas id="cam-canvas" style="display:none;"></canvas>
+
+<script>
+    const GARMENT_ID = '{{ garment.id }}';
+    const GARMENT_CATEGORY = '{{ garment.category }}';
+    let photoFile = null;
+    let camStream = null;
+    let frontCam = false;
+
+    // Camera
+    async function openCamera() {
+        try {
+            camStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: frontCam ? 'user' : 'environment', width:{ideal:1280}, height:{ideal:1920} },
+                audio: false
+            });
+            document.getElementById('cam-video').srcObject = camStream;
+            document.getElementById('camera-view').style.display = 'block';
+        } catch(e) {
+            alert('No se pudo abrir la cámara. Usa la galería.');
+        }
+    }
+
+    function switchCam() { frontCam = !frontCam; closeCamera(); openCamera(); }
+
+    function closeCamera() {
+        if (camStream) camStream.getTracks().forEach(t => t.stop());
+        camStream = null;
+        document.getElementById('cam-video').srcObject = null;
+        document.getElementById('camera-view').style.display = 'none';
+    }
+
+    function capture() {
+        const video = document.getElementById('cam-video');
+        const canvas = document.getElementById('cam-canvas');
+        if (!video.videoWidth) return;
+
+        let w = video.videoWidth, h = video.videoHeight;
+        if (w > 1200 || h > 1200) {
+            if (w > h) { h = Math.round(h*1200/w); w=1200; }
+            else { w = Math.round(w*1200/h); h=1200; }
+        }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(video, 0, 0, w, h);
+        closeCamera();
+
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        const byteStr = atob(dataUrl.split(',')[1]);
+        const ab = new ArrayBuffer(byteStr.length);
+        const ia = new Uint8Array(ab);
+        for (let i=0; i<byteStr.length; i++) ia[i] = byteStr.charCodeAt(i);
+
+        photoFile = new File([new Blob([ab], {type:'image/jpeg'})], 'camera.jpg', {type:'image/jpeg', lastModified:Date.now()});
+        showPreview(dataUrl);
+    }
+
+    // Gallery
+    function handlePhoto(input) {
+        if (!input.files || !input.files[0]) return;
+        const file = input.files[0];
+        // Compress
+        const img = new Image();
+        img.onload = () => {
+            let w=img.width, h=img.height;
+            if (w>1200||h>1200) { if(w>h){h=Math.round(h*1200/w);w=1200;}else{w=Math.round(w*1200/h);h=1200;} }
+            const c = document.createElement('canvas'); c.width=w; c.height=h;
+            c.getContext('2d').drawImage(img,0,0,w,h);
+            c.toBlob(b => {
+                photoFile = new File([b], 'photo.jpg', {type:'image/jpeg'});
+                showPreview(URL.createObjectURL(b));
+            }, 'image/jpeg', 0.85);
+        };
+        img.src = URL.createObjectURL(file);
+    }
+
+    function showPreview(src) {
+        document.getElementById('preview-img').src = src;
+        document.getElementById('cta-section').style.display = 'none';
+        document.getElementById('preview-section').style.display = 'block';
+        document.getElementById('result-section').style.display = 'none';
+    }
+
+    function retake() {
+        photoFile = null;
+        document.getElementById('preview-section').style.display = 'none';
+        document.getElementById('result-section').style.display = 'none';
+        document.getElementById('loader').classList.remove('visible');
+        document.getElementById('cta-section').style.display = 'block';
+        document.getElementById('btn-gen').disabled = false;
+        document.getElementById('btn-gen').textContent = '✨ Ver cómo me queda';
+    }
+
+    // Generate
+    async function generate() {
+        if (!photoFile) return;
+        const btn = document.getElementById('btn-gen');
+        btn.disabled = true; btn.textContent = '⏳ Generando...';
+
+        document.getElementById('preview-section').style.display = 'none';
+        const loader = document.getElementById('loader');
+        loader.classList.add('visible');
+        document.getElementById('loader-step').textContent = '👗 Probándote la prenda...';
+
+        // Animate progress
+        let elapsed = 0;
+        const bar = document.getElementById('progress-fill');
+        const timer = setInterval(() => {
+            elapsed += 0.5;
+            bar.style.width = Math.min(90, elapsed/10*100) + '%';
+            if (elapsed > 5) document.getElementById('loader-step').textContent = '✨ Finalizando...';
+        }, 500);
+
+        const form = new FormData();
+        form.append('model_image', photoFile);
+
+        // Determine endpoint based on category
+        if (GARMENT_CATEGORY === 'one-pieces') {
+            form.append('onepiece_id', GARMENT_ID);
+        } else if (GARMENT_CATEGORY === 'tops') {
+            form.append('top_id', GARMENT_ID);
+        } else {
+            form.append('bottom_id', GARMENT_ID);
+        }
+
+        try {
+            const controller = new AbortController();
+            setTimeout(() => controller.abort(), 180000);
+            const resp = await fetch('/api/try-on-outfit', { method:'POST', body:form, signal:controller.signal });
+
+            clearInterval(timer);
+            bar.style.width = '100%';
+
+            if (!resp.ok) {
+                const err = await resp.text();
+                loader.classList.remove('visible');
+                document.getElementById('preview-section').style.display = 'block';
+                btn.disabled = false; btn.textContent = '✨ Ver cómo me queda';
+                alert('Error: ' + err.substring(0, 100));
+                return;
+            }
+
+            const data = await resp.json();
+            loader.classList.remove('visible');
+
+            if (data.success) {
+                document.getElementById('result-img').src = data.result_image;
+                document.getElementById('result-section').style.display = 'block';
+            } else {
+                document.getElementById('preview-section').style.display = 'block';
+                btn.disabled = false; btn.textContent = '✨ Ver cómo me queda';
+                alert('Error generando la prueba');
+            }
+        } catch(e) {
+            clearInterval(timer);
+            loader.classList.remove('visible');
+            document.getElementById('preview-section').style.display = 'block';
+            btn.disabled = false; btn.textContent = '✨ Ver cómo me queda';
+            alert('Error de conexión: ' + e.message);
+        }
+    }
+
+    // Share
+    function shareWhatsApp() {
+        const img = document.getElementById('result-img');
+        const text = encodeURIComponent(`¡Mira cómo me queda esta prenda! 👗✨\n${window.location.href}`);
+        window.open(`https://wa.me/?text=${text}`, '_blank');
+    }
+</script>
+</body>
+</html>

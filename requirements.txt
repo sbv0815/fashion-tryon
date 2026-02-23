@@ -12,3 +12,4 @@ python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 python-dotenv==1.0.1
 gunicorn==22.0.0
+qrcode[pil]==7.4.2
