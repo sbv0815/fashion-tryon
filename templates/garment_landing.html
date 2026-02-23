@@ -61,6 +61,7 @@
             margin-bottom:0.75rem;
         }
         .btn-tryon:active { transform:scale(0.98); }
+        .btn-tryon:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
 
         .btn-gallery {
             display:block; width:100%; padding:14px;
@@ -197,16 +198,19 @@
         </div>
         <div style="display:flex;gap:0.75rem;margin-top:0.75rem;">
             <button class="btn-retry" onclick="hideCombo()">← Atrás</button>
-            <button class="btn-tryon" id="btn-combo-go" disabled onclick="startTryOn()">📷 Probar outfit</button>
+            <button class="btn-tryon" id="btn-combo-go" style="display:none;" onclick="startTryOn()">📷 Probar outfit</button>
         </div>
     </div>
 
     <!-- CAPTURE BUTTONS (hidden until startTryOn) -->
     <div id="capture-section" style="display:none;">
-        <div class="cta-title" style="margin-bottom:0.5rem;">📷 Tu foto</div>
-        <div class="cta-subtitle">Foto de cuerpo completo para la prueba virtual</div>
-        <button class="btn-tryon" onclick="openCamera()">📷 Tomar foto</button>
-        <button class="btn-gallery" onclick="document.getElementById('gallery-input').click()">🖼️ Elegir de galería</button>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.5rem;text-align:center;margin-top:1rem;">
+            <div class="cta-title" style="margin-bottom:0.3rem;">📷 Tu foto</div>
+            <div class="cta-subtitle">Foto de cuerpo completo para la prueba virtual</div>
+            <div id="outfit-summary" style="margin-bottom:1rem;padding:0.5rem;background:rgba(201,165,90,0.1);border-radius:8px;font-size:0.8rem;color:var(--accent);"></div>
+            <button class="btn-tryon" onclick="openCamera()">📷 Tomar foto con cámara</button>
+            <button class="btn-gallery" onclick="document.getElementById('gallery-input').click()">🖼️ Elegir foto de galería</button>
+        </div>
     </div>
     <input type="file" id="gallery-input" accept="image/*" onchange="handlePhoto(this)" style="display:none;">
 
@@ -314,10 +318,10 @@
             const icon = g.category === 'tops' ? '👕' : '👖';
             document.getElementById('combo-tag-extra').textContent = `${icon} ${g.name}`;
             bar.classList.add('visible');
-            btn.disabled = false;
+            btn.style.display = 'block';
         } else {
             bar.classList.remove('visible');
-            btn.disabled = true;
+            btn.style.display = 'none';
         }
     }
 
@@ -329,7 +333,23 @@
     function startTryOn() {
         document.getElementById('cta-section').style.display = 'none';
         document.getElementById('combo-section').style.display = 'none';
-        document.getElementById('capture-section').style.display = 'block';
+
+        // Show what will be tried on
+        const summary = document.getElementById('outfit-summary');
+        const mainIcon = GARMENT_CATEGORY === 'tops' ? '👕' : GARMENT_CATEGORY === 'bottoms' ? '👖' : '👗';
+        let text = mainIcon + ' {{ garment.name }}';
+        if (comboId) {
+            const g = comboGarments.find(x => x.id === comboId);
+            if (g) {
+                const comboIcon = g.category === 'tops' ? '👕' : '👖';
+                text += ' + ' + comboIcon + ' ' + g.name;
+            }
+        }
+        summary.textContent = text;
+
+        const capture = document.getElementById('capture-section');
+        capture.style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     // Camera
