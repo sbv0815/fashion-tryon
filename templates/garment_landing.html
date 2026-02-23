@@ -183,7 +183,7 @@
             <button class="btn-whatsapp" onclick="shareWhatsApp()">💬 Compartir</button>
             <button class="btn-retry" onclick="retake()">🔄 Otra foto</button>
         </div>
-        <button class="btn-browse" onclick="window.location.href='/'" style="width:100%; margin-top:0.75rem;">👗 Ver más prendas</button>
+        <button class="btn-browse" onclick="window.location.href=STORE_ID ? '/tienda?store='+STORE_ID : '/tienda'" style="width:100%; margin-top:0.75rem;">👗 Ver más prendas</button>
     </div>
 
     <div class="powered">Powered by Fashion TryOn ✨</div>
@@ -205,6 +205,7 @@
 <script>
     const GARMENT_ID = '{{ garment.id }}';
     const GARMENT_CATEGORY = '{{ garment.category }}';
+    const STORE_ID = '{{ garment.store_id or "" }}';
     let photoFile = null;
     let camStream = null;
     let frontCam = false;
