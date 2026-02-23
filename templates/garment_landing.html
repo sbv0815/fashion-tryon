@@ -292,8 +292,8 @@
         document.getElementById('btn-gen').textContent = '✨ Ver cómo me queda';
     }
 
-    // Generate
-    async function generate() {
+    // Generate with auto-retry
+    async function generate(retryCount = 0) {
         if (!photoFile) return;
         const btn = document.getElementById('btn-gen');
         btn.disabled = true; btn.textContent = '⏳ Generando...';
@@ -303,36 +303,35 @@
         loader.classList.add('visible');
         document.getElementById('loader-step').textContent = '👗 Probándote la prenda...';
 
-        // Animate progress
-        let elapsed = 0;
         const bar = document.getElementById('progress-fill');
+        bar.style.width = '0%';
+        let elapsed = 0;
         const timer = setInterval(() => {
             elapsed += 0.5;
-            bar.style.width = Math.min(90, elapsed/10*100) + '%';
-            if (elapsed > 5) document.getElementById('loader-step').textContent = '✨ Finalizando...';
+            bar.style.width = Math.min(90, elapsed/12*100) + '%';
+            if (elapsed > 6) document.getElementById('loader-step').textContent = '✨ Finalizando...';
         }, 500);
 
         const form = new FormData();
         form.append('model_image', photoFile);
-
-        // Determine endpoint based on category
-        if (GARMENT_CATEGORY === 'one-pieces') {
-            form.append('onepiece_id', GARMENT_ID);
-        } else if (GARMENT_CATEGORY === 'tops') {
-            form.append('top_id', GARMENT_ID);
-        } else {
-            form.append('bottom_id', GARMENT_ID);
-        }
+        if (GARMENT_CATEGORY === 'one-pieces') form.append('onepiece_id', GARMENT_ID);
+        else if (GARMENT_CATEGORY === 'tops') form.append('top_id', GARMENT_ID);
+        else form.append('bottom_id', GARMENT_ID);
 
         try {
             const controller = new AbortController();
             setTimeout(() => controller.abort(), 180000);
             const resp = await fetch('/api/try-on-outfit', { method:'POST', body:form, signal:controller.signal });
-
             clearInterval(timer);
             bar.style.width = '100%';
 
             if (!resp.ok) {
+                if (retryCount < 2) {
+                    document.getElementById('loader-step').textContent = `🔄 Reintentando... (${retryCount+1}/2)`;
+                    bar.style.width = '0%';
+                    setTimeout(() => generate(retryCount + 1), 1500);
+                    return;
+                }
                 const err = await resp.text();
                 loader.classList.remove('visible');
                 document.getElementById('preview-section').style.display = 'block';
@@ -348,24 +347,58 @@
                 document.getElementById('result-img').src = data.result_image;
                 document.getElementById('result-section').style.display = 'block';
             } else {
+                if (retryCount < 2) {
+                    document.getElementById('loader-step').textContent = `🔄 Reintentando... (${retryCount+1}/2)`;
+                    bar.style.width = '0%';
+                    setTimeout(() => generate(retryCount + 1), 1500);
+                    return;
+                }
                 document.getElementById('preview-section').style.display = 'block';
                 btn.disabled = false; btn.textContent = '✨ Ver cómo me queda';
                 alert('Error generando la prueba');
             }
         } catch(e) {
             clearInterval(timer);
+            if (retryCount < 2) {
+                document.getElementById('loader-step').textContent = `🔄 Reintentando... (${retryCount+1}/2)`;
+                bar.style.width = '0%';
+                setTimeout(() => generate(retryCount + 1), 2000);
+                return;
+            }
             loader.classList.remove('visible');
             document.getElementById('preview-section').style.display = 'block';
             btn.disabled = false; btn.textContent = '✨ Ver cómo me queda';
-            alert('Error de conexión: ' + e.message);
+            alert('Error de conexión. Intenta de nuevo.');
         }
     }
 
-    // Share
-    function shareWhatsApp() {
+    // Share result IMAGE via WhatsApp (not just link)
+    async function shareWhatsApp() {
         const img = document.getElementById('result-img');
-        const text = encodeURIComponent(`¡Mira cómo me queda esta prenda! 👗✨\n${window.location.href}`);
-        window.open(`https://wa.me/?text=${text}`, '_blank');
+        try {
+            const resp = await fetch(img.src);
+            const blob = await resp.blob();
+            const file = new File([blob], 'mi-look-virtual.jpg', { type: 'image/jpeg' });
+
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    title: '¡Mira cómo me queda!',
+                    text: '¡Mira cómo me queda esta prenda! 👗✨',
+                    files: [file]
+                });
+            } else {
+                // Fallback: download + open WhatsApp
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'mi-look-virtual.jpg';
+                a.click();
+                setTimeout(() => {
+                    window.open('https://wa.me/?text=' + encodeURIComponent('¡Mira cómo me queda esta prenda! 👗✨'), '_blank');
+                }, 1000);
+            }
+        } catch(e) {
+            window.open('https://wa.me/?text=' + encodeURIComponent('¡Mira cómo me queda esta prenda! 👗✨\n' + window.location.href), '_blank');
+        }
     }
 </script>
 </body>

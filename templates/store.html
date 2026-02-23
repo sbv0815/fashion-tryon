@@ -550,21 +550,22 @@
         document.getElementById('btn-gen').textContent='✨ Generar';
     }
 
-    // Step 4: Generate
-    async function generate() {
+    // Step 4: Generate with auto-retry
+    async function generate(retryCount = 0) {
         if(!photoFile) return;
         const btn = document.getElementById('btn-gen');
         btn.disabled=true; btn.textContent='⏳ Generando...';
 
         document.getElementById('loader').classList.add('visible');
         const bar = document.getElementById('prog-bar');
+        bar.style.width = '0%';
         let elapsed=0;
         const timer = setInterval(()=>{
             elapsed+=0.5;
-            bar.style.width = Math.min(90,elapsed/10*100)+'%';
+            bar.style.width = Math.min(90,elapsed/12*100)+'%';
             const step = document.getElementById('loader-step');
-            if(outfit.top && elapsed<5) step.textContent='👕 Probando superior...';
-            else if(outfit.bottom && elapsed<8) step.textContent='👖 Probando inferior...';
+            if(outfit.top && elapsed<6) step.textContent='👕 Probando superior...';
+            else if(outfit.bottom && elapsed<10) step.textContent='👖 Probando inferior...';
             else step.textContent='✨ Finalizando...';
         },500);
 
@@ -582,6 +583,14 @@
 
             if(!resp.ok) {
                 const err = await resp.text();
+                // Auto-retry up to 2 times
+                if (retryCount < 2) {
+                    document.getElementById('loader-step').textContent = `🔄 Reintentando... (${retryCount+1}/2)`;
+                    bar.style.width = '0%';
+                    clearInterval(timer);
+                    setTimeout(() => generate(retryCount + 1), 1500);
+                    return;
+                }
                 document.getElementById('loader').classList.remove('visible');
                 btn.disabled=false; btn.textContent='✨ Generar';
                 toast('Error: '+err.substring(0,100),'error');
@@ -597,20 +606,61 @@
                 document.getElementById('result-garments').textContent = names;
                 goStep(4);
             } else {
+                if (retryCount < 2) {
+                    document.getElementById('loader-step').textContent = `🔄 Reintentando... (${retryCount+1}/2)`;
+                    bar.style.width = '0%';
+                    setTimeout(() => generate(retryCount + 1), 1500);
+                    return;
+                }
                 btn.disabled=false; btn.textContent='✨ Generar';
                 toast('Error generando','error');
             }
         } catch(e) {
             clearInterval(timer);
+            // Auto-retry on connection errors
+            if (retryCount < 2) {
+                document.getElementById('loader-step').textContent = `🔄 Reintentando... (${retryCount+1}/2)`;
+                bar.style.width = '0%';
+                setTimeout(() => generate(retryCount + 1), 2000);
+                return;
+            }
             document.getElementById('loader').classList.remove('visible');
             btn.disabled=false; btn.textContent='✨ Generar';
-            toast('Error: '+e.message,'error');
+            toast('Error de conexión. Intenta de nuevo.','error');
         }
     }
 
-    function shareWA() {
-        const text = encodeURIComponent('¡Mira cómo me queda esta ropa! 👗✨\n' + window.location.href);
-        window.open('https://wa.me/?text='+text, '_blank');
+    // Share result image via WhatsApp (native share API)
+    async function shareWA() {
+        const img = document.getElementById('result-img');
+        try {
+            // Fetch the result image and convert to blob
+            const resp = await fetch(img.src);
+            const blob = await resp.blob();
+            const file = new File([blob], 'mi-look-virtual.jpg', { type: 'image/jpeg' });
+
+            // Use native share API if available (sends actual image)
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    title: '¡Mira cómo me queda!',
+                    text: '¡Mira cómo me queda esta ropa! 👗✨',
+                    files: [file]
+                });
+            } else {
+                // Fallback: download image + open WhatsApp with text
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'mi-look-virtual.jpg';
+                a.click();
+                toast('Imagen descargada. Compártela en WhatsApp.', 'success');
+                setTimeout(() => {
+                    window.open('https://wa.me/?text=' + encodeURIComponent('¡Mira cómo me queda esta ropa! 👗✨'), '_blank');
+                }, 1000);
+            }
+        } catch(e) {
+            // Last fallback
+            window.open('https://wa.me/?text=' + encodeURIComponent('¡Mira cómo me queda esta ropa! 👗✨\n' + window.location.href), '_blank');
+        }
     }
 
     function toast(msg, type='') {

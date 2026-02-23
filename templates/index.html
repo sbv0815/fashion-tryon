@@ -1692,9 +1692,9 @@
         btn.textContent = '✨ Generar prueba virtual';
     }
 
-    async function generateTryOn() {
+    async function generateTryOn(retryCount = 0) {
         const btn = document.getElementById('btn-generate');
-        if (btn.disabled) return;
+        if (btn.disabled && retryCount === 0) return;
 
         if (!modelPhotoFile) {
             showToast('Primero toma o sube una foto', 'error');
@@ -1710,101 +1710,76 @@
             return;
         }
 
-        // Disable button to prevent multiple taps
         btn.disabled = true;
         btn.textContent = '⏳ Generando...';
 
         const isOutfit = (outfit.top || outfit.bottom) && !outfit.onepiece;
         const isSingle = outfit.onepiece;
 
+        const form = new FormData();
+        form.append('model_image', modelPhotoFile);
         if (isOutfit) {
+            if (outfit.top) form.append('top_id', outfit.top);
+            if (outfit.bottom) form.append('bottom_id', outfit.bottom);
+        } else if (isSingle) {
+            form.append('onepiece_id', outfit.onepiece);
+        }
+
+        if (retryCount === 0) {
             let steps = [];
             if (outfit.top) steps.push(catalog.find(g => g.id === outfit.top)?.name || 'Superior');
             if (outfit.bottom) steps.push(catalog.find(g => g.id === outfit.bottom)?.name || 'Inferior');
-
+            if (outfit.onepiece) steps.push(catalog.find(g => g.id === outfit.onepiece)?.name || 'Prenda');
             const estTime = steps.length * 8;
-            showLoader(`Generando tu outfit...`);
+            showLoader('Generando tu outfit...');
             startProgress(estTime, steps);
+        }
 
-            const form = new FormData();
-            form.append('model_image', modelPhotoFile);
-            if (outfit.top) form.append('top_id', outfit.top);
-            if (outfit.bottom) form.append('bottom_id', outfit.bottom);
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 180000);
+            const resp = await fetch('/api/try-on-outfit', { method: 'POST', body: form, signal: controller.signal });
+            clearTimeout(timeoutId);
 
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 min timeout
-                const resp = await fetch('/api/try-on-outfit', { method: 'POST', body: form, signal: controller.signal });
-                clearTimeout(timeoutId);
-
-                if (!resp.ok) {
-                    const errText = await resp.text();
-                    stopProgress(); hideLoader();
-                    showToast(`Error ${resp.status}: ${errText.substring(0, 150)}`, 'error');
+            if (!resp.ok) {
+                if (retryCount < 2) {
+                    document.getElementById('loader-step').textContent = `🔄 Reintentando... (${retryCount+1}/2)`;
+                    document.getElementById('loader-bar').style.width = '0%';
+                    setTimeout(() => generateTryOn(retryCount + 1), 1500);
                     return;
                 }
-
-                const data = await resp.json();
-                stopProgress();
-
-                if (data.success) {
-                    renderOutfitResult(data);
-                    goToStep(4);
-                } else {
-                    hideLoader();
-                    showToast('Error: ' + (data.detail || 'Error generando outfit'), 'error');
-                }
-            } catch(e) {
-                stopProgress();
-                hideLoader();
-                if (e.name === 'AbortError') {
-                    showToast('La generación tardó demasiado. Intenta de nuevo.', 'error');
-                } else {
-                    showToast('Error: ' + e.message, 'error');
-                }
+                const errText = await resp.text();
+                stopProgress(); hideLoader();
+                showToast(`Error ${resp.status}: ${errText.substring(0, 150)}`, 'error');
+                return;
             }
-        } else if (isSingle) {
-            const garmentId = outfit.onepiece;
-            const garment = catalog.find(g => g.id === garmentId);
-            showLoader(`Probándote "${garment?.name}"...`);
-            startProgress(8, [garment?.name || 'Prenda']);
 
-            const form = new FormData();
-            form.append('model_image', modelPhotoFile);
-            form.append('onepiece_id', garmentId);
+            const data = await resp.json();
+            stopProgress();
 
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 180000);
-                const resp = await fetch('/api/try-on-outfit', { method: 'POST', body: form, signal: controller.signal });
-                clearTimeout(timeoutId);
-
-                if (!resp.ok) {
-                    const errText = await resp.text();
-                    stopProgress(); hideLoader();
-                    showToast(`Error ${resp.status}: ${errText.substring(0, 150)}`, 'error');
+            if (data.success) {
+                renderOutfitResult(data);
+                goToStep(4);
+            } else {
+                if (retryCount < 2) {
+                    document.getElementById('loader-step').textContent = `🔄 Reintentando... (${retryCount+1}/2)`;
+                    document.getElementById('loader-bar').style.width = '0%';
+                    setTimeout(() => generateTryOn(retryCount + 1), 1500);
                     return;
                 }
-
-                const data = await resp.json();
-                stopProgress();
-
-                if (data.success) {
-                    renderOutfitResult(data);
-                    goToStep(4);
-                } else {
-                    hideLoader();
-                    showToast('Error: ' + (data.detail || 'Error generando prueba'), 'error');
-                }
-            } catch(e) {
-                stopProgress();
                 hideLoader();
-                if (e.name === 'AbortError') {
-                    showToast('La generación tardó demasiado. Intenta de nuevo.', 'error');
-                } else {
-                    showToast('Error: ' + e.message, 'error');
-                }
+                showToast('Error: ' + (data.detail || 'Error generando'), 'error');
             }
+        } catch(e) {
+            if (retryCount < 2) {
+                document.getElementById('loader-step').textContent = `🔄 Reintentando... (${retryCount+1}/2)`;
+                document.getElementById('loader-bar').style.width = '0%';
+                setTimeout(() => generateTryOn(retryCount + 1), 2000);
+                return;
+            }
+            stopProgress();
+            hideLoader();
+            showToast('Error: ' + e.message, 'error');
         }
     }
 
