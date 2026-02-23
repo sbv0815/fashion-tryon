@@ -988,13 +988,29 @@
             <!-- Gallery input (no capture attribute) -->
             <input type="file" id="model-photo-gallery" accept="image/*" onchange="handleGalleryPhoto(this)" style="display:none">
 
-            <!-- Live camera viewfinder -->
-            <div id="camera-viewfinder" style="display:none; position:relative; border-radius:var(--radius); overflow:hidden; background:#000;">
-                <video id="camera-video" autoplay playsinline muted style="width:100%; max-height:70vh; object-fit:cover;"></video>
-                <div style="position:absolute; bottom:0; left:0; right:0; padding:1rem; background:linear-gradient(transparent, rgba(0,0,0,0.8)); display:flex; justify-content:center; gap:1rem;">
-                    <button onclick="switchCamera()" class="btn btn-secondary" style="padding:0.7rem 1.2rem; font-size:0.85rem;">🔄 Voltear</button>
-                    <button onclick="capturePhoto()" class="btn btn-primary" style="padding:0.7rem 2rem; font-size:1rem; font-weight:700;">📸 Capturar</button>
-                    <button onclick="cancelCamera()" class="btn btn-secondary" style="padding:0.7rem 1.2rem; font-size:0.85rem;">✕ Cancelar</button>
+            <!-- Live camera viewfinder - FULLSCREEN -->
+            <div id="camera-viewfinder" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; z-index:999; background:#000;">
+                <video id="camera-video" autoplay playsinline muted style="width:100%; height:100%; object-fit:cover;"></video>
+                
+                <!-- Guide overlay -->
+                <div style="position:absolute; top:0; left:0; right:0; bottom:0; pointer-events:none;">
+                    <div style="position:absolute; top:15%; left:15%; right:15%; bottom:20%; border:2px dashed rgba(201,165,90,0.5); border-radius:12px;"></div>
+                    <div style="position:absolute; top:5%; left:0; right:0; text-align:center; color:rgba(255,255,255,0.8); font-size:0.9rem; font-family:inherit; text-shadow:0 1px 4px rgba(0,0,0,0.8);">
+                        Ubica tu cuerpo completo dentro del recuadro
+                    </div>
+                </div>
+
+                <!-- Camera buttons - large and readable -->
+                <div style="position:absolute; bottom:0; left:0; right:0; padding:1.5rem 1rem 2.5rem; background:linear-gradient(transparent, rgba(0,0,0,0.85)); display:flex; justify-content:space-around; align-items:center;">
+                    <button onclick="switchCamera()" style="background:rgba(255,255,255,0.15); border:2px solid rgba(255,255,255,0.3); color:#fff; padding:14px 20px; border-radius:50px; cursor:pointer; font-family:inherit; font-size:1rem; font-weight:600; min-width:80px; text-align:center;">
+                        🔄<br><span style="font-size:0.75rem;">Voltear</span>
+                    </button>
+                    <button onclick="capturePhoto()" style="background:#c9a55a; border:3px solid #fff; color:#0a0a0a; padding:20px 30px; border-radius:50px; cursor:pointer; font-family:inherit; font-size:1.2rem; font-weight:700; min-width:120px; text-align:center; box-shadow:0 4px 15px rgba(0,0,0,0.4);">
+                        📸 Capturar
+                    </button>
+                    <button onclick="cancelCamera()" style="background:rgba(255,255,255,0.15); border:2px solid rgba(255,255,255,0.3); color:#fff; padding:14px 20px; border-radius:50px; cursor:pointer; font-family:inherit; font-size:1rem; font-weight:600; min-width:80px; text-align:center;">
+                        ✕<br><span style="font-size:0.75rem;">Cerrar</span>
+                    </button>
                 </div>
             </div>
 
