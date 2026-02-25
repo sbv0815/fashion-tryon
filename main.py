@@ -24,7 +24,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from models import (init_db, get_db, Garment, TryOnResult, Client, UsageLog,
-                    AdminSettings, Store, ShareLog, TryOnView, Collection, GarmentFeedback)
+                    AdminSettings, Store, ShareLog, TryOnView, Collection, GarmentFeedback,
+                    CustomerProfile)
 
 # ============================================================
 # CONFIGURATION
@@ -1399,6 +1400,165 @@ async def cleanup_garments(db: Session = Depends(get_db)):
         db.delete(g)
     db.commit()
     return {"success": True, "deleted": count, "message": f"Eliminadas {count} prendas sin imagen"}
+
+
+# ============================================================
+# CUSTOMER CLOSET (registration + history)
+# ============================================================
+@app.post("/api/customer/register")
+async def register_customer(
+    name: str = Form(...),
+    phone: str = Form(""),
+    gender: str = Form(""),
+    size: str = Form(""),
+    db: Session = Depends(get_db)
+):
+    """Register a customer and return their unique access token."""
+    if phone:
+        existing = db.query(CustomerProfile).filter(CustomerProfile.phone == phone).first()
+        if existing:
+            return {"success": True, "customer": {
+                "id": existing.id, "name": existing.name,
+                "token": existing.access_token,
+                "closet_url": f"/mi-closet/{existing.access_token}"
+            }}
+
+    customer_id = uuid.uuid4().hex[:12]
+    token = uuid.uuid4().hex[:16]
+
+    customer = CustomerProfile(
+        id=customer_id, name=name, phone=phone,
+        access_token=token, gender=gender if gender else None,
+        size=size if size else None,
+    )
+    db.add(customer)
+    db.commit()
+    return {"success": True, "customer": {
+        "id": customer.id, "name": customer.name,
+        "token": token,
+        "closet_url": f"/mi-closet/{token}"
+    }}
+
+
+@app.get("/mi-closet/{token}", response_class=HTMLResponse)
+async def customer_closet_page(token: str, request: Request, db: Session = Depends(get_db)):
+    """Customer's personal closet page."""
+    customer = db.query(CustomerProfile).filter(CustomerProfile.access_token == token).first()
+    if not customer:
+        raise HTTPException(status_code=404, detail="Closet no encontrado")
+    return templates.TemplateResponse("closet.html", {"request": request, "customer": customer})
+
+
+@app.get("/api/customer/{token}/results")
+async def get_customer_results(token: str, db: Session = Depends(get_db)):
+    """Get all try-on results for a customer."""
+    customer = db.query(CustomerProfile).filter(CustomerProfile.access_token == token).first()
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+
+    results = db.query(TryOnResult).filter(
+        TryOnResult.customer_id == customer.id
+    ).order_by(TryOnResult.created_at.desc()).all()
+
+    items = []
+    for r in results:
+        garment_ids = r.garment_ids.split(",") if r.garment_ids else []
+        garments = db.query(Garment).filter(Garment.id.in_(garment_ids)).all() if garment_ids else []
+        store = db.query(Store).filter(Store.id == r.store_id).first() if r.store_id else None
+
+        items.append({
+            "id": r.id,
+            "result_image": r.result_image_url,
+            "share_url": f"/resultado/{r.id}",
+            "garments": [{"id": g.id, "name": g.name, "price": g.price,
+                          "image_url": g.image_url, "category": g.category} for g in garments],
+            "store_name": store.name if store else "",
+            "store_color": store.primary_color if store else "#c9a55a",
+            "show_on_wall": r.show_on_wall,
+            "created_at": r.created_at.isoformat() if r.created_at else "",
+        })
+    return {"customer": {"id": customer.id, "name": customer.name}, "results": items}
+
+
+@app.post("/api/customer/{token}/wall-consent")
+async def toggle_wall_consent(
+    token: str, result_id: str = Form(...),
+    show: str = Form("true"),
+    db: Session = Depends(get_db)
+):
+    """Customer toggles whether a result appears on the store wall."""
+    customer = db.query(CustomerProfile).filter(CustomerProfile.access_token == token).first()
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+
+    result = db.query(TryOnResult).filter(
+        TryOnResult.id == result_id, TryOnResult.customer_id == customer.id
+    ).first()
+    if not result:
+        raise HTTPException(status_code=404, detail="Result not found")
+
+    result.show_on_wall = show.lower() in ('true', '1', 'yes')
+    db.commit()
+    return {"success": True, "show_on_wall": result.show_on_wall}
+
+
+# ============================================================
+# STORE WALL (public gallery of customer photos)
+# ============================================================
+@app.get("/muro/{store_slug}", response_class=HTMLResponse)
+async def store_wall_page(store_slug: str, request: Request, db: Session = Depends(get_db)):
+    """Public wall/gallery of customer try-on photos for a store."""
+    store = db.query(Store).filter(Store.slug == store_slug, Store.active == True).first()
+    if not store:
+        raise HTTPException(status_code=404, detail="Tienda no encontrada")
+    return templates.TemplateResponse("wall.html", {"request": request, "store": store})
+
+
+@app.get("/api/wall/{store_id}")
+async def get_store_wall(store_id: str, db: Session = Depends(get_db)):
+    """Get all consented try-on results for the store wall."""
+    results = db.query(TryOnResult).filter(
+        TryOnResult.store_id == store_id,
+        TryOnResult.show_on_wall == True
+    ).order_by(TryOnResult.created_at.desc()).limit(100).all()
+
+    items = []
+    for r in results:
+        garment_ids = r.garment_ids.split(",") if r.garment_ids else []
+        garments = db.query(Garment).filter(Garment.id.in_(garment_ids)).all() if garment_ids else []
+        customer = db.query(CustomerProfile).filter(CustomerProfile.id == r.customer_id).first() if r.customer_id else None
+
+        items.append({
+            "id": r.id,
+            "result_image": r.result_image_url,
+            "customer_name": customer.name if customer else "Anónimo",
+            "garments": [{"name": g.name, "price": g.price} for g in garments],
+            "created_at": r.created_at.isoformat() if r.created_at else "",
+        })
+    return {"results": items}
+
+
+# ============================================================
+# STORE SOCIAL LINKS (update)
+# ============================================================
+@app.put("/api/store/{store_id}/socials")
+async def update_store_socials(
+    store_id: str,
+    instagram: str = Form(None), facebook: str = Form(None),
+    tiktok: str = Form(None), twitter: str = Form(None),
+    website: str = Form(None),
+    db: Session = Depends(get_db)
+):
+    store = db.query(Store).filter(Store.id == store_id).first()
+    if not store:
+        raise HTTPException(status_code=404, detail="Store not found")
+    if instagram is not None: store.instagram = instagram
+    if facebook is not None: store.facebook = facebook
+    if tiktok is not None: store.tiktok = tiktok
+    if twitter is not None: store.twitter = twitter
+    if website is not None: store.website = website
+    db.commit()
+    return {"success": True}
 
 
 if __name__ == "__main__":

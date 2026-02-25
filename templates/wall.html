@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ store.name }} | Muro de Clientes</title>
+    <meta name="description" content="Mira cómo les queda la ropa de {{ store.name }} a clientes reales con IA">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --bg: #08070c; --surface: #0f0e16; --card: #15141d;
+            --border: rgba(255,255,255,0.06);
+            --accent: {{ store.primary_color or '#c9a55a' }};
+            --accent-soft: {{ store.primary_color or '#c9a55a' }}1a;
+            --white: #f0ece4; --text-mid: #8a8590; --text-dim: #4a4650;
+            --font-display: 'Inter', sans-serif;
+            --font-body: 'DM Sans', sans-serif;
+            --ease: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        body { font-family: var(--font-body); color: var(--white); background: var(--bg); min-height: 100vh; }
+
+        .wall-header {
+            background: var(--surface); border-bottom: 1px solid var(--border);
+            padding: 28px 20px; text-align: center;
+        }
+        .wall-header h1 {
+            font-family: var(--font-display); font-size: clamp(1.5rem, 3.5vw, 2rem);
+            font-weight: 800; margin-bottom: 6px;
+        }
+        .wall-header h1 span { color: var(--accent); }
+        .wall-header p { color: var(--text-mid); font-size: 0.9rem; }
+        .wall-header .meta { display: flex; justify-content: center; gap: 16px; margin-top: 14px; }
+        .wall-header .meta a {
+            padding: 6px 14px; border-radius: 8px; font-size: 0.75rem; font-weight: 600;
+            color: var(--text-mid); border: 1px solid var(--border); text-decoration: none; transition: all 0.2s;
+        }
+        .wall-header .meta a:hover { border-color: var(--accent); color: var(--accent); }
+
+        .wall-stats {
+            display: flex; justify-content: center; gap: 40px; padding: 20px;
+            max-width: 600px; margin: 0 auto;
+        }
+        .wall-stat { text-align: center; }
+        .wall-stat .num { font-family: var(--font-display); font-size: 1.6rem; font-weight: 800; color: var(--accent); }
+        .wall-stat .label { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 16px 40px; }
+
+        /* Masonry-like grid */
+        .wall-grid {
+            columns: 3; column-gap: 12px;
+        }
+        @media (max-width: 768px) { .wall-grid { columns: 2; } }
+        @media (max-width: 400px) { .wall-grid { columns: 2; column-gap: 8px; } }
+
+        .wall-item {
+            break-inside: avoid; margin-bottom: 12px;
+            background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+            overflow: hidden; transition: all 0.3s var(--ease);
+        }
+        .wall-item:hover { border-color: rgba(255,255,255,0.12); transform: translateY(-2px); box-shadow: 0 12px 30px rgba(0,0,0,0.3); }
+        .wall-item img { width: 100%; display: block; }
+        .wall-item .caption { padding: 10px 12px; }
+        .wall-item .customer { font-size: 0.8rem; font-weight: 600; }
+        .wall-item .garments { font-size: 0.72rem; color: var(--text-mid); margin-top: 2px; }
+        .wall-item .date { font-size: 0.65rem; color: var(--text-dim); margin-top: 4px; }
+
+        .empty-wall {
+            text-align: center; padding: 80px 20px;
+        }
+        .empty-wall .icon { font-size: 3.5rem; margin-bottom: 16px; opacity: 0.2; }
+        .empty-wall .title { font-family: var(--font-display); font-size: 1.2rem; margin-bottom: 8px; }
+        .empty-wall .text { color: var(--text-mid); font-size: 0.9rem; max-width: 400px; margin: 0 auto; }
+
+        .cta-section {
+            text-align: center; padding: 40px 20px; margin-top: 20px;
+            background: var(--surface); border-radius: 20px; border: 1px solid var(--border);
+            max-width: 600px; margin-left: auto; margin-right: auto;
+        }
+        .cta-section h3 { font-family: var(--font-display); font-size: 1.1rem; margin-bottom: 8px; }
+        .cta-section p { font-size: 0.85rem; color: var(--text-mid); margin-bottom: 16px; }
+        .cta-btn {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 12px 28px; background: var(--accent); color: var(--bg);
+            border-radius: 12px; font-weight: 700; font-size: 0.9rem; text-decoration: none;
+            transition: all 0.3s;
+        }
+        .cta-btn:hover { filter: brightness(1.12); transform: translateY(-2px); }
+
+        .footer { text-align: center; padding: 30px 20px; font-size: 0.75rem; color: var(--text-dim); }
+        .footer a { color: var(--accent); text-decoration: none; }
+
+        @keyframes fadeIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+        .wall-item { animation: fadeIn 0.4s var(--ease) backwards; }
+    </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="wall-header">
+    <h1>🖼️ Muro de <span>{{ store.name }}</span></h1>
+    <p>Clientes reales probándose ropa con Inteligencia Artificial</p>
+    <div class="meta">
+        <a href="/tienda/{{ store.slug }}">👗 Ver tienda</a>
+        {% if store.instagram %}<a href="https://instagram.com/{{ store.instagram }}" target="_blank">📸 @{{ store.instagram }}</a>{% endif %}
+        {% if store.phone %}<a href="https://wa.me/{{ store.phone }}">💬 WhatsApp</a>{% endif %}
+    </div>
+</header>
+
+<div class="wall-stats">
+    <div class="wall-stat"><div class="num" id="totalPhotos">0</div><div class="label">Fotos</div></div>
+    <div class="wall-stat"><div class="num" id="totalCustomers">—</div><div class="label">Clientes</div></div>
+</div>
+
+<div class="container">
+    <div class="wall-grid" id="wallGrid"></div>
+
+    <div class="empty-wall" id="emptyWall" style="display:none;">
+        <div class="icon">🖼️</div>
+        <div class="title">El muro está en construcción</div>
+        <div class="text">Cuando los clientes se prueben ropa y autoricen mostrar su foto, aparecerán aquí como una galería de looks reales.</div>
+    </div>
+
+    <div class="cta-section">
+        <h3>¿Quieres aparecer en el muro? ✨</h3>
+        <p>Pruébate ropa con IA y desde tu closet autoriza mostrar tu foto</p>
+        <a href="/tienda/{{ store.slug }}" class="cta-btn">👗 Probarme ropa</a>
+    </div>
+</div>
+
+<footer class="footer">
+    Muro de {{ store.name }} · Probador virtual por <a href="/">Fashion TryOn</a>
+</footer>
+
+<script>
+const STORE_ID = '{{ store.id }}';
+
+async function loadWall() {
+    try {
+        const resp = await fetch(`/api/wall/${STORE_ID}`);
+        const data = await resp.json();
+        const results = data.results || [];
+
+        document.getElementById('totalPhotos').textContent = results.length;
+        const customers = new Set(results.map(r => r.customer_name));
+        document.getElementById('totalCustomers').textContent = customers.size;
+
+        if (results.length === 0) {
+            document.getElementById('emptyWall').style.display = 'block';
+            return;
+        }
+
+        const grid = document.getElementById('wallGrid');
+        grid.innerHTML = results.map((r, i) => {
+            const names = r.garments.map(g => g.name).join(' + ');
+            const date = r.created_at ? new Date(r.created_at).toLocaleDateString('es-CO', {day:'numeric', month:'short'}) : '';
+            return `
+            <div class="wall-item" style="animation-delay:${i * 0.06}s;">
+                <img src="${r.result_image}" alt="${r.customer_name}" loading="lazy">
+                <div class="caption">
+                    <div class="customer">👤 ${r.customer_name}</div>
+                    <div class="garments">${names}</div>
+                    <div class="date">${date}</div>
+                </div>
+            </div>`;
+        }).join('');
+    } catch(e) {
+        console.error(e);
+        document.getElementById('emptyWall').style.display = 'block';
+    }
+}
+
+loadWall();
+</script>
+</body>
+</html>

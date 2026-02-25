@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mi Closet | Fashion TryOn</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --bg: #08070c; --surface: #0f0e16; --card: #15141d;
+            --border: rgba(255,255,255,0.06);
+            --accent: #c9a55a; --accent-soft: rgba(201,165,90,0.12);
+            --white: #f0ece4; --text-mid: #8a8590; --text-dim: #4a4650;
+            --green: #4ade80; --green-soft: rgba(74,222,128,0.12);
+            --font-display: 'Inter', sans-serif;
+            --font-body: 'DM Sans', sans-serif;
+            --ease: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        body { font-family: var(--font-body); color: var(--white); background: var(--bg); min-height: 100vh; }
+
+        .header {
+            background: var(--surface); border-bottom: 1px solid var(--border);
+            padding: 16px 20px; display: flex; align-items: center; justify-content: space-between;
+            position: sticky; top: 0; z-index: 100; backdrop-filter: blur(20px);
+        }
+        .header-title { font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; }
+        .header-title span { color: var(--accent); }
+        .header-badge { font-size: 0.7rem; color: var(--text-mid); background: var(--card); padding: 4px 10px; border-radius: 8px; border: 1px solid var(--border); }
+
+        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+
+        .profile-card {
+            background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+            padding: 24px; margin-bottom: 24px; text-align: center;
+        }
+        .profile-avatar { width: 64px; height: 64px; background: var(--accent-soft); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; margin: 0 auto 12px; }
+        .profile-name { font-family: var(--font-display); font-size: 1.3rem; font-weight: 700; margin-bottom: 4px; }
+        .profile-meta { font-size: 0.8rem; color: var(--text-mid); }
+        .profile-stats { display: flex; justify-content: center; gap: 32px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+        .profile-stat .num { font-family: var(--font-display); font-size: 1.4rem; font-weight: 800; color: var(--accent); }
+        .profile-stat .label { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .section-label {
+            font-family: var(--font-display); font-size: 0.7rem; color: var(--accent);
+            text-transform: uppercase; letter-spacing: 2px; margin-bottom: 14px; font-weight: 700;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .section-label::before { content: ''; width: 16px; height: 1.5px; background: var(--accent); }
+
+        .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+        @media (max-width: 520px) { .results-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; } }
+
+        .result-card {
+            background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+            overflow: hidden; transition: all 0.3s var(--ease); position: relative;
+        }
+        .result-card:hover { border-color: rgba(255,255,255,0.12); transform: translateY(-3px); box-shadow: 0 12px 30px rgba(0,0,0,0.3); }
+        .result-card .img-wrap { width: 100%; aspect-ratio: 3/4; overflow: hidden; background: #111; position: relative; }
+        .result-card img { width: 100%; height: 100%; object-fit: cover; }
+        .result-card .store-tag {
+            position: absolute; top: 8px; left: 8px;
+            padding: 3px 10px; border-radius: 8px; font-size: 0.65rem; font-weight: 700;
+            color: #fff; backdrop-filter: blur(8px);
+        }
+        .result-card .info { padding: 10px 12px; }
+        .result-card .garment-names { font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; }
+        .result-card .date { font-size: 0.7rem; color: var(--text-dim); }
+
+        .result-card .actions { display: flex; gap: 6px; padding: 0 12px 10px; }
+        .result-card .action-btn {
+            flex: 1; padding: 7px; border-radius: 8px; border: 1px solid var(--border);
+            background: transparent; color: var(--text-mid); font-size: 0.7rem; font-weight: 600;
+            cursor: pointer; font-family: var(--font-body); transition: all 0.2s;
+        }
+        .result-card .action-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .result-card .action-btn.wall-active { background: var(--green-soft); border-color: var(--green); color: var(--green); }
+
+        .empty-state { text-align: center; padding: 60px 20px; }
+        .empty-icon { font-size: 3rem; margin-bottom: 16px; opacity: 0.3; }
+        .empty-title { font-family: var(--font-display); font-size: 1.1rem; margin-bottom: 8px; }
+        .empty-text { color: var(--text-mid); font-size: 0.85rem; }
+
+        .share-closet {
+            text-align: center; margin-top: 24px; padding: 20px;
+            background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+        }
+        .share-closet-title { font-size: 0.8rem; color: var(--text-mid); margin-bottom: 10px; }
+        .share-closet-link {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 10px 20px; background: var(--accent-soft); border: 1px solid rgba(201,165,90,0.2);
+            border-radius: 10px; color: var(--accent); font-size: 0.8rem; font-weight: 600;
+            cursor: pointer; font-family: var(--font-body); transition: all 0.2s;
+        }
+        .share-closet-link:hover { background: var(--accent); color: var(--bg); }
+
+        .toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 10px 20px; font-size: 0.8rem; z-index: 2000; opacity: 0; transition: all 0.4s; }
+        .toast.visible { transform: translateX(-50%) translateY(0); opacity: 1; }
+        .toast.success { border-color: var(--green); }
+    </style>
+</head>
+<body>
+
+<header class="header">
+    <div class="header-title">🗄️ Mi <span>Closet</span></div>
+    <div class="header-badge">{{ customer.name }}</div>
+</header>
+
+<div class="container">
+    <!-- Profile -->
+    <div class="profile-card" id="profileCard">
+        <div class="profile-avatar">👤</div>
+        <div class="profile-name">{{ customer.name }}</div>
+        <div class="profile-meta">
+            {% if customer.gender %}{{ customer.gender | capitalize }}{% endif %}
+            {% if customer.size %} · Talla {{ customer.size }}{% endif %}
+        </div>
+        <div class="profile-stats">
+            <div class="profile-stat"><div class="num" id="totalResults">0</div><div class="label">Pruebas</div></div>
+            <div class="profile-stat"><div class="num" id="totalStores">0</div><div class="label">Tiendas</div></div>
+            <div class="profile-stat"><div class="num" id="totalOnWall">0</div><div class="label">En muro</div></div>
+        </div>
+    </div>
+
+    <!-- Results -->
+    <div class="section-label">Mis pruebas virtuales</div>
+    <div class="results-grid" id="resultsGrid"></div>
+
+    <!-- Empty state -->
+    <div class="empty-state" id="emptyState" style="display:none;">
+        <div class="empty-icon">🗄️</div>
+        <div class="empty-title">Tu closet está vacío</div>
+        <div class="empty-text">Pruébate ropa en alguna tienda y tus resultados aparecerán aquí</div>
+    </div>
+
+    <!-- Share closet link -->
+    <div class="share-closet">
+        <div class="share-closet-title">Tu link personal — guárdalo para volver</div>
+        <button class="share-closet-link" onclick="copyClosetLink()">🔗 Copiar link de mi closet</button>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const TOKEN = '{{ customer.access_token }}';
+const CLOSET_URL = window.location.origin + '/mi-closet/' + TOKEN;
+
+async function loadResults() {
+    try {
+        const resp = await fetch(`/api/customer/${TOKEN}/results`);
+        const data = await resp.json();
+        const results = data.results || [];
+
+        document.getElementById('totalResults').textContent = results.length;
+        const stores = new Set(results.map(r => r.store_name).filter(Boolean));
+        document.getElementById('totalStores').textContent = stores.size;
+        document.getElementById('totalOnWall').textContent = results.filter(r => r.show_on_wall).length;
+
+        if (results.length === 0) {
+            document.getElementById('emptyState').style.display = 'block';
+            return;
+        }
+
+        const grid = document.getElementById('resultsGrid');
+        grid.innerHTML = results.map(r => {
+            const names = r.garments.map(g => g.name).join(' + ');
+            const date = r.created_at ? new Date(r.created_at).toLocaleDateString('es-CO', {day:'numeric',month:'short'}) : '';
+            return `
+            <div class="result-card">
+                <div class="img-wrap">
+                    <img src="${r.result_image}" alt="Try-on" loading="lazy">
+                    <div class="store-tag" style="background:${r.store_color || '#c9a55a'};">${r.store_name || 'Fashion TryOn'}</div>
+                </div>
+                <div class="info">
+                    <div class="garment-names">${names}</div>
+                    <div class="date">${date}</div>
+                </div>
+                <div class="actions">
+                    <a href="${r.share_url}" class="action-btn" style="text-decoration:none;text-align:center;">👁️ Ver</a>
+                    <button class="action-btn" onclick="shareResult('${r.share_url}')">📤 Compartir</button>
+                    <button class="action-btn ${r.show_on_wall ? 'wall-active' : ''}" onclick="toggleWall('${r.id}', this)" id="wall-${r.id}">
+                        ${r.show_on_wall ? '✅ En muro' : '🖼️ Muro'}
+                    </button>
+                </div>
+            </div>`;
+        }).join('');
+    } catch(e) {
+        console.error(e);
+        document.getElementById('emptyState').style.display = 'block';
+    }
+}
+
+async function toggleWall(resultId, btn) {
+    const isActive = btn.classList.contains('wall-active');
+    const newState = !isActive;
+    try {
+        const form = new FormData();
+        form.append('result_id', resultId);
+        form.append('show', newState ? 'true' : 'false');
+        const resp = await fetch(`/api/customer/${TOKEN}/wall-consent`, { method: 'POST', body: form });
+        const data = await resp.json();
+        if (data.success) {
+            btn.classList.toggle('wall-active', data.show_on_wall);
+            btn.innerHTML = data.show_on_wall ? '✅ En muro' : '🖼️ Muro';
+            toast(data.show_on_wall ? '¡Tu foto aparecerá en el muro de la tienda!' : 'Foto retirada del muro', 'success');
+            const count = document.querySelectorAll('.wall-active').length;
+            document.getElementById('totalOnWall').textContent = count;
+        }
+    } catch(e) { toast('Error actualizando', ''); }
+}
+
+function shareResult(url) {
+    const fullUrl = window.location.origin + url;
+    if (navigator.share) {
+        navigator.share({ title: '¡Mira cómo me queda!', url: fullUrl });
+    } else {
+        navigator.clipboard.writeText(fullUrl).then(() => toast('Link copiado', 'success'));
+    }
+}
+
+function copyClosetLink() {
+    navigator.clipboard.writeText(CLOSET_URL).then(() => toast('Link copiado — guárdalo para volver', 'success'));
+}
+
+function toast(msg, type) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.className = `toast visible ${type||''}`;
+    setTimeout(() => t.classList.remove('visible'), 3000);
+}
+
+loadResults();
+</script>
+</body>
+</html>

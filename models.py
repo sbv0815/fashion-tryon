@@ -1,5 +1,5 @@
 """
-Database models for Fashion Virtual Try-On + Admin Dashboard
+Database models for Fashion Virtual Try-On
 """
 from sqlalchemy import create_engine, Column, String, Float, DateTime, Text, Integer, Boolean
 from sqlalchemy.ext.declarative import declarative_base
@@ -29,8 +29,11 @@ class Store(Base):
     email = Column(String(200), nullable=True)
     address = Column(Text, nullable=True)
     instagram = Column(String(100), nullable=True)
-    website = Column(Text, nullable=True)
-    panel_password = Column(String(100), nullable=True)  # simple password for store panel
+    website = Column(String(300), nullable=True)
+    facebook = Column(String(200), nullable=True)
+    tiktok = Column(String(100), nullable=True)
+    twitter = Column(String(100), nullable=True)
+    panel_password = Column(String(100), nullable=True)
     active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -64,7 +67,9 @@ class TryOnResult(Base):
     gender = Column(String(20), nullable=True)
     size = Column(String(10), nullable=True)
     store_id = Column(String(20), nullable=True)
+    customer_id = Column(String(20), nullable=True)
     shared = Column(Boolean, default=False)
+    show_on_wall = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -77,6 +82,17 @@ class Client(Base):
     price_per_outfit = Column(Float, default=2000)
     price_per_video = Column(Float, default=5000)
     active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class CustomerProfile(Base):
+    __tablename__ = "customer_profiles"
+    id = Column(String(20), primary_key=True)
+    name = Column(String(200), nullable=False)
+    phone = Column(String(50), nullable=True)
+    access_token = Column(String(40), nullable=False, unique=True)
+    gender = Column(String(20), nullable=True)
+    size = Column(String(10), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -103,50 +119,46 @@ class AdminSettings(Base):
 
 
 class ShareLog(Base):
-    """Track when users share their try-on results on social media."""
     __tablename__ = "share_logs"
     id = Column(String(20), primary_key=True)
-    result_id = Column(String(20), nullable=False)
+    result_id = Column(String(20), nullable=True)
     garment_id = Column(String(20), nullable=True)
     store_id = Column(String(20), nullable=True)
-    platform = Column(String(30), nullable=False)  # instagram, whatsapp, tiktok, facebook, copy_link
+    platform = Column(String(30), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
 class TryOnView(Base):
-    """Track each time someone opens the try-on for a garment (from QR scan etc)."""
     __tablename__ = "tryon_views"
     id = Column(String(20), primary_key=True)
     garment_id = Column(String(20), nullable=False)
     store_id = Column(String(20), nullable=True)
-    source = Column(String(30), nullable=True)  # qr, collection_page, direct
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-
-class GarmentFeedback(Base):
-    """Customer feedback/rating after trying on a garment."""
-    __tablename__ = "garment_feedback"
-    id = Column(String(20), primary_key=True)
-    result_id = Column(String(20), nullable=False)
-    garment_id = Column(String(20), nullable=False)
-    store_id = Column(String(20), nullable=True)
-    rating = Column(Integer, nullable=False)  # 1-5 stars
-    comment = Column(Text, nullable=True)
-    would_buy = Column(Boolean, default=False)
+    source = Column(String(30), default="qr")
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
 class Collection(Base):
-    """A curated collection/lookbook for a store."""
     __tablename__ = "collections"
     id = Column(String(20), primary_key=True)
     store_id = Column(String(20), nullable=False)
     name = Column(String(200), nullable=False)
-    slug = Column(String(100), nullable=False)
+    slug = Column(String(150), nullable=False, unique=True)
     description = Column(Text, nullable=True)
     cover_color = Column(String(10), default="#1a1a1a")
+    garment_ids = Column(Text, nullable=True)
     active = Column(Boolean, default=True)
-    garment_ids = Column(Text, nullable=True)  # comma-separated garment IDs
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class GarmentFeedback(Base):
+    __tablename__ = "garment_feedback"
+    id = Column(String(20), primary_key=True)
+    result_id = Column(String(20), nullable=True)
+    garment_id = Column(String(20), nullable=True)
+    store_id = Column(String(20), nullable=True)
+    rating = Column(Integer, default=3)
+    comment = Column(Text, nullable=True)
+    would_buy = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -155,55 +167,39 @@ def init_db():
         Base.metadata.create_all(bind=engine, checkfirst=True)
     except Exception as e:
         print(f"Database tables may already exist: {e}")
-        pass
 
-    # Auto-migrate: add missing columns/tables
     try:
         from sqlalchemy import text, inspect
         insp = inspect(engine)
-        existing_tables = insp.get_table_names()
+        tables = insp.get_table_names()
 
-        # Create new tables if not exist
-        for table_name in ['stores', 'clients', 'usage_logs', 'admin_settings',
-                           'share_logs', 'tryon_views', 'collections', 'garment_feedback']:
-            if table_name not in existing_tables:
-                Base.metadata.tables[table_name].create(bind=engine)
-                print(f"Created {table_name} table")
-
-        # Check garments table for new columns
-        if 'garments' in existing_tables:
-            existing_cols = [c['name'] for c in insp.get_columns('garments')]
-            with engine.connect() as conn:
-                new_cols = {
-                    'image_data': 'TEXT', 'store_id': 'VARCHAR(20)',
-                    'reference': 'VARCHAR(100)', 'color': 'VARCHAR(50)',
-                    'material': 'VARCHAR(100)', 'tryon_enabled': 'BOOLEAN DEFAULT FALSE',
-                }
-                for col_name, col_type in new_cols.items():
-                    if col_name not in existing_cols:
-                        conn.execute(text(f"ALTER TABLE garments ADD COLUMN {col_name} {col_type}"))
+        def add_col(table, column, col_type):
+            if table in tables:
+                existing = [c['name'] for c in insp.get_columns(table)]
+                if column not in existing:
+                    with engine.connect() as conn:
+                        conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {col_type}"))
                         conn.commit()
-                        print(f"Added {col_name} column to garments")
+                    print(f"  Added {table}.{column}")
 
-        # Check tryon_results for new columns
-        if 'tryon_results' in existing_tables:
-            existing_cols = [c['name'] for c in insp.get_columns('tryon_results')]
-            with engine.connect() as conn:
-                for col_name, col_type in {'store_id': 'VARCHAR(20)', 'shared': 'BOOLEAN DEFAULT FALSE'}.items():
-                    if col_name not in existing_cols:
-                        conn.execute(text(f"ALTER TABLE tryon_results ADD COLUMN {col_name} {col_type}"))
-                        conn.commit()
-                        print(f"Added {col_name} to tryon_results")
+        add_col('stores', 'facebook', 'VARCHAR(200)')
+        add_col('stores', 'tiktok', 'VARCHAR(100)')
+        add_col('stores', 'twitter', 'VARCHAR(100)')
+        add_col('tryon_results', 'customer_id', 'VARCHAR(20)')
+        add_col('tryon_results', 'show_on_wall', 'BOOLEAN DEFAULT FALSE')
+        add_col('tryon_results', 'shared', 'BOOLEAN DEFAULT FALSE')
+        add_col('garments', 'image_data', 'TEXT')
+        add_col('garments', 'store_id', 'VARCHAR(20)')
+        add_col('garments', 'reference', 'VARCHAR(100)')
+        add_col('garments', 'color', 'VARCHAR(50)')
+        add_col('garments', 'material', 'VARCHAR(100)')
+        add_col('garments', 'tryon_enabled', 'BOOLEAN DEFAULT FALSE')
 
-        # Check stores for new columns
-        if 'stores' in existing_tables:
-            existing_cols = [c['name'] for c in insp.get_columns('stores')]
-            with engine.connect() as conn:
-                for col_name, col_type in {'instagram': 'VARCHAR(100)', 'website': 'TEXT', 'panel_password': 'VARCHAR(100)'}.items():
-                    if col_name not in existing_cols:
-                        conn.execute(text(f"ALTER TABLE stores ADD COLUMN {col_name} {col_type}"))
-                        conn.commit()
-                        print(f"Added {col_name} to stores")
+        for tname in ['customer_profiles', 'share_logs', 'tryon_views',
+                      'collections', 'garment_feedback', 'stores']:
+            if tname not in tables and tname in Base.metadata.tables:
+                Base.metadata.tables[tname].create(bind=engine)
+                print(f"  Created table {tname}")
 
     except Exception as e:
         print(f"Migration note: {e}")
