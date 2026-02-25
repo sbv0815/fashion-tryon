@@ -2,2006 +2,451 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fashion TryOn - Probador Virtual</title>
-
-    <!-- PWA -->
-    <link rel="manifest" href="/static/manifest.json">
-    <meta name="theme-color" content="#c9a55a">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="FashionTryOn">
-    <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fashion TryOn | Probador Virtual con IA para Tiendas de Ropa</title>
+    <meta name="description" content="Fashion TryOn - Probador virtual con Inteligencia Artificial. Tus clientes se prueban la ropa desde su celular. Aumenta ventas, reduce devoluciones.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         :root {
-            --bg-primary: #0a0a0a;
-            --bg-secondary: #141414;
-            --bg-card: #1a1a1a;
-            --bg-card-hover: #222;
-            --accent: #c9a55a;
-            --accent-glow: rgba(201, 165, 90, 0.15);
-            --accent-light: #e4c97b;
-            --text-primary: #f0ece4;
-            --text-secondary: #8a8578;
-            --text-muted: #5a564e;
-            --border: #2a2824;
-            --border-light: #3a3630;
-            --danger: #c44;
-            --success: #5a9;
-            --radius: 12px;
-            --radius-sm: 8px;
-            --shadow: 0 4px 30px rgba(0,0,0,0.4);
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            font-family: 'DM Sans', sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-
-        /* ===== HEADER ===== */
-        header {
-            background: linear-gradient(180deg, var(--bg-secondary) 0%, transparent 100%);
-            padding: 1.5rem 2rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 1px solid var(--border);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            backdrop-filter: blur(20px);
-        }
-
-        .logo {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.6rem;
-            font-weight: 700;
-            color: var(--accent);
-            letter-spacing: 2px;
-        }
-        .logo span { color: var(--text-primary); font-weight: 400; }
-
-        .credits-badge {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            padding: 0.4rem 1rem;
-            border-radius: 50px;
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-        }
-        .credits-badge strong { color: var(--accent); }
-
-        /* ===== NAVIGATION STEPS ===== */
-        .steps-nav {
-            display: flex;
-            justify-content: center;
-            gap: 0;
-            padding: 2rem 2rem 0;
-            max-width: 900px;
-            margin: 0 auto;
-        }
-
-        .step-item {
-            display: flex;
-            align-items: center;
-            gap: 0.6rem;
-            padding: 0.8rem 1.5rem;
-            cursor: pointer;
-            position: relative;
-            transition: all 0.3s;
-            opacity: 0.4;
-        }
-        .step-item.active { opacity: 1; }
-        .step-item.completed { opacity: 0.7; }
-
-        .step-num {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            border: 2px solid var(--border-light);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.8rem;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-        .step-item.active .step-num {
-            background: var(--accent);
-            border-color: var(--accent);
-            color: var(--bg-primary);
-        }
-        .step-item.completed .step-num {
-            background: var(--success);
-            border-color: var(--success);
-            color: white;
-        }
-
-        .step-label {
-            font-size: 0.85rem;
-            font-weight: 500;
-        }
-
-        .step-connector {
-            width: 40px;
-            height: 2px;
-            background: var(--border);
-            align-self: center;
-        }
-
-        /* ===== MAIN CONTAINER ===== */
-        .main-container {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-
-        /* ===== SECTIONS ===== */
-        .section {
-            display: none;
-            animation: fadeIn 0.4s ease;
-        }
-        .section.active { display: block; }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .section-title {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.8rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-        }
-
-        .section-subtitle {
-            color: var(--text-secondary);
-            font-size: 0.95rem;
-            margin-bottom: 2rem;
-            font-weight: 300;
-        }
-
-        /* ===== CARDS ===== */
-        .card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 2rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .card-title {
-            font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            color: var(--accent);
-        }
-
-        /* ===== FORM ELEMENTS ===== */
-        .form-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.2rem;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.4rem;
-        }
-        .form-group.full { grid-column: 1 / -1; }
-
-        label {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        input, select {
-            background: var(--bg-primary);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            padding: 0.75rem 1rem;
-            color: var(--text-primary);
-            font-family: 'DM Sans', sans-serif;
-            font-size: 0.95rem;
-            transition: border-color 0.3s;
-        }
-        input:focus, select:focus {
-            outline: none;
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px var(--accent-glow);
-        }
-
-        /* ===== GENDER SELECTOR ===== */
-        .gender-selector {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .gender-option {
-            flex: 1;
-            padding: 1.5rem;
-            border: 2px solid var(--border);
-            border-radius: var(--radius);
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-            background: var(--bg-card);
-        }
-        .gender-option:hover { border-color: var(--border-light); }
-        .gender-option.selected {
-            border-color: var(--accent);
-            background: var(--accent-glow);
-        }
-        .gender-option .icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
-        .gender-option .label { font-weight: 600; font-size: 0.95rem; }
-
-        /* ===== SIZE RESULT ===== */
-        .size-result {
-            display: none;
-            text-align: center;
-            padding: 2rem;
-            background: linear-gradient(135deg, var(--accent-glow), transparent);
-            border: 1px solid var(--accent);
-            border-radius: var(--radius);
-            margin-top: 1.5rem;
-        }
-        .size-result.visible { display: block; }
-
-        .size-big {
-            font-family: 'Playfair Display', serif;
-            font-size: 4rem;
-            font-weight: 700;
-            color: var(--accent);
-            line-height: 1;
-        }
-
-        .size-label {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            margin-top: 0.5rem;
-        }
-
-        /* ===== UPLOAD AREA ===== */
-        .upload-zone {
-            border: 2px dashed var(--border-light);
-            border-radius: var(--radius);
-            padding: 3rem 2rem;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-            position: relative;
-            overflow: hidden;
-        }
-        .upload-zone:hover {
-            border-color: var(--accent);
-            background: var(--accent-glow);
-        }
-        .upload-zone.has-image {
-            padding: 0;
-            border-style: solid;
-            border-color: var(--accent);
-        }
-        .upload-zone input { display: none; }
-        .upload-zone .icon { font-size: 2.5rem; margin-bottom: 0.5rem; opacity: 0.5; }
-        .upload-zone .text { color: var(--text-secondary); font-size: 0.9rem; }
-        .upload-zone img {
-            width: 100%;
-            max-height: 200px;
-            object-fit: contain;
-            display: block;
-        }
-
-        /* ===== PHOTO GUIDE ===== */
-        .photo-guide-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-            margin-top: 1rem;
-        }
-        .guide-item {
-            padding: 1rem;
-            border-radius: var(--radius-sm);
-            border: 1px solid var(--border);
-        }
-        .guide-good { background: rgba(85, 170, 153, 0.08); border-color: rgba(85, 170, 153, 0.3); }
-        .guide-bad { background: rgba(204, 68, 68, 0.08); border-color: rgba(204, 68, 68, 0.3); }
-        .guide-icon { font-size: 1.5rem; margin-bottom: 0.3rem; }
-        .guide-label { font-weight: 600; font-size: 0.9rem; margin-bottom: 0.5rem; }
-        .guide-list { list-style: none; padding: 0; }
-        .guide-list li { font-size: 0.8rem; color: var(--text-secondary); padding: 3px 0; }
-        .guide-list li::before { content: "• "; color: var(--text-muted); }
-
-        /* ===== CAPTURE OPTIONS ===== */
-        .capture-options {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-            margin-top: 0.5rem;
-        }
-        .capture-btn {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 1.8rem 1rem;
-            border: 2px dashed var(--border-light);
-            border-radius: var(--radius);
-            background: var(--bg-primary);
-            cursor: pointer;
-            transition: all 0.3s;
-            text-align: center;
-            font-family: inherit;
-            color: var(--text-primary);
-        }
-        .capture-btn:hover, .capture-btn:active {
-            border-color: var(--accent);
-            background: var(--accent-glow);
-        }
-        .capture-icon { font-size: 2.2rem; margin-bottom: 0.5rem; }
-        .capture-label { font-weight: 600; font-size: 0.95rem; }
-        .capture-hint { font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.3rem; }
-
-        /* ===== PHOTO PREVIEW ===== */
-        .photo-preview-container {
-            margin-top: 1rem;
-            border: 2px solid var(--accent);
-            border-radius: var(--radius);
-            overflow: hidden;
-            background: var(--bg-primary);
-        }
-        .preview-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.6rem 1rem;
-            background: var(--accent-glow);
-            font-weight: 600;
-            font-size: 0.85rem;
-        }
-        .btn-retake {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            color: var(--accent);
-            padding: 0.3rem 0.8rem;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            cursor: pointer;
-            font-family: inherit;
-        }
-        .btn-retake:hover { background: var(--bg-card-hover); }
-        .photo-preview-img {
-            width: 100%;
-            max-height: 350px;
-            object-fit: contain;
-            display: block;
-        }
-
-        /* ===== VIDEO PREMIUM BADGE ===== */
-        .premium-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            background: linear-gradient(135deg, #c9a55a 0%, #e4c97b 100%);
-            color: #0a0a0a;
-            padding: 3px 10px;
-            border-radius: 6px;
-            font-size: 0.7rem;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-        }
-
-        /* ===== MOBILE RESPONSIVE ===== */
-        @media (max-width: 768px) {
-            header { padding: 0.8rem 1rem; }
-            .logo { font-size: 1.2rem; }
-            .credits-badge { font-size: 0.7rem; padding: 0.3rem 0.7rem; }
-
-            .steps-nav { padding: 1rem 0.5rem 0; gap: 0; }
-            .step-item .step-num { width: 28px; height: 28px; font-size: 0.75rem; }
-            .step-item .step-label { font-size: 0.65rem; }
-            .step-line { top: 14px; }
-
-            .container { padding: 0.5rem; }
-            .section { padding: 1rem; }
-            .section-title { font-size: 1.3rem; }
-            .section-subtitle { font-size: 0.8rem; }
-
-            .card { padding: 1rem; margin-bottom: 0.8rem; }
-            .card-title { font-size: 0.95rem; }
-
-            .gender-selector { gap: 0.5rem; }
-            .gender-option { padding: 1rem 0.5rem; }
-            .gender-option .icon { font-size: 1.8rem; }
-            .gender-option .label { font-size: 0.8rem; }
-
-            .form-grid { grid-template-columns: 1fr; gap: 0.5rem; }
-            .form-group.full { grid-column: 1; }
-
-            .garments-grid { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
-            .garment-card img { height: 160px; }
-            .garment-info { padding: 0.5rem; }
-            .garment-info .name { font-size: 0.78rem; }
-            .garment-info .meta { font-size: 0.68rem; }
-
-            .photo-guide-grid { grid-template-columns: 1fr; gap: 0.5rem; }
-            .guide-item { padding: 0.8rem; }
-            .capture-options { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
-            .capture-btn { padding: 1.2rem 0.5rem; }
-            .capture-icon { font-size: 1.8rem; }
-            .capture-label { font-size: 0.85rem; }
-            .photo-preview-img { max-height: 280px; }
-
-            .btn { padding: 0.75rem 1.2rem; font-size: 0.85rem; }
-            .btn-row { flex-direction: column; gap: 0.5rem; }
-            .btn-row .btn { width: 100%; text-align: center; }
-
-            .outfit-summary { flex-direction: column; }
-            .outfit-slot { min-width: auto; }
-
-            .results-display {
-                grid-template-columns: 1fr !important;
-            }
-            .result-panel img, .result-panel video {
-                max-height: 400px;
-            }
-
-            .size-big { font-size: 3rem; }
-
-            .modal { width: 95vw; max-height: 85vh; padding: 1rem; margin: 0 auto; }
-            .modal-overlay { padding: 0.5rem; }
-
-            .upload-zone { padding: 1.5rem 1rem; }
-            .upload-zone .icon { font-size: 1.8rem; }
-            .upload-zone .text { font-size: 0.8rem; }
-        }
-
-        @media (max-width: 400px) {
-            .capture-options { grid-template-columns: 1fr; }
-            .garments-grid { grid-template-columns: repeat(2, 1fr); }
-        }
-
-        /* ===== GARMENT GRID ===== */
-        .garments-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 1rem;
-        }
-
-        .garment-card {
-            background: var(--bg-card);
-            border: 2px solid var(--border);
-            border-radius: var(--radius);
-            overflow: hidden;
-            cursor: pointer;
-            transition: all 0.3s;
-            position: relative;
-        }
-        .garment-card:hover {
-            border-color: var(--border-light);
-            transform: translateY(-2px);
-        }
-        .garment-card.selected {
-            border-color: var(--accent);
-            box-shadow: 0 0 20px var(--accent-glow);
-        }
-
-        .garment-card img {
-            width: 100%;
-            height: 220px;
-            object-fit: cover;
-            display: block;
-            pointer-events: none;
-        }
-
-        .garment-info {
-            padding: 0.8rem;
-            pointer-events: none;
-        }
-        .garment-info .name {
-            font-weight: 600;
-            font-size: 0.85rem;
-            margin-bottom: 0.2rem;
-        }
-        .garment-info .meta {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-        }
-        .garment-info .price {
-            color: var(--accent);
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-
-        .garment-check {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            width: 28px;
-            height: 28px;
-            background: var(--accent);
-            border-radius: 50%;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.85rem;
-            color: var(--bg-primary);
-            font-weight: 700;
-        }
-        .garment-card.selected .garment-check { display: flex; }
-
-        .garment-delete {
-            position: absolute;
-            top: 8px;
-            left: 8px;
-            width: 26px;
-            height: 26px;
-            background: rgba(204, 68, 68, 0.85);
-            border: none;
-            border-radius: 50%;
-            color: white;
-            font-size: 0.75rem;
-            cursor: pointer;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 5;
-            pointer-events: auto;
-            font-family: inherit;
-        }
-        .garment-card:hover .garment-delete { display: flex; }
-        @media (max-width: 768px) {
-            .garment-delete { display: flex; }
-        }
-
-        /* ===== OUTFIT SLOTS ===== */
-        .outfit-slot {
-            flex: 1;
-            min-width: 150px;
-            background: var(--bg-primary);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            padding: 0.8rem 1rem;
-            text-align: center;
-        }
-        .outfit-slot.filled {
-            border-color: var(--accent);
-            background: var(--accent-glow);
-        }
-        .outfit-slot-label {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 0.3rem;
-        }
-        .outfit-slot-content {
-            font-size: 0.9rem;
-            font-weight: 500;
-            color: var(--text-muted);
-        }
-        .outfit-slot.filled .outfit-slot-content {
-            color: var(--text-primary);
-        }
-
-        /* ===== BUTTONS ===== */
-        .btn {
-            padding: 0.85rem 2rem;
-            border: none;
-            border-radius: var(--radius-sm);
-            font-family: 'DM Sans', sans-serif;
-            font-size: 0.95rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .btn-primary {
-            background: var(--accent);
-            color: var(--bg-primary);
-        }
-        .btn-primary:hover {
-            background: var(--accent-light);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 15px rgba(201, 165, 90, 0.3);
-        }
-        .btn-primary:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .btn-secondary {
-            background: transparent;
-            color: var(--text-primary);
-            border: 1px solid var(--border-light);
-        }
-        .btn-secondary:hover { border-color: var(--text-secondary); }
-
-        .btn-outline {
-            background: transparent;
-            color: var(--accent);
-            border: 1px solid var(--accent);
-        }
-        .btn-outline:hover {
-            background: var(--accent-glow);
-        }
-
-        .btn-row {
-            display: flex;
-            gap: 1rem;
-            margin-top: 2rem;
-            justify-content: flex-end;
-        }
-
-        /* ===== RESULTS ===== */
-        .results-display {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 2rem;
-            margin-top: 2rem;
-        }
-
-        .result-panel {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            overflow: hidden;
-        }
-
-        .result-panel .panel-header {
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid var(--border);
-            font-weight: 600;
-            font-size: 0.85rem;
-            color: var(--accent);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .result-panel img, .result-panel video {
-            width: 100%;
-            display: block;
-        }
-
-        .result-panel .panel-footer {
-            padding: 1rem 1.5rem;
-            border-top: 1px solid var(--border);
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        /* ===== LOADER ===== */
-        .loader-overlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(10,10,10,0.9);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-        .loader-overlay.visible { display: flex; }
-
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 3px solid var(--border);
-            border-top-color: var(--accent);
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        .loader-text {
-            color: var(--text-secondary);
-            font-size: 0.95rem;
-        }
-
-        .loader-content {
-            text-align: center;
-            max-width: 300px;
-        }
-
-        .loader-progress {
-            width: 100%;
-            height: 4px;
-            background: var(--border);
-            border-radius: 4px;
-            margin-top: 16px;
-            overflow: hidden;
-        }
-
-        .loader-progress-bar {
-            height: 100%;
-            background: var(--accent);
-            border-radius: 4px;
-            width: 0%;
-            transition: width 0.5s ease;
-        }
-
-        /* ===== ADD GARMENT MODAL ===== */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(10,10,10,0.85);
-            z-index: 500;
-            justify-content: center;
-            align-items: center;
-        }
-        .modal-overlay.visible { display: flex; }
-
-        .modal {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            width: 90%;
-            max-width: 550px;
-            max-height: 85vh;
-            overflow-y: auto;
-            padding: 2rem;
-            box-shadow: var(--shadow);
-        }
-
-        .modal-title {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.3rem;
-            margin-bottom: 1.5rem;
-        }
-
-        /* ===== EMPTY STATE ===== */
-        .empty-state {
-            text-align: center;
-            padding: 4rem 2rem;
-            color: var(--text-muted);
-        }
-        .empty-state .icon { font-size: 3rem; margin-bottom: 1rem; }
-
-        /* ===== TOAST ===== */
-        .toast {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            padding: 1rem 1.5rem;
-            color: var(--text-primary);
-            font-size: 0.9rem;
-            z-index: 2000;
-            transform: translateY(100px);
-            opacity: 0;
-            transition: all 0.4s;
-        }
-        .toast.visible {
-            transform: translateY(0);
-            opacity: 1;
-        }
-        .toast.success { border-color: var(--success); }
-        .toast.error { border-color: var(--danger); }
+            --bg: #08070c; --surface: #0f0e16; --card: #15141d;
+            --border: rgba(255,255,255,0.06);
+            --gold: #c9a55a; --gold-soft: rgba(201,165,90,0.12); --gold-glow: rgba(201,165,90,0.25);
+            --white: #f0ece4; --white-pure: #ffffff;
+            --text: #f0ece4; --text-mid: #8a8590; --text-dim: #4a4650;
+            --green: #4ade80; --green-soft: rgba(74,222,128,0.12);
+            --font-display: 'Syne', sans-serif;
+            --font-body: 'DM Sans', sans-serif;
+            --ease: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        html { scroll-behavior: smooth; }
+        body { font-family: var(--font-body); color: var(--text); background: var(--bg); overflow-x: hidden; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+        a { text-decoration: none; transition: all 0.4s var(--ease); }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+        /* ===== NAVBAR ===== */
+        .navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; padding: 20px 0; transition: all 0.4s var(--ease); }
+        .navbar.scrolled { background: rgba(8,7,12,0.92); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); padding: 14px 0; border-bottom: 1px solid var(--border); }
+        .nav-inner { display: flex; align-items: center; justify-content: space-between; }
+        .nav-brand { font-family: var(--font-display); font-size: 1.3rem; font-weight: 700; color: var(--white); letter-spacing: 2px; text-transform: uppercase; }
+        .nav-brand span { color: var(--gold); font-weight: 800; }
+        .nav-links { display: flex; align-items: center; gap: 32px; list-style: none; }
+        .nav-links a { color: var(--text-mid); font-size: 0.9rem; font-weight: 500; position: relative; }
+        .nav-links a:hover { color: var(--white); }
+        .nav-links a::after { content: ''; position: absolute; bottom: -4px; left: 0; width: 0; height: 1.5px; background: var(--gold); transition: width 0.4s var(--ease); }
+        .nav-links a:hover::after { width: 100%; }
+        .nav-cta { padding: 10px 24px; background: var(--gold); color: var(--bg); font-weight: 700; font-size: 0.85rem; border-radius: 10px; letter-spacing: 0.5px; border: none; cursor: pointer; font-family: var(--font-body); }
+        .nav-cta:hover { filter: brightness(1.15); transform: translateY(-2px); box-shadow: 0 8px 24px var(--gold-glow); color: var(--bg); }
+        .nav-hamburger { display: none; flex-direction: column; gap: 5px; background: none; border: none; cursor: pointer; padding: 5px; }
+        .nav-hamburger span { display: block; width: 24px; height: 2px; background: var(--white); transition: all 0.3s; }
+
+        /* ===== HERO ===== */
+        .hero { position: relative; min-height: 100vh; display: flex; align-items: center; overflow: hidden; }
+        .hero-videos { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        .hero-videos video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 2s ease; }
+        .hero-videos video.active { opacity: 0.3; }
+        .hero-overlay { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(8,7,12,0.5) 0%, rgba(8,7,12,0.3) 40%, rgba(8,7,12,0.85) 100%); }
+        .hero-grain { position: absolute; inset: 0; opacity: 0.03; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+        .hero-content { position: relative; z-index: 2; max-width: 780px; padding: 160px 0 120px; }
+        .hero-tag { display: inline-flex; align-items: center; gap: 10px; background: var(--gold-soft); border: 1px solid rgba(201,165,90,0.2); padding: 8px 20px; border-radius: 50px; font-family: var(--font-display); font-size: 0.75rem; color: var(--gold); margin-bottom: 32px; letter-spacing: 2px; text-transform: uppercase; font-weight: 600; }
+        .hero-tag .dot { width: 7px; height: 7px; background: var(--gold); border-radius: 50%; animation: pulse-dot 2s infinite; }
+        @keyframes pulse-dot { 0%,100%{opacity:1}50%{opacity:0.3} }
+        .hero h1 { font-family: var(--font-display); font-size: clamp(2.6rem, 5.5vw, 4.2rem); font-weight: 800; line-height: 1.08; margin-bottom: 28px; letter-spacing: -1.5px; color: var(--white); }
+        .hero h1 .gold { background: linear-gradient(135deg, var(--gold), #e8c56d); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .hero-desc { font-size: 1.15rem; color: var(--text-mid); max-width: 560px; margin-bottom: 44px; font-weight: 300; line-height: 1.8; }
+        .hero-buttons { display: flex; gap: 14px; flex-wrap: wrap; }
+        .btn-gold { display: inline-flex; align-items: center; gap: 10px; padding: 16px 36px; background: var(--gold); color: var(--bg); font-weight: 700; font-size: 0.95rem; border-radius: 12px; border: none; cursor: pointer; font-family: var(--font-body); letter-spacing: 0.3px; }
+        .btn-gold:hover { filter: brightness(1.12); transform: translateY(-3px); box-shadow: 0 16px 40px var(--gold-glow); color: var(--bg); }
+        .btn-outline { display: inline-flex; align-items: center; gap: 10px; padding: 16px 36px; background: transparent; color: var(--white); font-weight: 600; font-size: 0.95rem; border-radius: 12px; border: 1.5px solid rgba(255,255,255,0.15); cursor: pointer; font-family: var(--font-body); }
+        .btn-outline:hover { border-color: var(--gold); color: var(--gold); transform: translateY(-3px); }
+        .hero-stats { display: flex; gap: 50px; margin-top: 72px; padding-top: 40px; border-top: 1px solid rgba(255,255,255,0.06); }
+        .hero-stat .number { font-family: var(--font-display); font-size: 2rem; font-weight: 800; color: var(--white); display: block; line-height: 1; }
+        .hero-stat .label { font-size: 0.85rem; color: var(--text-dim); margin-top: 6px; }
+        .scroll-indicator { position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%); z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        .scroll-indicator span { font-size: 0.7rem; color: var(--text-dim); font-family: var(--font-display); text-transform: uppercase; letter-spacing: 3px; }
+        .scroll-line { width: 1px; height: 36px; background: linear-gradient(to bottom, var(--gold), transparent); animation: scroll-pulse 2s infinite; }
+        @keyframes scroll-pulse { 0%{transform:scaleY(0);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}51%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom} }
+
+        /* ===== SECTIONS COMMON ===== */
+        .section-label { display: inline-flex; align-items: center; gap: 10px; font-family: var(--font-display); font-size: 0.75rem; color: var(--gold); text-transform: uppercase; letter-spacing: 3px; margin-bottom: 20px; font-weight: 700; }
+        .section-label::before { content: ''; width: 28px; height: 1.5px; background: var(--gold); }
+
+        /* ===== HOW IT WORKS ===== */
+        .how-section { padding: 120px 0; background: var(--surface); position: relative; }
+        .how-header { text-align: center; max-width: 600px; margin: 0 auto 70px; }
+        .how-header h2 { font-family: var(--font-display); font-size: 2.6rem; color: var(--white); margin-bottom: 16px; letter-spacing: -1px; font-weight: 800; }
+        .how-header p { font-size: 1.05rem; color: var(--text-mid); }
+        .how-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
+        .how-card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 40px 32px; transition: all 0.4s var(--ease); position: relative; overflow: hidden; }
+        .how-card:hover { border-color: rgba(201,165,90,0.2); transform: translateY(-6px); box-shadow: 0 24px 60px rgba(0,0,0,0.25); }
+        .how-card .step-num { font-family: var(--font-display); font-size: 4rem; font-weight: 800; color: rgba(201,165,90,0.08); position: absolute; top: 16px; right: 24px; line-height: 1; }
+        .how-card .icon { width: 56px; height: 56px; background: var(--gold-soft); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; margin-bottom: 20px; }
+        .how-card h3 { font-family: var(--font-display); font-size: 1.15rem; color: var(--white); margin-bottom: 10px; font-weight: 700; }
+        .how-card p { font-size: 0.9rem; color: var(--text-mid); line-height: 1.7; }
+
+        /* ===== BENEFITS ===== */
+        .benefits-section { padding: 120px 0; background: var(--bg); }
+        .benefits-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
+        .benefits-title { font-family: var(--font-display); font-size: 2.6rem; color: var(--white); margin-bottom: 24px; letter-spacing: -1px; font-weight: 800; }
+        .benefits-title .gold { color: var(--gold); }
+        .benefits-text { font-size: 1.05rem; color: var(--text-mid); line-height: 1.8; margin-bottom: 20px; }
+        .benefit-list { list-style: none; padding: 0; margin: 32px 0 0; }
+        .benefit-list li { display: flex; align-items: flex-start; gap: 16px; padding: 14px 0; }
+        .benefit-list .check { width: 28px; height: 28px; background: var(--gold-soft); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--gold); font-size: 0.8rem; flex-shrink: 0; font-weight: 700; margin-top: 2px; }
+        .benefit-list .text h4 { font-family: var(--font-display); font-size: 1rem; color: var(--white); margin-bottom: 4px; font-weight: 600; }
+        .benefit-list .text p { font-size: 0.88rem; color: var(--text-mid); margin: 0; line-height: 1.6; }
+        .benefits-visual { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .benefit-stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 30px 24px; text-align: center; transition: all 0.4s var(--ease); }
+        .benefit-stat-card:hover { border-color: rgba(201,165,90,0.2); transform: translateY(-4px); }
+        .benefit-stat-card .emoji { font-size: 2.4rem; margin-bottom: 12px; display: block; }
+        .benefit-stat-card .big { font-family: var(--font-display); font-size: 1.8rem; font-weight: 800; color: var(--gold); display: block; margin-bottom: 4px; }
+        .benefit-stat-card .desc { font-size: 0.82rem; color: var(--text-mid); }
+        .benefit-stat-card:nth-child(2) { margin-top: 32px; }
+        .benefit-stat-card:nth-child(3) { margin-top: -32px; }
+
+        /* ===== STORES / TIENDAS ===== */
+        .stores-section { padding: 120px 0; background: var(--surface); }
+        .stores-header { text-align: center; max-width: 600px; margin: 0 auto 60px; }
+        .stores-header h2 { font-family: var(--font-display); font-size: 2.6rem; color: var(--white); margin-bottom: 16px; letter-spacing: -1px; font-weight: 800; }
+        .stores-header p { font-size: 1.05rem; color: var(--text-mid); }
+        .stores-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .store-tile { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 28px 24px; transition: all 0.4s var(--ease); cursor: pointer; position: relative; overflow: hidden; }
+        .store-tile:hover { border-color: rgba(201,165,90,0.25); transform: translateY(-5px); box-shadow: 0 20px 50px rgba(0,0,0,0.2); }
+        .store-tile .store-color { position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+        .store-tile .store-name { font-family: var(--font-display); font-size: 1.15rem; font-weight: 700; color: var(--white); margin-bottom: 6px; }
+        .store-tile .store-meta { font-size: 0.82rem; color: var(--text-mid); margin-bottom: 16px; }
+        .store-tile .store-garments { display: inline-flex; align-items: center; gap: 6px; background: var(--gold-soft); color: var(--gold); padding: 4px 12px; border-radius: 8px; font-size: 0.78rem; font-weight: 600; }
+        .store-tile .store-enter { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: var(--white); font-size: 0.85rem; font-weight: 600; margin-top: 16px; width: 100%; justify-content: center; transition: all 0.3s; }
+        .store-tile .store-enter:hover { background: var(--gold); color: var(--bg); border-color: var(--gold); }
+        .stores-empty { text-align: center; padding: 60px 20px; color: var(--text-dim); font-size: 1rem; }
+
+        /* ===== CTA SECTION ===== */
+        .cta-section { padding: 120px 0; background: var(--bg); position: relative; overflow: hidden; }
+        .cta-box { background: linear-gradient(135deg, var(--card), rgba(201,165,90,0.06)); border: 1px solid rgba(201,165,90,0.15); border-radius: 28px; padding: 70px 60px; text-align: center; position: relative; }
+        .cta-box h2 { font-family: var(--font-display); font-size: 2.4rem; color: var(--white); margin-bottom: 16px; font-weight: 800; letter-spacing: -1px; }
+        .cta-box p { font-size: 1.05rem; color: var(--text-mid); max-width: 500px; margin: 0 auto 36px; }
+        .cta-buttons { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+
+        /* ===== FOOTER ===== */
+        .footer { background: var(--surface); padding: 50px 0 30px; border-top: 1px solid var(--border); }
+        .footer-inner { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; }
+        .footer-brand { font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; color: var(--white); letter-spacing: 2px; }
+        .footer-brand span { color: var(--gold); }
+        .footer-text { font-size: 0.8rem; color: var(--text-dim); }
+        .footer-links { display: flex; gap: 24px; }
+        .footer-links a { color: var(--text-mid); font-size: 0.85rem; }
+        .footer-links a:hover { color: var(--gold); }
+
+        /* ===== LOGIN MODAL ===== */
+        .login-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 2000; opacity: 0; pointer-events: none; transition: all 0.3s; }
+        .login-overlay.active { opacity: 1; pointer-events: all; }
+        .login-box { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 40px; width: 380px; max-width: 90vw; transform: translateY(20px); transition: all 0.4s var(--ease); }
+        .login-overlay.active .login-box { transform: translateY(0); }
+        .login-box h3 { font-family: var(--font-display); font-size: 1.4rem; color: var(--white); margin-bottom: 8px; font-weight: 700; }
+        .login-box .sub { font-size: 0.9rem; color: var(--text-mid); margin-bottom: 28px; }
+        .login-box input { width: 100%; padding: 14px 16px; background: var(--bg); border: 1.5px solid rgba(255,255,255,0.08); border-radius: 10px; color: var(--white); font-family: var(--font-body); font-size: 0.95rem; margin-bottom: 14px; transition: all 0.3s; }
+        .login-box input:focus { outline: none; border-color: var(--gold); }
+        .login-box .login-btn { width: 100%; padding: 14px; background: var(--gold); color: var(--bg); border: none; border-radius: 10px; font-family: var(--font-body); font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: all 0.3s; }
+        .login-box .login-btn:hover { filter: brightness(1.1); }
+        .login-box .login-close { position: absolute; top: 16px; right: 16px; background: none; border: none; color: var(--text-mid); font-size: 1.2rem; cursor: pointer; }
+        .login-box .error { color: #f87171; font-size: 0.85rem; margin-bottom: 10px; display: none; }
+
+        /* ===== ANIMATIONS ===== */
+        .fade-up { opacity: 0; transform: translateY(40px); transition: opacity 0.8s ease, transform 0.8s ease; }
+        .fade-up.visible { opacity: 1; transform: translateY(0); }
+        .stagger-1 { transition-delay: 0.1s; } .stagger-2 { transition-delay: 0.2s; } .stagger-3 { transition-delay: 0.3s; } .stagger-4 { transition-delay: 0.4s; }
+
+        .back-to-top { position: fixed; bottom: 28px; right: 28px; width: 48px; height: 48px; background: var(--gold); color: var(--bg); border: none; border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0; transform: translateY(20px); transition: all 0.4s var(--ease); z-index: 900; font-size: 1.1rem; font-weight: 700; box-shadow: 0 8px 24px var(--gold-glow); }
+        .back-to-top.visible { opacity: 1; transform: translateY(0); }
 
         /* ===== RESPONSIVE ===== */
+        @media (max-width: 1024px) { .benefits-grid { grid-template-columns: 1fr; gap: 50px; } .how-grid { grid-template-columns: 1fr; } }
         @media (max-width: 768px) {
-            .form-grid { grid-template-columns: 1fr; }
-            .results-display { grid-template-columns: 1fr; }
-            .steps-nav { flex-wrap: wrap; gap: 0.5rem; }
-            .step-connector { display: none; }
-            .gender-selector { flex-direction: column; }
-            .garments-grid { grid-template-columns: repeat(2, 1fr); }
+            .nav-links { display: none; } .nav-hamburger { display: flex; }
+            .nav-links.open { display: flex; flex-direction: column; position: absolute; top: 100%; left: 0; right: 0; background: rgba(8,7,12,0.98); backdrop-filter: blur(20px); padding: 24px; gap: 18px; border-bottom: 1px solid var(--border); }
+            .hero-content { padding: 130px 0 80px; }
+            .hero-stats { flex-direction: column; gap: 20px; }
+            .scroll-indicator { display: none; }
+            .how-header h2, .benefits-title, .stores-header h2, .cta-box h2 { font-size: 2rem; }
+            .cta-box { padding: 40px 24px; }
+            .footer-inner { flex-direction: column; text-align: center; }
+            .benefits-visual { display: none; }
         }
     </style>
 </head>
 <body>
 
-<!-- HEADER -->
-<header>
-    <div class="logo">FASHION<span>TryOn</span></div>
-    <div class="credits-badge">Créditos FASHN: <strong id="credits-count">—</strong></div>
-    <a href="/admin" class="credits-badge" style="text-decoration:none; margin-left:4px; cursor:pointer;">⚙️ Admin</a>
-</header>
-
-<!-- STEPS NAVIGATION -->
-<div class="steps-nav">
-    <div class="step-item active" data-step="1" onclick="goToStep(1)">
-        <div class="step-num">1</div>
-        <span class="step-label">Tu perfil</span>
-    </div>
-    <div class="step-connector"></div>
-    <div class="step-item" data-step="2" onclick="goToStep(2)">
-        <div class="step-num">2</div>
-        <span class="step-label">Elegir prendas</span>
-    </div>
-    <div class="step-connector"></div>
-    <div class="step-item" data-step="3" onclick="goToStep(3)">
-        <div class="step-num">3</div>
-        <span class="step-label">Tu foto</span>
-    </div>
-    <div class="step-connector"></div>
-    <div class="step-item" data-step="4" onclick="goToStep(4)">
-        <div class="step-num">4</div>
-        <span class="step-label">Resultado</span>
-    </div>
-</div>
-
-<div class="main-container">
-
-    <!-- ==================== STEP 1: PROFILE ==================== -->
-    <div class="section active" id="step-1">
-        <h2 class="section-title">¿Cómo eres?</h2>
-        <p class="section-subtitle">Selecciona tu género y medidas para encontrar tu talla ideal</p>
-
-        <div class="card">
-            <div class="card-title">Género</div>
-            <div class="gender-selector">
-                <div class="gender-option" data-gender="mujer" onclick="selectGender('mujer')">
-                    <div class="icon">👩</div>
-                    <div class="label">Mujer</div>
-                </div>
-                <div class="gender-option" data-gender="hombre" onclick="selectGender('hombre')">
-                    <div class="icon">👨</div>
-                    <div class="label">Hombre</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="card-title">Medidas</div>
-            <div class="form-grid">
-                <div class="form-group">
-                    <label>Estatura (cm)</label>
-                    <input type="number" id="height" placeholder="165" min="100" max="220">
-                </div>
-                <div class="form-group">
-                    <label>Peso (kg)</label>
-                    <input type="number" id="weight" placeholder="65" min="30" max="200">
-                </div>
-            </div>
-
-            <div class="size-result" id="size-result">
-                <div class="size-label">Tu talla recomendada</div>
-                <div class="size-big" id="size-display">M</div>
-                <div class="size-label" id="size-measures"></div>
-            </div>
-        </div>
-
-        <div class="btn-row">
-            <button class="btn btn-primary" onclick="calculateSize()">
-                Calcular talla y continuar →
+<!-- NAVBAR -->
+<nav class="navbar" id="navbar">
+    <div class="container">
+        <div class="nav-inner">
+            <a href="#home" class="nav-brand">FASHION <span>TryOn</span></a>
+            <ul class="nav-links" id="navLinks">
+                <li><a href="#home">Inicio</a></li>
+                <li><a href="#como-funciona">Cómo funciona</a></li>
+                <li><a href="#beneficios">Beneficios</a></li>
+                <li><a href="#tiendas">Tiendas</a></li>
+                <li><a href="#" onclick="event.preventDefault();openLogin('admin')" class="nav-cta">Admin ✦</a></li>
+            </ul>
+            <button class="nav-hamburger" id="navHamburger" onclick="toggleNav()" aria-label="Menu">
+                <span></span><span></span><span></span>
             </button>
         </div>
     </div>
+</nav>
 
-    <!-- ==================== STEP 2: GARMENTS ==================== -->
-    <div class="section" id="step-2">
-        <h2 class="section-title">Arma tu outfit</h2>
-        <p class="section-subtitle">Selecciona una prenda superior, inferior, o un vestido/enterizo completo</p>
-
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:0.5rem;">
-            <div style="display:flex; gap:0.5rem;">
-                <button class="btn btn-secondary filter-btn active" data-filter="all" onclick="filterGarments('all')">Todas</button>
-                <button class="btn btn-secondary filter-btn" data-filter="tops" onclick="filterGarments('tops')">Tops</button>
-                <button class="btn btn-secondary filter-btn" data-filter="bottoms" onclick="filterGarments('bottoms')">Bottoms</button>
-                <button class="btn btn-secondary filter-btn" data-filter="one-pieces" onclick="filterGarments('one-pieces')">Vestidos</button>
+<!-- HERO -->
+<section class="hero" id="home">
+    <div class="hero-videos">
+        <video id="vid1" autoplay muted loop playsinline class="active"><source src="/static/pagina_inicio.mp4" type="video/mp4"></video>
+        <video id="vid2" muted loop playsinline><source src="/static/pagina_inicio1.mp4" type="video/mp4"></video>
+    </div>
+    <div class="hero-overlay"></div>
+    <div class="hero-grain"></div>
+    <div class="container">
+        <div class="hero-content">
+            <div class="hero-tag fade-up"><span class="dot"></span>Probador Virtual con Inteligencia Artificial</div>
+            <h1 class="fade-up stagger-1">Tus clientes se prueban<br>la ropa <span class="gold">desde su celular</span></h1>
+            <p class="hero-desc fade-up stagger-2">Tecnología de IA que permite a los compradores verse con tu ropa antes de comprar. Aumenta ventas, reduce devoluciones y lleva tu tienda al siguiente nivel.</p>
+            <div class="hero-buttons fade-up stagger-3">
+                <a href="#tiendas" class="btn-gold">Ver tiendas participantes →</a>
+                <a href="https://wa.me/573174352503?text=Hola%2C%20me%20interesa%20Fashion%20TryOn%20para%20mi%20tienda" target="_blank" class="btn-outline">Quiero activarlo 💬</a>
             </div>
-            <button class="btn btn-outline" onclick="openAddGarment()">
-                + Agregar prenda
-            </button>
-        </div>
-
-        <!-- Outfit selection summary -->
-        <div class="card" id="outfit-summary" style="display:none; margin-bottom:1.5rem;">
-            <div class="card-title">🧥 Tu outfit</div>
-            <div style="display:flex; gap:1.5rem; align-items:center; flex-wrap:wrap;">
-                <div id="outfit-top-slot" class="outfit-slot">
-                    <div class="outfit-slot-label">👕 Superior</div>
-                    <div class="outfit-slot-content">Sin seleccionar</div>
-                </div>
-                <div style="font-size:1.5rem; color:var(--text-muted);">+</div>
-                <div id="outfit-bottom-slot" class="outfit-slot">
-                    <div class="outfit-slot-label">👖 Inferior</div>
-                    <div class="outfit-slot-content">Sin seleccionar</div>
-                </div>
-                <div style="margin-left:auto;">
-                    <button class="btn btn-secondary" onclick="clearOutfit()" style="font-size:0.8rem;">✕ Limpiar</button>
-                </div>
+            <div class="hero-stats fade-up stagger-4">
+                <div class="hero-stat"><span class="number">✨ IA</span><span class="label">Inteligencia Artificial</span></div>
+                <div class="hero-stat"><span class="number">📱 QR</span><span class="label">Escanea y pruébate</span></div>
+                <div class="hero-stat"><span class="number">🇨🇴</span><span class="label">Hecho en Colombia</span></div>
             </div>
-        </div>
-
-        <div class="garments-grid" id="garments-grid">
-        </div>
-
-        <div class="btn-row">
-            <button class="btn btn-secondary" onclick="goToStep(1)">← Atrás</button>
-            <button class="btn btn-primary" id="btn-to-step3" disabled onclick="goToStep(3)">
-                Continuar con outfit →
-            </button>
         </div>
     </div>
+    <div class="scroll-indicator"><span>Scroll</span><div class="scroll-line"></div></div>
+</section>
 
-    <!-- ==================== STEP 3: PHOTO ==================== -->
-    <div class="section" id="step-3">
-        <h2 class="section-title">Tu foto</h2>
-        <p class="section-subtitle">Toma o sube una foto de cuerpo completo</p>
-
-        <!-- PHOTO GUIDE -->
-        <div class="card" id="photo-guide">
-            <div class="card-title">📋 Guía para la mejor foto</div>
-            <div class="photo-guide-grid">
-                <div class="guide-item guide-good">
-                    <div class="guide-icon">✅</div>
-                    <div class="guide-label">Así sí</div>
-                    <ul class="guide-list">
-                        <li>De cuerpo completo (cabeza a pies)</li>
-                        <li>De frente, postura natural</li>
-                        <li>Ropa ajustada al cuerpo</li>
-                        <li>Buena iluminación</li>
-                        <li>Fondo limpio o pared lisa</li>
-                    </ul>
-                </div>
-                <div class="guide-item guide-bad">
-                    <div class="guide-icon">❌</div>
-                    <div class="guide-label">Así no</div>
-                    <ul class="guide-list">
-                        <li>Foto cortada (sin piernas)</li>
-                        <li>De lado o sentado</li>
-                        <li>Ropa muy ancha u holgada</li>
-                        <li>Muy oscura o borrosa</li>
-                        <li>Fondo con mucho desorden</li>
-                    </ul>
-                </div>
-            </div>
+<!-- CÓMO FUNCIONA -->
+<section class="how-section" id="como-funciona">
+    <div class="container">
+        <div class="how-header">
+            <div class="section-label fade-up">Cómo funciona</div>
+            <h2 class="fade-up">Tres pasos simples</h2>
+            <p class="fade-up">Sin apps, sin descargas. Solo el celular del cliente.</p>
         </div>
-
-        <!-- CAMERA / UPLOAD OPTIONS -->
-        <div class="card" id="camera-card">
-            <div class="card-title">📸 Tu foto de cuerpo completo</div>
-
-            <!-- Option buttons -->
-            <div id="capture-options" style="display:flex; gap:0.75rem; margin-bottom:1rem;">
-                <button class="btn btn-primary" onclick="startLiveCamera()" style="flex:1; padding:1rem;">
-                    📷 Abrir cámara
-                </button>
-                <button class="btn btn-secondary" onclick="document.getElementById('model-photo-gallery').click()" style="flex:1; padding:1rem;">
-                    🖼️ Galería
-                </button>
+        <div class="how-grid">
+            <div class="how-card fade-up">
+                <div class="step-num">01</div>
+                <div class="icon">📱</div>
+                <h3>Escanea el QR</h3>
+                <p>Cada prenda tiene un código QR. El cliente lo escanea desde su celular y accede al probador virtual al instante.</p>
             </div>
-
-            <!-- Gallery input (no capture attribute) -->
-            <input type="file" id="model-photo-gallery" accept="image/*" onchange="handleGalleryPhoto(this)" style="display:none">
-
-            <!-- Live camera viewfinder - FULLSCREEN -->
-            <div id="camera-viewfinder" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; z-index:999; background:#000;">
-                <video id="camera-video" autoplay playsinline muted style="width:100%; height:100%; object-fit:cover;"></video>
-                
-                <!-- Guide overlay -->
-                <div style="position:absolute; top:0; left:0; right:0; bottom:0; pointer-events:none;">
-                    <div style="position:absolute; top:3%; left:5%; right:5%; bottom:12%; border:2px dashed rgba(201,165,90,0.5); border-radius:12px;"></div>
-                    <div style="position:absolute; top:0.5%; left:0; right:0; text-align:center; color:rgba(255,255,255,0.8); font-size:0.85rem; font-family:inherit; text-shadow:0 1px 4px rgba(0,0,0,0.8);">
-                        Ubica tu cuerpo completo dentro del recuadro
-                    </div>
-                </div>
-
-                <!-- Camera buttons - large and readable -->
-                <div style="position:absolute; bottom:0; left:0; right:0; padding:1.5rem 1rem 2.5rem; background:linear-gradient(transparent, rgba(0,0,0,0.85)); display:flex; justify-content:space-around; align-items:center;">
-                    <button onclick="switchCamera()" style="background:rgba(255,255,255,0.15); border:2px solid rgba(255,255,255,0.3); color:#fff; padding:14px 20px; border-radius:50px; cursor:pointer; font-family:inherit; font-size:1rem; font-weight:600; min-width:80px; text-align:center;">
-                        🔄<br><span style="font-size:0.75rem;">Voltear</span>
-                    </button>
-                    <button onclick="capturePhoto()" style="background:#c9a55a; border:3px solid #fff; color:#0a0a0a; padding:20px 30px; border-radius:50px; cursor:pointer; font-family:inherit; font-size:1.2rem; font-weight:700; min-width:120px; text-align:center; box-shadow:0 4px 15px rgba(0,0,0,0.4);">
-                        📸 Capturar
-                    </button>
-                    <button onclick="cancelCamera()" style="background:rgba(255,255,255,0.15); border:2px solid rgba(255,255,255,0.3); color:#fff; padding:14px 20px; border-radius:50px; cursor:pointer; font-family:inherit; font-size:1rem; font-weight:600; min-width:80px; text-align:center;">
-                        ✕<br><span style="font-size:0.75rem;">Cerrar</span>
-                    </button>
-                </div>
+            <div class="how-card fade-up stagger-1">
+                <div class="step-num">02</div>
+                <div class="icon">📸</div>
+                <h3>Toma una foto</h3>
+                <p>Se toma una foto de cuerpo completo o sube una desde su galería. La IA procesa la imagen en segundos.</p>
             </div>
-
-            <!-- Hidden canvas for capture -->
-            <canvas id="camera-canvas" style="display:none;"></canvas>
-
-            <!-- Photo preview -->
-            <div id="model-preview-container" class="photo-preview-container" style="display:none">
-                <div class="preview-header">
-                    <span>Tu foto</span>
-                    <button class="btn-retake" onclick="retakePhoto()">🔄 Cambiar foto</button>
-                </div>
-                <img id="model-preview-img" class="photo-preview-img" alt="Tu foto">
+            <div class="how-card fade-up stagger-2">
+                <div class="step-num">03</div>
+                <div class="icon">✨</div>
+                <h3>Ve cómo le queda</h3>
+                <p>La Inteligencia Artificial genera una imagen realista del cliente usando la prenda. Puede compartir, calificar o comprar por WhatsApp.</p>
             </div>
-        </div>
-
-        <div class="btn-row">
-            <button class="btn btn-secondary" onclick="goToStep(2)">← Atrás</button>
-            <button class="btn btn-primary" id="btn-generate" disabled onclick="generateTryOn()">
-                ✨ Generar prueba virtual
-            </button>
         </div>
     </div>
+</section>
 
-    <!-- ==================== STEP 4: RESULTS ==================== -->
-    <div class="section" id="step-4">
-        <h2 class="section-title">Tu look virtual</h2>
-        <p class="section-subtitle">Así te verías con las prendas seleccionadas</p>
-
-        <div id="results-container"></div>
-
-        <div class="btn-row">
-            <button class="btn btn-secondary" onclick="goToStep(2)">← Probar otras prendas</button>
-            <button class="btn btn-outline" onclick="goToStep(1)">🔄 Empezar de nuevo</button>
+<!-- BENEFICIOS -->
+<section class="benefits-section" id="beneficios">
+    <div class="container">
+        <div class="benefits-grid">
+            <div>
+                <div class="section-label fade-up">Para tu tienda</div>
+                <h2 class="benefits-title fade-up">Más ventas, menos <span class="gold">devoluciones</span></h2>
+                <p class="benefits-text fade-up">Tu tienda se diferencia con tecnología de punta que tus clientes aman. Y tú obtienes datos valiosos sobre qué prendas generan más interés.</p>
+                <ul class="benefit-list">
+                    <li class="fade-up"><span class="check">✓</span><div class="text"><h4>Experiencia única en tienda</h4><p>QR en cada prenda — el cliente se prueba sin hacer fila al vestier.</p></div></li>
+                    <li class="fade-up stagger-1"><span class="check">✓</span><div class="text"><h4>Marketing viral gratis</h4><p>Cada foto compartida en redes es publicidad orgánica para tu marca.</p></div></li>
+                    <li class="fade-up stagger-2"><span class="check">✓</span><div class="text"><h4>Analytics por prenda</h4><p>Sabes cuáles prendas generan más interés, calificación y compras.</p></div></li>
+                    <li class="fade-up stagger-3"><span class="check">✓</span><div class="text"><h4>Panel exclusivo para tu tienda</h4><p>Dashboard privado con estadísticas, feedback de clientes y ranking de productos.</p></div></li>
+                </ul>
+            </div>
+            <div class="benefits-visual fade-up">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                    <div class="benefit-stat-card"><span class="emoji">📉</span><span class="big">-40%</span><span class="desc">Menos devoluciones</span></div>
+                    <div class="benefit-stat-card" style="margin-top:32px;"><span class="emoji">📈</span><span class="big">+25%</span><span class="desc">Más conversión</span></div>
+                    <div class="benefit-stat-card" style="margin-top:-32px;"><span class="emoji">📱</span><span class="big">QR</span><span class="desc">Sin app, sin descarga</span></div>
+                    <div class="benefit-stat-card"><span class="emoji">⭐</span><span class="big">5.0</span><span class="desc">Rating de clientes</span></div>
+                </div>
+            </div>
         </div>
+    </div>
+</section>
+
+<!-- TIENDAS PARTICIPANTES -->
+<section class="stores-section" id="tiendas">
+    <div class="container">
+        <div class="stores-header">
+            <div class="section-label fade-up">Tiendas participantes</div>
+            <h2 class="fade-up">Explora nuestras tiendas</h2>
+            <p class="fade-up">Estas tiendas ya usan el probador virtual. Entra y pruébate su ropa.</p>
+        </div>
+        <div class="stores-grid" id="storesGrid">
+            <div class="stores-empty">Cargando tiendas...</div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+    <div class="container">
+        <div class="cta-box fade-up">
+            <h2>¿Quieres activar Fashion TryOn<br>en tu tienda?</h2>
+            <p>Contáctanos y en menos de 24 horas tu tienda estará activa con probador virtual IA.</p>
+            <div class="cta-buttons">
+                <a href="https://wa.me/573174352503?text=Hola%2C%20quiero%20activar%20Fashion%20TryOn%20para%20mi%20tienda" target="_blank" class="btn-gold">Contactar por WhatsApp 💬</a>
+                <a href="mailto:contacto@tscamp.co" class="btn-outline">contacto@tscamp.co</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+    <div class="container">
+        <div class="footer-inner">
+            <div class="footer-brand">FASHION <span>TryOn</span></div>
+            <div class="footer-links">
+                <a href="#como-funciona">Cómo funciona</a>
+                <a href="#beneficios">Beneficios</a>
+                <a href="#tiendas">Tiendas</a>
+                <a href="https://tscamp.co" target="_blank">TSCAMP SAS</a>
+            </div>
+            <div class="footer-text">© 2026 TSCAMP SAS · NIT 901565311-9 · Bogotá, Colombia</div>
+        </div>
+    </div>
+</footer>
+
+<!-- BACK TO TOP -->
+<button class="back-to-top" id="backToTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+<!-- LOGIN MODAL -->
+<div class="login-overlay" id="loginOverlay" onclick="if(event.target===this)closeLogin()">
+    <div class="login-box" style="position:relative;">
+        <button class="login-close" onclick="closeLogin()">✕</button>
+        <h3 id="loginTitle">Panel Admin</h3>
+        <p class="sub" id="loginSub">Ingresa tus credenciales</p>
+        <div class="error" id="loginError">Credenciales incorrectas</div>
+        <input type="password" id="loginPass" placeholder="Contraseña" onkeydown="if(event.key==='Enter')doLogin()">
+        <button class="login-btn" onclick="doLogin()">Ingresar →</button>
     </div>
 </div>
-
-<!-- ADD GARMENT MODAL -->
-<div class="modal-overlay" id="add-garment-modal">
-    <div class="modal">
-        <div class="modal-title">Agregar prenda al catálogo</div>
-        <form id="garment-form" onsubmit="submitGarment(event)">
-            <div class="form-grid">
-                <div class="form-group full">
-                    <label>Nombre de la prenda</label>
-                    <input type="text" id="g-name" placeholder="Ej: Camiseta estampada" required>
-                </div>
-                <div class="form-group">
-                    <label>Categoría</label>
-                    <select id="g-category" required>
-                        <option value="" disabled selected>Selecciona categoría...</option>
-                        <optgroup label="👕 Parte Superior (tops)">
-                            <option value="tops">Camiseta</option>
-                            <option value="tops">Camisa</option>
-                            <option value="tops">Buzo / Saco</option>
-                            <option value="tops">Blusa</option>
-                        </optgroup>
-                        <optgroup label="👖 Parte Inferior (bottoms)">
-                            <option value="bottoms">Pantalón</option>
-                            <option value="bottoms">Pantaloneta</option>
-                            <option value="bottoms">Falda</option>
-                        </optgroup>
-                        <optgroup label="👗 Cuerpo Completo">
-                            <option value="one-pieces">Vestido</option>
-                            <option value="one-pieces">Enterizo</option>
-                        </optgroup>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Género</label>
-                    <select id="g-gender" required>
-                        <option value="mujer">Mujer</option>
-                        <option value="hombre">Hombre</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Talla</label>
-                    <select id="g-size" required>
-                        <option value="S">S</option>
-                        <option value="M">M</option>
-                        <option value="L">L</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Precio (COP)</label>
-                    <input type="number" id="g-price" placeholder="59900" min="0">
-                </div>
-                <div class="form-group full">
-                    <label>Foto de la prenda (fondo blanco)</label>
-                    <div class="upload-zone" id="garment-upload-zone" onclick="document.getElementById('g-image').click()" style="padding:1.5rem;">
-                        <input type="file" id="g-image" accept="image/*" onchange="previewGarmentUpload(this)" required>
-                        <div class="icon">📷</div>
-                        <div class="text">Clic para subir foto de la prenda</div>
-                    </div>
-                </div>
-            </div>
-            <div class="btn-row">
-                <button type="button" class="btn btn-secondary" onclick="closeAddGarment()">Cancelar</button>
-                <button type="submit" class="btn btn-primary">Guardar prenda</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- LOADER -->
-<div class="loader-overlay" id="loader">
-    <div class="loader-content">
-        <div class="spinner"></div>
-        <div class="loader-text" id="loader-text">Generando tu prueba virtual...</div>
-        <div class="loader-progress">
-            <div class="loader-progress-bar" id="loader-bar"></div>
-        </div>
-        <div class="loader-step" id="loader-step" style="font-size:0.75rem; color:#8a8578; margin-top:8px;"></div>
-    </div>
-</div>
-
-<!-- TOAST -->
-<div class="toast" id="toast"></div>
 
 <script>
-    // ============================
-    // STATE
-    // ============================
-    let currentStep = 1;
-    let userProfile = { gender: null, size: null, measurements: {} };
-    let outfit = { top: null, bottom: null, onepiece: null };
-    let modelPhotoFile = null;
-    let catalog = [];
+// ===== NAV =====
+const navbar = document.getElementById('navbar');
+window.addEventListener('scroll', () => {
+    navbar.classList.toggle('scrolled', window.scrollY > 60);
+    document.getElementById('backToTop').classList.toggle('visible', window.scrollY > 500);
+});
+function toggleNav() { document.getElementById('navLinks').classList.toggle('open'); }
+document.querySelectorAll('.nav-links a').forEach(a => a.addEventListener('click', () => document.getElementById('navLinks').classList.remove('open')));
 
-    // Restore state after camera returns (Android kills PWA sometimes)
-    function saveState() {
-        try {
-            sessionStorage.setItem('ft_state', JSON.stringify({
-                step: currentStep,
-                profile: userProfile,
-                outfit: outfit
-            }));
-        } catch(e) {}
-    }
+// ===== SMOOTH SCROLL =====
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => { e.preventDefault(); const t = document.querySelector(a.getAttribute('href')); if(t) t.scrollIntoView({behavior:'smooth',block:'start'}); });
+});
 
-    function restoreState() {
-        try {
-            const saved = sessionStorage.getItem('ft_state');
-            if (saved) {
-                const s = JSON.parse(saved);
-                userProfile = s.profile || userProfile;
-                outfit = s.outfit || outfit;
-                if (s.step && s.step > 1) {
-                    // Restore to previous step (go to step 2 if was on 3, since photo is lost)
-                    const restoreStep = s.step >= 3 ? 3 : s.step;
-                    setTimeout(() => {
-                        goToStep(restoreStep);
-                        if (restoreStep === 3) {
-                            showToast('Toma tu foto nuevamente', '');
-                        }
-                    }, 300);
-                }
-            }
-        } catch(e) {}
-    }
+// ===== SCROLL ANIMATIONS =====
+const obs = new IntersectionObserver(entries => { entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); }); }, {threshold:0.1, rootMargin:'0px 0px -40px 0px'});
+document.querySelectorAll('.fade-up').forEach(el => obs.observe(el));
 
-    // ============================
-    // NAVIGATION
-    // ============================
-    function goToStep(step) {
-        // Validation
-        if (step === 2 && !userProfile.size) {
-            showToast('Primero calcula tu talla', 'error');
+// ===== VIDEO CROSSFADE =====
+const vids = [document.getElementById('vid1'), document.getElementById('vid2')];
+let currentVid = 0;
+setInterval(() => {
+    vids[currentVid].classList.remove('active');
+    currentVid = (currentVid + 1) % vids.length;
+    vids[currentVid].play();
+    vids[currentVid].classList.add('active');
+}, 8000);
+
+// ===== LOAD STORES =====
+async function loadStores() {
+    try {
+        const res = await fetch('/api/stores');
+        const stores = await res.json();
+        const grid = document.getElementById('storesGrid');
+        if (!stores || !stores.length) {
+            grid.innerHTML = '<div class="stores-empty">Próximamente — estamos activando las primeras tiendas.</div>';
             return;
         }
-        if (step === 3 && !outfit.top && !outfit.bottom && !outfit.onepiece) {
-            showToast('Selecciona al menos una prenda', 'error');
-            return;
-        }
-
-        currentStep = step;
-        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-        document.getElementById(`step-${step}`).classList.add('active');
-
-        document.querySelectorAll('.step-item').forEach(s => {
-            const sStep = parseInt(s.dataset.step);
-            s.classList.remove('active', 'completed');
-            if (sStep === step) s.classList.add('active');
-            else if (sStep < step) s.classList.add('completed');
-        });
-
-        if (step === 2) loadCatalog();
-        saveState();
-    }
-
-    // ============================
-    // STEP 1: PROFILE & SIZE
-    // ============================
-    function selectGender(gender) {
-        userProfile.gender = gender;
-        document.querySelectorAll('.gender-option').forEach(o => o.classList.remove('selected'));
-        document.querySelector(`[data-gender="${gender}"]`).classList.add('selected');
-    }
-
-    async function calculateSize() {
-        if (!userProfile.gender) {
-            showToast('Selecciona tu género', 'error');
-            return;
-        }
-        const height = parseFloat(document.getElementById('height').value);
-        const weight = parseFloat(document.getElementById('weight').value);
-        if (!height || !weight) {
-            showToast('Ingresa tu estatura y peso', 'error');
-            return;
-        }
-
-        const form = new FormData();
-        form.append('gender', userProfile.gender);
-        form.append('height_cm', height);
-        form.append('weight_kg', weight);
-
-        try {
-            const resp = await fetch('/api/estimate-size', { method: 'POST', body: form });
-            const data = await resp.json();
-
-            userProfile.size = data.estimated_size;
-            userProfile.measurements = data.measurements;
-
-            document.getElementById('size-display').textContent = data.estimated_size;
-            document.getElementById('size-measures').textContent =
-                `Estatura: ${data.measurements.height_cm}cm · Peso: ${data.measurements.weight_kg}kg`;
-            document.getElementById('size-result').classList.add('visible');
-
-            showToast(`Talla estimada: ${data.estimated_size}`, 'success');
-
-            setTimeout(() => goToStep(2), 800);
-        } catch (e) {
-            showToast('Error calculando talla', 'error');
-        }
-    }
-
-    // ============================
-    // STEP 2: GARMENTS
-    // ============================
-    async function loadCatalog() {
-        try {
-            // Load ALL garments for this gender (don't filter by size so user sees everything)
-            const resp = await fetch(`/api/catalog?gender=${userProfile.gender}`);
-            const data = await resp.json();
-            catalog = data.garments;
-
-            // If nothing found for this gender, try loading all
-            if (catalog.length === 0) {
-                const respAll = await fetch('/api/catalog');
-                const dataAll = await respAll.json();
-                catalog = dataAll.garments;
-            }
-
-            renderGarments(catalog);
-        } catch(e) {
-            console.error(e);
-        }
-    }
-
-    function renderGarments(items) {
-        const grid = document.getElementById('garments-grid');
-
-        if (items.length === 0) {
-            grid.innerHTML = `
-                <div class="empty-state">
-                    <div class="icon">👗</div>
-                    <p>Aún no hay prendas en el catálogo.</p>
-                    <p style="margin-top:0.5rem; font-size:0.85rem;">Haz clic en "Agregar prenda" para subir la primera.</p>
-                </div>
-            `;
-            return;
-        }
-
-        grid.innerHTML = items.map(g => {
-            const sizeMatch = g.size === userProfile.size;
-            const isSelected = g.id === outfit.top || g.id === outfit.bottom || g.id === outfit.onepiece;
-            const catIcon = g.category === 'tops' ? '👕' : g.category === 'bottoms' ? '👖' : '👗';
-            return `
-            <div class="garment-card ${isSelected ? 'selected' : ''}"
-                 data-id="${g.id}" data-category="${g.category}"
-                 onclick="toggleGarment('${g.id}')">
-                <div class="garment-check">✓</div>
-                <button class="garment-delete" onclick="event.stopPropagation(); deleteGarment('${g.id}', '${g.name}')" title="Eliminar prenda">✕</button>
-                <img src="${g.image_url}" alt="${g.name}" onerror="this.parentElement.style.opacity='0.5'; this.alt='⚠ Imagen no disponible'">
-                <div class="garment-info">
-                    <div class="name">${g.name}</div>
-                    <div class="meta">
-                        ${catIcon}
-                        <span style="color:${sizeMatch ? 'var(--success)' : 'var(--text-secondary)'}; font-weight:${sizeMatch ? '600' : '400'};">
-                            ${g.size} ${sizeMatch ? '✓ Tu talla' : ''}
-                        </span>
-                    </div>
-                    ${g.price ? `<div class="price">$${Number(g.price).toLocaleString('es-CO')}</div>` : ''}
-                </div>
+        grid.innerHTML = stores.map(s => `
+            <div class="store-tile fade-up">
+                <div class="store-color" style="background:${s.primary_color || 'var(--gold)'};"></div>
+                <div class="store-name">${s.name}</div>
+                <div class="store-meta">${s.instagram ? '@'+s.instagram+' · ' : ''}${s.address || 'Colombia'}</div>
+                <span class="store-garments">✨ ${s.garment_count || 0} prendas disponibles</span>
+                <a href="/tienda/${s.slug}" class="store-enter">Entrar a la tienda →</a>
             </div>
-        `}).join('');
+        `).join('');
+        // Re-observe new elements
+        grid.querySelectorAll('.fade-up').forEach(el => obs.observe(el));
+    } catch(e) {
+        document.getElementById('storesGrid').innerHTML = '<div class="stores-empty">Próximamente — estamos activando las primeras tiendas.</div>';
     }
+}
+loadStores();
 
-    function toggleGarment(id) {
-        const garment = catalog.find(g => g.id === id);
-        if (!garment) {
-            console.error('Garment not found:', id);
-            return;
-        }
+// ===== LOGIN =====
+let loginMode = 'admin'; // 'admin' or 'panel'
+let loginSlug = '';
 
-        console.log('Toggling garment:', garment.name, garment.category);
-        const category = garment.category;
-
-        if (category === 'one-pieces') {
-            // One-piece clears top and bottom
-            if (outfit.onepiece === id) {
-                outfit.onepiece = null;
-            } else {
-                outfit.onepiece = id;
-                outfit.top = null;
-                outfit.bottom = null;
-            }
-        } else if (category === 'tops') {
-            if (outfit.top === id) {
-                outfit.top = null;
-            } else {
-                outfit.top = id;
-                outfit.onepiece = null; // Clear onepiece if selecting top
-            }
-        } else if (category === 'bottoms') {
-            if (outfit.bottom === id) {
-                outfit.bottom = null;
-            } else {
-                outfit.bottom = id;
-                outfit.onepiece = null; // Clear onepiece if selecting bottom
-            }
-        }
-
-        updateOutfitUI();
+function openLogin(mode, slug) {
+    loginMode = mode;
+    loginSlug = slug || '';
+    const overlay = document.getElementById('loginOverlay');
+    document.getElementById('loginPass').value = '';
+    document.getElementById('loginError').style.display = 'none';
+    if (mode === 'admin') {
+        document.getElementById('loginTitle').textContent = 'Panel Admin';
+        document.getElementById('loginSub').textContent = 'Acceso exclusivo administrador';
+    } else {
+        document.getElementById('loginTitle').textContent = 'Panel de Tienda';
+        document.getElementById('loginSub').textContent = 'Ingresa la contraseña de tu tienda';
     }
+    overlay.classList.add('active');
+    setTimeout(() => document.getElementById('loginPass').focus(), 200);
+}
+function closeLogin() { document.getElementById('loginOverlay').classList.remove('active'); }
 
-    function clearOutfit() {
-        outfit = { top: null, bottom: null, onepiece: null };
-        updateOutfitUI();
-    }
-
-    function updateOutfitUI() {
-        const allSelected = [outfit.top, outfit.bottom, outfit.onepiece].filter(Boolean);
-
-        // Update card selections
-        document.querySelectorAll('.garment-card').forEach(c => {
-            c.classList.toggle('selected', allSelected.includes(c.dataset.id));
-        });
-
-        // Update outfit summary
-        const summary = document.getElementById('outfit-summary');
-        const hasSelection = allSelected.length > 0;
-        summary.style.display = hasSelection ? 'block' : 'none';
-
-        const topSlot = document.getElementById('outfit-top-slot');
-        const bottomSlot = document.getElementById('outfit-bottom-slot');
-
-        if (outfit.onepiece) {
-            const g = catalog.find(g => g.id === outfit.onepiece);
-            topSlot.classList.add('filled');
-            topSlot.querySelector('.outfit-slot-label').textContent = '👗 Vestido/Enterizo';
-            topSlot.querySelector('.outfit-slot-content').textContent = g?.name || '';
-            bottomSlot.style.display = 'none';
+async function doLogin() {
+    const pass = document.getElementById('loginPass').value;
+    if (loginMode === 'admin') {
+        // Simple admin check - you can customize this
+        if (pass === 'fashionadmin2026') {
+            window.location.href = '/admin';
         } else {
-            bottomSlot.style.display = '';
-            topSlot.querySelector('.outfit-slot-label').textContent = '👕 Superior';
-
-            if (outfit.top) {
-                const g = catalog.find(g => g.id === outfit.top);
-                topSlot.classList.add('filled');
-                topSlot.querySelector('.outfit-slot-content').textContent = g?.name || '';
-            } else {
-                topSlot.classList.remove('filled');
-                topSlot.querySelector('.outfit-slot-content').textContent = 'Sin seleccionar';
-            }
-
-            if (outfit.bottom) {
-                const g = catalog.find(g => g.id === outfit.bottom);
-                bottomSlot.classList.add('filled');
-                bottomSlot.querySelector('.outfit-slot-content').textContent = g?.name || '';
-            } else {
-                bottomSlot.classList.remove('filled');
-                bottomSlot.querySelector('.outfit-slot-content').textContent = 'Sin seleccionar';
-            }
+            document.getElementById('loginError').style.display = 'block';
         }
-
-        // Enable/disable continue button
-        document.getElementById('btn-to-step3').disabled = allSelected.length === 0;
-    }
-
-    function filterGarments(category) {
-        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        document.querySelector(`[data-filter="${category}"]`).classList.add('active');
-
-        if (category === 'all') renderGarments(catalog);
-        else renderGarments(catalog.filter(g => g.category === category));
-    }
-
-    // Add garment modal
-    function openAddGarment() {
-        document.getElementById('add-garment-modal').classList.add('visible');
-        // Pre-fill gender
-        if (userProfile.gender) {
-            document.getElementById('g-gender').value = userProfile.gender;
-        }
-        if (userProfile.size) {
-            document.getElementById('g-size').value = userProfile.size;
-        }
-    }
-
-    function closeAddGarment() {
-        document.getElementById('add-garment-modal').classList.remove('visible');
-        document.getElementById('garment-form').reset();
-        // Reset upload zone
-        const zone = document.getElementById('garment-upload-zone');
-        zone.classList.remove('has-image');
-        zone.innerHTML = `
-            <input type="file" id="g-image" accept="image/*" onchange="previewGarmentUpload(this)" required>
-            <div class="icon">📷</div>
-            <div class="text">Clic para subir foto de la prenda</div>
-        `;
-    }
-
-    function previewGarmentUpload(input) {
-        if (input.files && input.files[0]) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const zone = document.getElementById('garment-upload-zone');
-                zone.classList.add('has-image');
-                zone.innerHTML = `
-                    <input type="file" id="g-image" accept="image/*" onchange="previewGarmentUpload(this)" required>
-                    <img src="${e.target.result}" alt="Preview">
-                `;
-                zone.querySelector('input').files = input.files;
-            };
-            reader.readAsDataURL(input.files[0]);
-        }
-    }
-
-    async function submitGarment(event) {
-        event.preventDefault();
-        const form = new FormData();
-        form.append('name', document.getElementById('g-name').value);
-        form.append('category', document.getElementById('g-category').value);
-        form.append('gender', document.getElementById('g-gender').value);
-        form.append('size', document.getElementById('g-size').value);
-        form.append('price', document.getElementById('g-price').value || 0);
-        form.append('image', document.getElementById('g-image').files[0]);
-
+    } else {
+        // Store panel auth
         try {
-            showLoader('Subiendo prenda...');
-            const resp = await fetch('/api/upload-garment', { method: 'POST', body: form });
-            const data = await resp.json();
-            hideLoader();
-
+            const res = await fetch('/api/panel/auth', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: `store_slug=${loginSlug}&password=${pass}`
+            });
+            const data = await res.json();
             if (data.success) {
-                showToast(`"${data.garment.name}" agregada al catálogo`, 'success');
-                closeAddGarment();
-                loadCatalog();
-            }
-        } catch(e) {
-            hideLoader();
-            showToast('Error subiendo prenda', 'error');
-        }
-    }
-
-    // ============================
-    // STEP 3: CAMERA & PHOTO
-    // ============================
-    // ============================
-    // CAMERA: Live viewfinder (no input[capture] - avoids Android PWA crash)
-    // ============================
-    let cameraStream = null;
-    let useFrontCamera = false;
-
-    async function startLiveCamera() {
-        try {
-            // Stop any existing stream
-            if (cameraStream) {
-                cameraStream.getTracks().forEach(t => t.stop());
-            }
-
-            const constraints = {
-                video: {
-                    facingMode: useFrontCamera ? 'user' : 'environment',
-                    width: { ideal: 1280 },
-                    height: { ideal: 1920 }
-                },
-                audio: false
-            };
-
-            cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
-            const video = document.getElementById('camera-video');
-            video.srcObject = cameraStream;
-            await video.play();
-
-            document.getElementById('capture-options').style.display = 'none';
-            document.getElementById('photo-guide').style.display = 'none';
-            document.getElementById('camera-viewfinder').style.display = 'block';
-
-        } catch(err) {
-            console.error('Camera error:', err);
-            if (err.name === 'NotAllowedError') {
-                showToast('Permite el acceso a la cámara en los permisos del navegador', 'error');
+                window.location.href = `/panel/${loginSlug}`;
             } else {
-                showToast('No se pudo abrir la cámara. Usa la galería.', 'error');
-            }
-        }
-    }
-
-    function switchCamera() {
-        useFrontCamera = !useFrontCamera;
-        startLiveCamera();
-    }
-
-    function capturePhoto() {
-        const video = document.getElementById('camera-video');
-        const canvas = document.getElementById('camera-canvas');
-
-        if (!video.videoWidth || !video.videoHeight) {
-            showToast('La cámara no está lista, espera un momento', 'error');
-            return;
-        }
-
-        // Draw before stopping
-        let w = video.videoWidth, h = video.videoHeight;
-        const maxDim = 1200;
-        if (w > maxDim || h > maxDim) {
-            if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
-            else { w = Math.round(w * maxDim / h); h = maxDim; }
-        }
-        canvas.width = w;
-        canvas.height = h;
-        canvas.getContext('2d').drawImage(video, 0, 0, w, h);
-        stopCameraStream();
-
-        // Convert canvas to data URL, then to a real File (same as gallery)
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-        const byteString = atob(dataUrl.split(',')[1]);
-        const ab = new ArrayBuffer(byteString.length);
-        const ia = new Uint8Array(ab);
-        for (let i = 0; i < byteString.length; i++) {
-            ia[i] = byteString.charCodeAt(i);
-        }
-        const blob = new Blob([ab], { type: 'image/jpeg' });
-        const file = new File([blob], 'camera_photo.jpg', { type: 'image/jpeg', lastModified: Date.now() });
-
-        if (file.size > 100) {
-            modelPhotoFile = file;
-            document.getElementById('model-preview-img').src = dataUrl;
-            showPhotoPreview();
-            showToast(`Foto capturada ✓ (${(file.size/1024).toFixed(0)}KB)`, 'success');
-        } else {
-            showToast('Error capturando foto. Intenta de nuevo.', 'error');
-            document.getElementById('capture-options').style.display = 'flex';
-        }
-    }
-
-    function cancelCamera() {
-        stopCameraStream();
-        document.getElementById('camera-viewfinder').style.display = 'none';
-        document.getElementById('capture-options').style.display = 'flex';
-        document.getElementById('photo-guide').style.display = 'block';
-    }
-
-    function stopCameraStream() {
-        if (cameraStream) {
-            cameraStream.getTracks().forEach(t => t.stop());
-            cameraStream = null;
-        }
-        document.getElementById('camera-video').srcObject = null;
-        document.getElementById('camera-viewfinder').style.display = 'none';
-    }
-
-    // Gallery handler (file input, no capture attribute)
-    function handleGalleryPhoto(input) {
-        if (!input.files || !input.files[0]) return;
-        const file = input.files[0];
-        if (!file.type.startsWith('image/')) {
-            showToast('Selecciona una imagen', 'error');
-            return;
-        }
-        showToast('Procesando foto...', '');
-        compressImage(file, 1200, 0.85).then(compressed => {
-            modelPhotoFile = compressed;
-            document.getElementById('model-preview-img').src = URL.createObjectURL(compressed);
-            showPhotoPreview();
-            showToast('Foto lista ✓', 'success');
-        }).catch(() => {
-            modelPhotoFile = file;
-            document.getElementById('model-preview-img').src = URL.createObjectURL(file);
-            showPhotoPreview();
-            showToast('Foto cargada ✓', 'success');
-        });
-    }
-
-    function showPhotoPreview() {
-        document.getElementById('model-preview-container').style.display = 'block';
-        document.getElementById('capture-options').style.display = 'none';
-        document.getElementById('camera-viewfinder').style.display = 'none';
-        document.getElementById('photo-guide').style.display = 'none';
-        document.getElementById('btn-generate').disabled = false;
-    }
-
-    function compressImage(file, maxDim, quality) {
-        return new Promise((resolve, reject) => {
-            const img = new Image();
-            img.onload = () => {
-                let w = img.width, h = img.height;
-                if (w > maxDim || h > maxDim) {
-                    if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
-                    else { w = Math.round(w * maxDim / h); h = maxDim; }
-                }
-                const canvas = document.createElement('canvas');
-                canvas.width = w; canvas.height = h;
-                canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                canvas.toBlob(blob => {
-                    if (blob) resolve(new File([blob], 'photo.jpg', { type: 'image/jpeg' }));
-                    else reject(new Error('toBlob failed'));
-                }, 'image/jpeg', quality);
-                URL.revokeObjectURL(img.src);
-            };
-            img.onerror = () => reject(new Error('Image load failed'));
-            img.src = URL.createObjectURL(file);
-        });
-    }
-
-    function retakePhoto() {
-        modelPhotoFile = null;
-        stopCameraStream();
-        document.getElementById('model-preview-container').style.display = 'none';
-        document.getElementById('capture-options').style.display = 'flex';
-        document.getElementById('photo-guide').style.display = 'block';
-        document.getElementById('btn-generate').disabled = true;
-        document.getElementById('model-photo-gallery').value = '';
-    }
-
-    // ============================
-    // STEP 4: GENERATE
-    // ============================
-    let progressTimer = null;
-
-    function startProgress(totalSeconds, steps) {
-        let elapsed = 0;
-        const bar = document.getElementById('loader-bar');
-        const stepEl = document.getElementById('loader-step');
-        bar.style.width = '5%';
-
-        progressTimer = setInterval(() => {
-            elapsed += 0.5;
-            const pct = Math.min(95, (elapsed / totalSeconds) * 100);
-            bar.style.width = pct + '%';
-
-            // Show step messages
-            if (steps.length === 2) {
-                if (elapsed < totalSeconds * 0.45) {
-                    stepEl.textContent = `👕 Probando ${steps[0]}...`;
-                } else if (elapsed < totalSeconds * 0.9) {
-                    stepEl.textContent = `👖 Probando ${steps[1]}...`;
-                } else {
-                    stepEl.textContent = '✨ Finalizando...';
-                }
-            } else {
-                if (elapsed < totalSeconds * 0.7) {
-                    stepEl.textContent = `👗 Probando ${steps[0]}...`;
-                } else {
-                    stepEl.textContent = '✨ Finalizando...';
-                }
-            }
-        }, 500);
-    }
-
-    function stopProgress() {
-        if (progressTimer) clearInterval(progressTimer);
-        progressTimer = null;
-        const bar = document.getElementById('loader-bar');
-        bar.style.width = '100%';
-        document.getElementById('loader-step').textContent = '✅ ¡Listo!';
-        setTimeout(hideLoader, 400);
-    }
-
-    function resetGenerateButton() {
-        const btn = document.getElementById('btn-generate');
-        btn.disabled = false;
-        btn.textContent = '✨ Generar prueba virtual';
-    }
-
-    async function generateTryOn(retryCount = 0) {
-        const btn = document.getElementById('btn-generate');
-        if (btn.disabled && retryCount === 0) return;
-
-        if (!modelPhotoFile) {
-            showToast('Primero toma o sube una foto', 'error');
-            return;
-        }
-        if (!modelPhotoFile.size || modelPhotoFile.size < 100) {
-            showToast('La foto no se capturó bien. Toma otra foto.', 'error');
-            retakePhoto();
-            return;
-        }
-        if (!outfit.top && !outfit.bottom && !outfit.onepiece) {
-            showToast('Selecciona al menos una prenda', 'error');
-            return;
-        }
-
-        btn.disabled = true;
-        btn.textContent = '⏳ Generando...';
-
-        const isOutfit = (outfit.top || outfit.bottom) && !outfit.onepiece;
-        const isSingle = outfit.onepiece;
-
-        const form = new FormData();
-        form.append('model_image', modelPhotoFile);
-        if (isOutfit) {
-            if (outfit.top) form.append('top_id', outfit.top);
-            if (outfit.bottom) form.append('bottom_id', outfit.bottom);
-        } else if (isSingle) {
-            form.append('onepiece_id', outfit.onepiece);
-        }
-
-        if (retryCount === 0) {
-            let steps = [];
-            if (outfit.top) steps.push(catalog.find(g => g.id === outfit.top)?.name || 'Superior');
-            if (outfit.bottom) steps.push(catalog.find(g => g.id === outfit.bottom)?.name || 'Inferior');
-            if (outfit.onepiece) steps.push(catalog.find(g => g.id === outfit.onepiece)?.name || 'Prenda');
-            const estTime = steps.length * 8;
-            showLoader('Generando tu outfit...');
-            startProgress(estTime, steps);
-        }
-
-        try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 180000);
-            const resp = await fetch('/api/try-on-outfit', { method: 'POST', body: form, signal: controller.signal });
-            clearTimeout(timeoutId);
-
-            if (!resp.ok) {
-                if (retryCount < 2) {
-                    document.getElementById('loader-step').textContent = `🔄 Reintentando... (${retryCount+1}/2)`;
-                    document.getElementById('loader-bar').style.width = '0%';
-                    setTimeout(() => generateTryOn(retryCount + 1), 1500);
-                    return;
-                }
-                const errText = await resp.text();
-                stopProgress(); hideLoader();
-                showToast(`Error ${resp.status}: ${errText.substring(0, 150)}`, 'error');
-                return;
-            }
-
-            const data = await resp.json();
-            stopProgress();
-
-            if (data.success) {
-                renderOutfitResult(data);
-                goToStep(4);
-            } else {
-                if (retryCount < 2) {
-                    document.getElementById('loader-step').textContent = `🔄 Reintentando... (${retryCount+1}/2)`;
-                    document.getElementById('loader-bar').style.width = '0%';
-                    setTimeout(() => generateTryOn(retryCount + 1), 1500);
-                    return;
-                }
-                hideLoader();
-                showToast('Error: ' + (data.detail || 'Error generando'), 'error');
+                document.getElementById('loginError').style.display = 'block';
             }
         } catch(e) {
-            if (retryCount < 2) {
-                document.getElementById('loader-step').textContent = `🔄 Reintentando... (${retryCount+1}/2)`;
-                document.getElementById('loader-bar').style.width = '0%';
-                setTimeout(() => generateTryOn(retryCount + 1), 2000);
-                return;
-            }
-            stopProgress();
-            hideLoader();
-            showToast('Error: ' + e.message, 'error');
+            document.getElementById('loginError').style.display = 'block';
         }
     }
-
-    function renderOutfitResult(data) {
-        const container = document.getElementById('results-container');
-        const garmentNames = data.garments_used.map(g => g.name).join(' + ');
-        const totalPrice = data.garments_used.reduce((sum, g) => sum + (g.price || 0), 0);
-
-        container.innerHTML = `
-            <div class="results-display">
-                <div class="result-panel">
-                    <div class="panel-header">📸 Tu outfit completo</div>
-                    <img src="${data.result_image}" alt="Outfit result">
-                    <div class="panel-footer">
-                        <a href="${data.result_image}" download class="btn btn-secondary" style="font-size:0.8rem;">
-                            ⬇ Descargar foto
-                        </a>
-                    </div>
-                </div>
-                <div class="result-panel" id="video-panel-outfit">
-                    <div class="panel-header">🎬 Video desfile <span class="premium-badge">⭐ PREMIUM</span></div>
-                    <div style="padding:2rem; text-align:center;">
-                        <div style="font-size:2.5rem; margin-bottom:0.8rem;">🎬</div>
-                        <p style="color:var(--text-secondary); font-size:0.85rem; margin-bottom:0.5rem;">
-                            Genera un video de pasarela con tu outfit
-                        </p>
-                        <p style="color:var(--text-muted); font-size:0.75rem; margin-bottom:1rem;">
-                            Costo adicional: 3 créditos (720p)
-                        </p>
-                        <button class="btn btn-primary" style="font-size:0.85rem;"
-                                onclick="generateVideo('${data.fashn_url}', this)">
-                            ⭐ Generar video premium
-                        </button>
-                    </div>
-                </div>
-            </div>
-            <div class="card" style="margin-top:0.5rem;">
-                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
-                    <div>
-                        <strong>${garmentNames}</strong>
-                        <span style="color:var(--text-secondary); margin-left:0.5rem;">
-                            ${data.garments_used.map(g => g.size).join(' / ')}
-                        </span>
-                    </div>
-                    ${totalPrice > 0 ? `<div style="color:var(--accent); font-weight:600;">Total: $${Number(totalPrice).toLocaleString('es-CO')}</div>` : ''}
-                </div>
-            </div>
-        `;
-    }
-
-    async function generateVideo(imageUrl, btn) {
-        btn.disabled = true;
-        btn.textContent = '⏳ Generando...';
-        showLoader('Generando video de desfile... Esto puede tomar 1-2 minutos');
-
-        try {
-            const form = new FormData();
-            form.append('image_url', imageUrl);
-            const resp = await fetch('/api/generate-video', { method: 'POST', body: form });
-            const data = await resp.json();
-
-            hideLoader();
-
-            if (data.success && data.video_url) {
-                // Find the video panel and inject video
-                const panels = document.querySelectorAll('.result-panel');
-                // Replace nearby video placeholder
-                btn.closest('.results-display').querySelector('[id^="video-panel"]').innerHTML = `
-                    <div class="panel-header">🎬 Video desfile</div>
-                    <video controls autoplay loop style="width:100%;">
-                        <source src="${data.video_url}" type="video/mp4">
-                    </video>
-                    <div class="panel-footer">
-                        <a href="${data.video_url}" download class="btn btn-secondary" style="font-size:0.8rem;">
-                            ⬇ Descargar video
-                        </a>
-                    </div>
-                `;
-                showToast('Video generado exitosamente', 'success');
-            }
-        } catch(e) {
-            hideLoader();
-            showToast('Error generando video', 'error');
-            btn.disabled = false;
-            btn.textContent = '🎬 Generar desfile';
-        }
-    }
-
-    // ============================
-    // UI HELPERS
-    // ============================
-    function showLoader(text) {
-        document.getElementById('loader-text').textContent = text;
-        document.getElementById('loader').classList.add('visible');
-    }
-    function updateLoader(text) {
-        document.getElementById('loader-text').textContent = text;
-    }
-    function hideLoader() {
-        document.getElementById('loader').classList.remove('visible');
-        resetGenerateButton();
-    }
-
-    function showToast(msg, type = '') {
-        const toast = document.getElementById('toast');
-        toast.textContent = msg;
-        toast.className = `toast visible ${type}`;
-        setTimeout(() => toast.classList.remove('visible'), 3000);
-    }
-
-    // ============================
-    // DELETE GARMENT
-    // ============================
-    async function deleteGarment(id, name) {
-        if (!confirm(`¿Eliminar "${name}" del catálogo?`)) return;
-        try {
-            const resp = await fetch(`/api/garment/${id}`, { method: 'DELETE' });
-            const data = await resp.json();
-            if (data.success) {
-                catalog = catalog.filter(g => g.id !== id);
-                // Clear from outfit if selected
-                if (outfit.top === id) outfit.top = null;
-                if (outfit.bottom === id) outfit.bottom = null;
-                if (outfit.onepiece === id) outfit.onepiece = null;
-                renderGarments(catalog);
-                updateOutfitUI();
-                showToast('Prenda eliminada', 'success');
-            }
-        } catch(e) {
-            showToast('Error eliminando prenda', 'error');
-        }
-    }
-
-    // ============================
-    // INIT
-    // ============================
-    async function init() {
-        try {
-            const resp = await fetch('/api/credits');
-            const data = await resp.json();
-            let credits = data.credits ?? data.balance ?? data.remaining ?? null;
-            if (typeof credits === 'object' && credits !== null) {
-                credits = credits.remaining ?? credits.balance ?? credits.total ?? JSON.stringify(credits);
-            }
-            document.getElementById('credits-count').textContent = credits ?? '—';
-        } catch(e) {
-            document.getElementById('credits-count').textContent = '—';
-        }
-        restoreState();
-    }
-    init();
-
-    // ============================
-    // PWA: SERVICE WORKER + INSTALL
-    // ============================
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/static/sw.js')
-            .then(reg => console.log('SW registered'))
-            .catch(err => console.log('SW error:', err));
-    }
-
-    let deferredPrompt = null;
-
-    window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        deferredPrompt = e;
-        // Show install banner
-        document.getElementById('pwa-install-banner').style.display = 'flex';
-    });
-
-    function installPWA() {
-        if (!deferredPrompt) return;
-        deferredPrompt.prompt();
-        deferredPrompt.userChoice.then((result) => {
-            if (result.outcome === 'accepted') {
-                showToast('¡App instalada!', 'success');
-            }
-            deferredPrompt = null;
-            document.getElementById('pwa-install-banner').style.display = 'none';
-        });
-    }
-
-    function dismissInstall() {
-        document.getElementById('pwa-install-banner').style.display = 'none';
-    }
+}
 </script>
-
-<!-- PWA INSTALL BANNER -->
-<div id="pwa-install-banner" style="
-    display: none;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: linear-gradient(135deg, #1a1a1a, #222);
-    border-top: 2px solid #c9a55a;
-    padding: 14px 20px;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    z-index: 999;
-    box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
-">
-    <div style="display:flex; align-items:center; gap:10px;">
-        <img src="/static/icons/icon-192.png" style="width:40px; height:40px; border-radius:10px;">
-        <div>
-            <div style="font-weight:600; font-size:0.9rem; color:#f0ece4;">Instalar FashionTryOn</div>
-            <div style="font-size:0.75rem; color:#8a8578;">Abre como app sin barra de navegación</div>
-        </div>
-    </div>
-    <div style="display:flex; gap:8px;">
-        <button onclick="dismissInstall()" style="background:none; border:1px solid #3a3630; color:#8a8578; padding:8px 14px; border-radius:8px; cursor:pointer; font-family:inherit; font-size:0.8rem;">Ahora no</button>
-        <button onclick="installPWA()" style="background:#c9a55a; border:none; color:#0a0a0a; padding:8px 18px; border-radius:8px; cursor:pointer; font-weight:600; font-family:inherit; font-size:0.8rem;">Instalar</button>
-    </div>
-</div>
-
 </body>
 </html>
