@@ -29,7 +29,6 @@
             font-family:'Playfair Display',serif; font-size:1.2rem; font-weight:600;
             background:linear-gradient(135deg, var(--accent), #e8d5a3);
             -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-            background-clip:text;
         }
 
         .container { max-width:600px; margin:0 auto; padding:1rem; }
@@ -219,9 +218,13 @@
     <!-- STEP 1: PROFILE -->
     <div class="section active" id="step-1">
         <div class="section-title">¿Quién eres?</div>
-        <div class="section-sub">Selecciona tu género y medidas para recomendarte la talla</div>
+        <div class="section-sub">Tu info para guardar tus pruebas en tu closet personal</div>
         <div class="card">
-            <div class="gender-opts">
+            <div class="form-row">
+                <div class="field"><label>Tu nombre</label><input type="text" id="customerName" placeholder="María García"></div>
+                <div class="field"><label>WhatsApp (opcional)</label><input type="tel" id="customerPhone" placeholder="3101234567"></div>
+            </div>
+            <div class="gender-opts" style="margin-top:1rem;">
                 <button class="gender-opt" onclick="selectGender('mujer')">
                     <div class="icon">👩</div><div class="label">Mujer</div>
                 </button>
@@ -361,6 +364,30 @@
                 <button class="btn btn-secondary" onclick="goStep(3)">🔄 Otra foto</button>
                 <button class="btn btn-secondary" onclick="goStep(2)">👗 Otra ropa</button>
             </div>
+
+            <!-- Wall consent -->
+            <div id="wall-consent-section" style="margin-top:1rem;">
+                <div class="card" style="border-color:rgba(201,165,90,0.2);padding:1rem;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;">
+                        <div>
+                            <div style="font-weight:600;font-size:0.85rem;">🖼️ Mostrar en el muro de la tienda</div>
+                            <div style="font-size:0.72rem;color:var(--text3);margin-top:2px;">Tu foto aparecerá en la galería pública</div>
+                        </div>
+                        <label style="position:relative;width:48px;height:26px;display:inline-block;">
+                            <input type="checkbox" id="wallToggle" onchange="toggleWallConsent()" style="opacity:0;width:0;height:0;">
+                            <span style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:var(--border);border-radius:26px;transition:0.3s;"></span>
+                            <span id="wallDot" style="position:absolute;top:3px;left:3px;width:20px;height:20px;background:#fff;border-radius:50%;transition:0.3s;"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Closet link -->
+            <div id="closet-link-section" style="display:none;margin-top:0.8rem;">
+                <a id="closetLink" href="#" class="btn btn-secondary" style="display:block;text-align:center;width:100%;padding:12px;border-color:var(--accent);color:var(--accent);text-decoration:none;font-size:0.9rem;">
+                    🗄️ Ver mi closet — todas mis pruebas
+                </a>
+            </div>
         </div>
     </div>
 </div>
@@ -404,6 +431,8 @@ let storeName = '';
 let lastResultId = null;
 let lastShareUrl = null;
 let lastStoreData = null;
+let customerId = null;
+let customerToken = null;
 
 // Load store info
 async function loadStoreInfo() {
@@ -449,6 +478,9 @@ async function calcSize() {
     const h = parseFloat(document.getElementById('height').value);
     const w = parseFloat(document.getElementById('weight').value);
     if (!h || !w) { toast('Ingresa estatura y peso','error'); return; }
+    const custName = document.getElementById('customerName').value.trim();
+    if (!custName) { toast('Ingresa tu nombre','error'); return; }
+
     const form = new FormData();
     form.append('gender', profile.gender);
     form.append('height_cm', h);
@@ -459,6 +491,23 @@ async function calcSize() {
         profile.size = d.estimated_size;
         document.getElementById('size-display').textContent = d.estimated_size;
         document.getElementById('size-result').classList.add('visible');
+
+        // Register customer
+        const custForm = new FormData();
+        custForm.append('name', custName);
+        custForm.append('phone', document.getElementById('customerPhone').value.trim());
+        custForm.append('gender', profile.gender);
+        custForm.append('size', d.estimated_size);
+        const custResp = await fetch('/api/customer/register', {method:'POST', body:custForm});
+        const custData = await custResp.json();
+        if (custData.success) {
+            customerId = custData.customer.id;
+            customerToken = custData.customer.token;
+            // Show closet link
+            document.getElementById('closet-link-section').style.display = 'block';
+            document.getElementById('closetLink').href = custData.customer.closet_url;
+        }
+
         toast(`Talla: ${d.estimated_size}`, 'success');
         setTimeout(() => goStep(2), 600);
     } catch(e) { toast('Error calculando talla','error'); }
@@ -653,6 +702,7 @@ async function generate(retryCount = 0) {
     if(outfit.top) form.append('top_id', outfit.top);
     if(outfit.bottom) form.append('bottom_id', outfit.bottom);
     if(outfit.onepiece) form.append('onepiece_id', outfit.onepiece);
+    if(customerId) form.append('customer_id', customerId);
 
     try {
         const controller = new AbortController();
@@ -848,6 +898,34 @@ function buyWhatsApp() {
     } else {
         window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
     }
+}
+
+// ============================================================
+// WALL CONSENT + CLOSET
+// ============================================================
+async function toggleWallConsent() {
+    if (!lastResultId || !customerToken) return;
+    const checked = document.getElementById('wallToggle').checked;
+    const dot = document.getElementById('wallDot');
+
+    try {
+        const form = new FormData();
+        form.append('result_id', lastResultId);
+        form.append('show', checked ? 'true' : 'false');
+        const resp = await fetch(`/api/customer/${customerToken}/wall-consent`, { method: 'POST', body: form });
+        const data = await resp.json();
+        if (data.success) {
+            if (data.show_on_wall) {
+                dot.style.left = '25px';
+                dot.parentElement.previousElementSibling.nextElementSibling.style.background = 'var(--accent)';
+                toast('✅ Tu foto aparecerá en el muro de la tienda', 'success');
+            } else {
+                dot.style.left = '3px';
+                dot.parentElement.previousElementSibling.nextElementSibling.style.background = 'var(--border)';
+                toast('Foto retirada del muro', '');
+            }
+        }
+    } catch(e) { toast('Error actualizando', 'error'); }
 }
 
 // ============================================================

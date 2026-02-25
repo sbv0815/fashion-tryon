@@ -638,6 +638,7 @@ async def virtual_try_on(
     model_image: UploadFile = File(...),
     garment_id: str = Form(...),
     client_id: str = Form(""),
+    customer_id: str = Form(""),
     db: Session = Depends(get_db)
 ):
     garment = db.query(Garment).filter(Garment.id == garment_id).first()
@@ -665,7 +666,8 @@ async def virtual_try_on(
     tryon = TryOnResult(
         id=result_id, garment_ids=garment_id,
         result_image_url=f"/static/results/tryon_{result_id}.png",
-        store_id=garment.store_id
+        store_id=garment.store_id,
+        customer_id=customer_id if customer_id else None
     )
     db.add(tryon)
     db.commit()
@@ -696,6 +698,7 @@ async def virtual_try_on_outfit(
     model_image: UploadFile = File(...),
     top_id: str = Form(None), bottom_id: str = Form(None),
     onepiece_id: str = Form(None), client_id: str = Form(""),
+    customer_id: str = Form(""),
     db: Session = Depends(get_db)
 ):
     if onepiece_id:
@@ -720,7 +723,8 @@ async def virtual_try_on_outfit(
             img_resp = await client.get(result_url)
             result_path.write_bytes(img_resp.content)
         db.add(TryOnResult(id=result_id, garment_ids=onepiece_id,
-               result_image_url=f"/static/results/outfit_{result_id}.png", store_id=garment.store_id))
+               result_image_url=f"/static/results/outfit_{result_id}.png", store_id=garment.store_id,
+               customer_id=customer_id if customer_id else None))
         db.commit()
         if client_id:
             log_usage(db, client_id, "tryon", 1, garments_desc=garment.name,
@@ -801,7 +805,8 @@ async def virtual_try_on_outfit(
         img_resp = await client.get(current_fashn_url)
         result_path.write_bytes(img_resp.content)
     db.add(TryOnResult(id=result_id, garment_ids=",".join([g["id"] for g in garments_used]),
-           result_image_url=f"/static/results/outfit_{result_id}.png", store_id=store_id_for_result))
+           result_image_url=f"/static/results/outfit_{result_id}.png", store_id=store_id_for_result,
+           customer_id=customer_id if customer_id else None))
     db.commit()
     if client_id:
         garment_names = " + ".join([g["name"] for g in garments_used])
