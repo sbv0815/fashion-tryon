@@ -28,7 +28,7 @@
         .header h1 {
             font-family:'Playfair Display',serif; font-size:1.2rem; font-weight:600;
             background:linear-gradient(135deg, var(--accent), #e8d5a3);
-            -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+           -webkit-background-clip:text; -webkit-text-fill-color:transparent;
             background-clip:text;
         }
 
@@ -312,6 +312,48 @@
                     <button class="share-btn share-facebook" onclick="shareFacebook()">👤 Facebook</button>
                     <button class="share-btn share-copy" onclick="copyShareLink()">🔗 Copiar link</button>
                     <a class="share-btn share-download" id="downloadBtn" href="#" download="mi_look.jpg">⬇️ Descargar imagen branded</a>
+                </div>
+            </div>
+
+            <!-- Buy button -->
+            <div id="buy-section" style="margin-top:1.2rem;">
+                <button class="btn btn-primary" onclick="buyWhatsApp()" style="width:100%;padding:16px;font-size:1.05rem;background:#25D366;border-radius:14px;">
+                    🛒 ¡Lo quiero! Comprar por WhatsApp
+                </button>
+            </div>
+
+            <!-- Feedback section -->
+            <div id="feedback-section" style="margin-top:1.2rem;">
+                <div class="card" style="border-color:var(--accent);">
+                    <div class="card-title" style="text-align:center;">⭐ ¿Qué te pareció?</div>
+                    <div style="font-size:0.75rem;color:var(--text3);text-align:center;margin-bottom:0.8rem;">Tu opinión es privada y ayuda a mejorar la colección</div>
+
+                    <!-- Star rating -->
+                    <div id="stars" style="display:flex;justify-content:center;gap:8px;margin-bottom:1rem;">
+                        <span class="star" onclick="setRating(1)" style="font-size:2rem;cursor:pointer;opacity:0.3;">⭐</span>
+                        <span class="star" onclick="setRating(2)" style="font-size:2rem;cursor:pointer;opacity:0.3;">⭐</span>
+                        <span class="star" onclick="setRating(3)" style="font-size:2rem;cursor:pointer;opacity:0.3;">⭐</span>
+                        <span class="star" onclick="setRating(4)" style="font-size:2rem;cursor:pointer;opacity:0.3;">⭐</span>
+                        <span class="star" onclick="setRating(5)" style="font-size:2rem;cursor:pointer;opacity:0.3;">⭐</span>
+                    </div>
+
+                    <!-- Comment -->
+                    <textarea id="feedback-comment" placeholder="¿Algún comentario sobre la prenda? (opcional)"
+                        style="width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:0.85rem;resize:vertical;min-height:60px;"></textarea>
+
+                    <button class="btn btn-primary" onclick="submitFeedback()" id="btn-feedback"
+                        style="width:100%;margin-top:0.8rem;padding:12px;">
+                        Enviar opinión
+                    </button>
+                </div>
+            </div>
+
+            <!-- Thank you (shown after feedback) -->
+            <div id="feedback-thanks" style="display:none;margin-top:1.2rem;">
+                <div class="card" style="border-color:var(--success);text-align:center;padding:1.5rem;">
+                    <div style="font-size:2rem;margin-bottom:0.5rem;">🙏</div>
+                    <div style="font-weight:600;color:var(--success);">¡Gracias por tu opinión!</div>
+                    <div style="font-size:0.8rem;color:var(--text2);margin-top:4px;">Tu feedback ayuda a mejorar la colección</div>
                 </div>
             </div>
 
@@ -645,6 +687,14 @@ async function generate(retryCount = 0) {
             lastResultId = data.result_id;
             lastShareUrl = window.location.origin + (data.share_url || '');
             lastStoreData = data.store;
+            lastGarmentsUsed = data.garments_used || [];
+
+            // Reset feedback state
+            currentRating = 0;
+            document.querySelectorAll('#stars .star').forEach(s => s.style.opacity = '0.3');
+            document.getElementById('feedback-comment').value = '';
+            document.getElementById('feedback-section').style.display = 'block';
+            document.getElementById('feedback-thanks').style.display = 'none';
 
             // Update download button
             if (lastResultId) {
@@ -721,6 +771,82 @@ async function copyShareLink() {
         document.execCommand('copy');
         document.body.removeChild(input);
         toast('✅ Link copiado', 'success');
+    }
+}
+
+// ============================================================
+// FEEDBACK + RATING + BUY
+// ============================================================
+let currentRating = 0;
+let lastGarmentsUsed = [];
+
+function setRating(n) {
+    currentRating = n;
+    document.querySelectorAll('#stars .star').forEach((s, i) => {
+        s.style.opacity = i < n ? '1' : '0.3';
+    });
+}
+
+async function submitFeedback() {
+    if (currentRating === 0) { toast('Selecciona una calificación', 'error'); return; }
+    if (!lastResultId) return;
+
+    const garmentIds = lastGarmentsUsed.map(g => g.id).join(',');
+    const comment = document.getElementById('feedback-comment').value.trim();
+    const wouldBuy = 'false'; // tracked separately via buy button
+
+    const form = new FormData();
+    form.append('result_id', lastResultId);
+    form.append('garment_ids', garmentIds);
+    form.append('rating', currentRating);
+    form.append('comment', comment);
+    form.append('would_buy', wouldBuy);
+
+    try {
+        const resp = await fetch('/api/feedback', { method: 'POST', body: form });
+        const data = await resp.json();
+        if (data.success) {
+            document.getElementById('feedback-section').style.display = 'none';
+            document.getElementById('feedback-thanks').style.display = 'block';
+            toast('¡Gracias por tu opinión!', 'success');
+        }
+    } catch(e) { toast('Error enviando feedback', 'error'); }
+}
+
+function buyWhatsApp() {
+    // Log buy intent as feedback
+    if (lastResultId) {
+        const garmentIds = lastGarmentsUsed.map(g => g.id).join(',');
+        const form = new FormData();
+        form.append('result_id', lastResultId);
+        form.append('garment_ids', garmentIds);
+        form.append('rating', currentRating || 5);
+        form.append('comment', '');
+        form.append('would_buy', 'true');
+        fetch('/api/feedback', { method: 'POST', body: form }).catch(() => {});
+    }
+
+    // Build WhatsApp message with garment details
+    const items = lastGarmentsUsed.map(g => {
+        const icon = g.category === 'tops' ? '👕' : g.category === 'bottoms' ? '👖' : '👗';
+        return `${icon} ${g.name} - Talla ${g.size}${g.price ? ` - $${Number(g.price).toLocaleString('es-CO')}` : ''}`;
+    }).join('\n');
+
+    const total = lastGarmentsUsed.reduce((sum, g) => sum + (g.price || 0), 0);
+    const shareLink = lastShareUrl || '';
+
+    let msg = `¡Hola! 🛒 Me probé estas prendas con el probador virtual y me gustaría comprarlas:\n\n${items}`;
+    if (total > 0) msg += `\n\n💰 Total: $${total.toLocaleString('es-CO')}`;
+    if (shareLink) msg += `\n\n📸 Así me quedaron: ${shareLink}`;
+
+    // Use store phone if available
+    const storePhone = lastStoreData?.phone || '';
+    const cleanPhone = storePhone.replace(/[^0-9+]/g, '');
+
+    if (cleanPhone) {
+        window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+    } else {
+        window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
     }
 }
 

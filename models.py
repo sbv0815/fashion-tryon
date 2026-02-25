@@ -122,6 +122,19 @@ class TryOnView(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
+class GarmentFeedback(Base):
+    """Customer feedback/rating after trying on a garment."""
+    __tablename__ = "garment_feedback"
+    id = Column(String(20), primary_key=True)
+    result_id = Column(String(20), nullable=False)
+    garment_id = Column(String(20), nullable=False)
+    store_id = Column(String(20), nullable=True)
+    rating = Column(Integer, nullable=False)  # 1-5 stars
+    comment = Column(Text, nullable=True)
+    would_buy = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class Collection(Base):
     """A curated collection/lookbook for a store."""
     __tablename__ = "collections"
@@ -151,7 +164,7 @@ def init_db():
 
         # Create new tables if not exist
         for table_name in ['stores', 'clients', 'usage_logs', 'admin_settings',
-                           'share_logs', 'tryon_views', 'collections']:
+                           'share_logs', 'tryon_views', 'collections', 'garment_feedback']:
             if table_name not in existing_tables:
                 Base.metadata.tables[table_name].create(bind=engine)
                 print(f"Created {table_name} table")

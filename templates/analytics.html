@@ -34,7 +34,7 @@
         .container { max-width: 900px; margin: 0 auto; padding: 24px 20px; }
 
         /* Stats */
-        .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+        .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 24px; }
         .stat-box {
             background: var(--card); border: 1px solid var(--border); border-radius: 14px;
             padding: 18px; text-align: center;
@@ -121,6 +121,8 @@
         <div class="stat-box"><div class="stat-box-icon">👁️</div><div class="stat-box-value" id="totalViews">—</div><div class="stat-box-label">Visitas</div></div>
         <div class="stat-box"><div class="stat-box-icon">✨</div><div class="stat-box-value" id="totalTryons">—</div><div class="stat-box-label">Pruebas IA</div></div>
         <div class="stat-box"><div class="stat-box-icon">📤</div><div class="stat-box-value" id="totalShares">—</div><div class="stat-box-label">Compartidas</div></div>
+        <div class="stat-box"><div class="stat-box-icon">⭐</div><div class="stat-box-value" id="avgRating">—</div><div class="stat-box-label">Calificación</div></div>
+        <div class="stat-box"><div class="stat-box-icon">🛒</div><div class="stat-box-value" id="buyIntent">—</div><div class="stat-box-label">Quieren comprar</div></div>
         <div class="stat-box"><div class="stat-box-icon">📈</div><div class="stat-box-value" id="convRate">—</div><div class="stat-box-label">Conversión</div></div>
     </div>
 
@@ -182,6 +184,8 @@ function renderStats(data) {
     document.getElementById('totalViews').textContent = t.views || 0;
     document.getElementById('totalTryons').textContent = t.tryons || 0;
     document.getElementById('totalShares').textContent = t.shares || 0;
+    document.getElementById('avgRating').textContent = t.avg_rating ? `${t.avg_rating}/5` : '—';
+    document.getElementById('buyIntent').textContent = t.buy_intent || 0;
     document.getElementById('convRate').textContent = (t.conversion_rate || 0) + '%';
 }
 
@@ -212,6 +216,7 @@ function renderRanking(ranking) {
     list.innerHTML = ranking.map((g, i) => {
         const pct = Math.round((g.engagement / maxEng) * 100);
         const color = barColors[i % barColors.length];
+        const stars = g.avg_rating ? '⭐'.repeat(Math.round(g.avg_rating)) : '';
         return `
         <div class="ranking-item">
             <div class="rank-num ${i < 3 ? 'top' : ''}">${i + 1}</div>
@@ -219,6 +224,7 @@ function renderRanking(ranking) {
             <div>
                 <div class="rank-name">${g.name}</div>
                 <div class="rank-ref">${g.reference || g.category}${g.price ? ' · $'+Number(g.price).toLocaleString('es-CO') : ''}</div>
+                ${g.avg_rating ? `<div style="font-size:11px;margin-top:2px;">${stars} ${g.avg_rating}/5 (${g.feedback_count})${g.buy_intent ? ` · 🛒 ${g.buy_intent}` : ''}</div>` : ''}
             </div>
             <div class="rank-stat"><div class="rank-stat-val">${g.views}</div><div class="rank-stat-label">Visitas</div></div>
             <div class="rank-stat"><div class="rank-stat-val" style="color:var(--accent)">${g.tryons}</div><div class="rank-stat-label">Pruebas</div></div>
@@ -266,6 +272,31 @@ function renderInsights(data) {
             text: rate > 30
                 ? 'Tu colección está generando mucho interés. Las personas que ven tus prendas quieren probárselas.'
                 : 'Podrías mejorar la conversión activando el probador IA en más prendas o mejorando las fotos del catálogo.'
+        });
+    }
+
+    if (totals.buy_intent > 0) {
+        insights.push({
+            title: `🛒 ${totals.buy_intent} personas quieren comprar`,
+            text: `${totals.buy_intent} cliente(s) tocaron el botón "¡Lo quiero!" después de probarse prendas. Esto indica intención de compra real generada por el probador virtual.`
+        });
+    }
+
+    if (totals.avg_rating > 0) {
+        const quality = totals.avg_rating >= 4 ? 'excelente' : totals.avg_rating >= 3 ? 'buena' : 'mejorable';
+        insights.push({
+            title: `⭐ Calificación promedio ${quality}: ${totals.avg_rating}/5`,
+            text: `Basado en ${totals.total_feedback} opiniones de clientes. ${totals.avg_rating >= 4 ? 'Tu colección está gustando mucho.' : 'Revisa los comentarios para entender qué mejorar.'}`
+        });
+    }
+
+    // Show top comments
+    const allComments = ranking.flatMap(g => (g.comments || []).map(c => ({garment: g.name, comment: c})));
+    if (allComments.length > 0) {
+        const commentList = allComments.slice(0, 5).map(c => `<strong>${c.garment}:</strong> "${c.comment}"`).join('<br>');
+        insights.push({
+            title: `💬 Últimos comentarios de clientes`,
+            text: commentList
         });
     }
 

@@ -24,7 +24,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from models import (init_db, get_db, Garment, TryOnResult, Client, UsageLog,
-                    AdminSettings, Store, ShareLog, TryOnView, Collection)
+                    AdminSettings, Store, ShareLog, TryOnView, Collection, GarmentFeedback)
 
 # ============================================================
 # CONFIGURATION
@@ -647,7 +647,7 @@ async def virtual_try_on(
         "fashn_url": result_url,
         "garment": {"id": garment.id, "name": garment.name, "category": garment.category,
                     "size": garment.size, "price": garment.price},
-        "store": {"name": store.name, "instagram": store.instagram,
+        "store": {"name": store.name, "instagram": store.instagram, "phone": store.phone,
                   "primary_color": store.primary_color} if store else None,
     }
 
@@ -693,7 +693,7 @@ async def virtual_try_on_outfit(
             "fashn_url": result_url,
             "garments_used": [{"id": garment.id, "name": garment.name, "category": garment.category,
                                "size": garment.size, "price": garment.price}],
-            "store": {"name": store.name, "instagram": store.instagram,
+            "store": {"name": store.name, "instagram": store.instagram, "phone": store.phone,
                       "primary_color": store.primary_color} if store else None,
         }
 
@@ -774,7 +774,7 @@ async def virtual_try_on_outfit(
         "success": True, "result_image": f"/static/results/outfit_{result_id}.png",
         "result_id": result_id, "share_url": f"/resultado/{result_id}",
         "fashn_url": current_fashn_url, "garments_used": garments_used,
-        "store": {"name": store.name, "instagram": store.instagram,
+        "store": {"name": store.name, "instagram": store.instagram, "phone": store.phone,
                   "primary_color": store.primary_color} if store else None,
     }
 
@@ -891,6 +891,62 @@ async def get_branded_share_image(result_id: str, db: Session = Depends(get_db))
     from fastapi.responses import StreamingResponse
     return StreamingResponse(buf, media_type="image/jpeg",
         headers={"Content-Disposition": f"inline; filename=tryon_{result_id}.jpg"})
+
+
+# ============================================================
+# GARMENT FEEDBACK (rating + comment + buy intent)
+# ============================================================
+@app.post("/api/feedback")
+async def submit_feedback(
+    result_id: str = Form(...),
+    garment_ids: str = Form(...),
+    rating: int = Form(...),
+    comment: str = Form(""),
+    would_buy: str = Form("false"),
+    db: Session = Depends(get_db)
+):
+    """Submit customer feedback after trying on garments."""
+    result = db.query(TryOnResult).filter(TryOnResult.id == result_id).first()
+    store_id = result.store_id if result else None
+
+    for gid in garment_ids.split(","):
+        gid = gid.strip()
+        if not gid:
+            continue
+        fb = GarmentFeedback(
+            id=uuid.uuid4().hex[:12],
+            result_id=result_id,
+            garment_id=gid,
+            store_id=store_id,
+            rating=max(1, min(5, rating)),
+            comment=comment if comment else None,
+            would_buy=would_buy.lower() in ('true', '1', 'yes'),
+            created_at=datetime.utcnow()
+        )
+        db.add(fb)
+    db.commit()
+    return {"success": True}
+
+
+@app.get("/api/feedback/{store_id}")
+async def get_store_feedback(store_id: str, db: Session = Depends(get_db)):
+    """Get all feedback for a store's garments."""
+    feedbacks = db.query(GarmentFeedback).filter(
+        GarmentFeedback.store_id == store_id
+    ).order_by(GarmentFeedback.created_at.desc()).limit(200).all()
+
+    result = []
+    for f in feedbacks:
+        garment = db.query(Garment).filter(Garment.id == f.garment_id).first()
+        result.append({
+            "id": f.id, "garment_id": f.garment_id,
+            "garment_name": garment.name if garment else "—",
+            "garment_image": garment.image_url if garment else "",
+            "rating": f.rating, "comment": f.comment,
+            "would_buy": f.would_buy,
+            "created_at": f.created_at.isoformat() if f.created_at else "",
+        })
+    return {"feedback": result}
 
 
 # ============================================================
@@ -1040,12 +1096,44 @@ async def get_store_analytics(store_id: str, days: int = 30, db: Session = Depen
     total_tryons = sum(tryon_count.values())
     total_shares = sum(shares_by_platform.values())
 
+    # Feedback stats
+    feedbacks = db.query(GarmentFeedback).filter(
+        GarmentFeedback.store_id == store_id, GarmentFeedback.created_at >= since
+    ).all()
+
+    avg_rating = round(sum(f.rating for f in feedbacks) / len(feedbacks), 1) if feedbacks else 0
+    buy_intent = len([f for f in feedbacks if f.would_buy])
+    total_feedback = len(feedbacks)
+
+    # Per-garment feedback
+    feedback_by_garment = {}
+    for f in feedbacks:
+        if f.garment_id not in feedback_by_garment:
+            feedback_by_garment[f.garment_id] = {"ratings": [], "comments": [], "buy_count": 0}
+        feedback_by_garment[f.garment_id]["ratings"].append(f.rating)
+        if f.comment:
+            feedback_by_garment[f.garment_id]["comments"].append(f.comment)
+        if f.would_buy:
+            feedback_by_garment[f.garment_id]["buy_count"] += 1
+
+    # Enrich ranking with feedback
+    for item in ranking:
+        fb = feedback_by_garment.get(item["id"], {})
+        ratings = fb.get("ratings", [])
+        item["avg_rating"] = round(sum(ratings) / len(ratings), 1) if ratings else 0
+        item["feedback_count"] = len(ratings)
+        item["buy_intent"] = fb.get("buy_count", 0)
+        item["comments"] = fb.get("comments", [])[:5]  # last 5
+
     return {
         "period_days": days,
         "totals": {
             "views": total_views, "tryons": total_tryons,
             "shares": total_shares,
             "conversion_rate": round(total_tryons / total_views * 100, 1) if total_views > 0 else 0,
+            "avg_rating": avg_rating,
+            "total_feedback": total_feedback,
+            "buy_intent": buy_intent,
         },
         "shares_by_platform": shares_by_platform,
         "garment_ranking": ranking,
