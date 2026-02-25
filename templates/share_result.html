@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Look - {{ store.name if store else 'Fashion Try-On' }}</title>
+
+    <!-- Open Graph for social sharing -->
+    <meta property="og:title" content="Mira cómo me queda esto 🔥 {{ store.name if store else '' }}">
+    <meta property="og:image" content="{{ base_url }}/api/share-image/{{ result.id }}">
+    <meta property="og:url" content="{{ share_url }}">
+    <meta property="og:type" content="website">
+    <meta property="og:description" content="Me probé esta prenda con IA ✨ {{ store.name if store else 'Fashion Try-On' }}">
+
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --accent: {{ store.primary_color if store else '#c9a55a' }};
+            --bg: #0c0b0f;
+            --surface: #16151a;
+            --card: #1a191f;
+            --border: #2a2930;
+            --text: #eae6df;
+            --text-mid: #9a9590;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+
+        .header-bar {
+            width: 100%; padding: 16px 20px; display: flex; align-items: center; justify-content: center; gap: 12px;
+            background: var(--surface); border-bottom: 3px solid var(--accent);
+        }
+        .header-bar img { height: 36px; border-radius: 8px; }
+        .store-name { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 600; }
+
+        .result-container {
+            max-width: 480px; width: 100%; padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 20px; flex: 1;
+        }
+
+        .result-frame {
+            position: relative; width: 100%; border-radius: 16px; overflow: hidden;
+            border: 2px solid var(--accent); box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
+        .result-frame img { width: 100%; display: block; }
+        .frame-badge {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            background: linear-gradient(transparent, rgba(0,0,0,0.85));
+            padding: 40px 16px 16px;
+        }
+        .frame-store { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 600; color: var(--accent); }
+        .frame-tag { font-size: 12px; color: rgba(255,255,255,0.6); margin-top: 4px; }
+        .frame-ig { font-size: 13px; color: rgba(255,255,255,0.8); margin-top: 2px; }
+
+        /* Garment info */
+        .garment-info {
+            width: 100%; display: flex; gap: 12px; flex-wrap: wrap;
+        }
+        .garment-chip {
+            background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+            padding: 10px 14px; flex: 1; min-width: 140px;
+        }
+        .garment-chip-name { font-weight: 600; font-size: 14px; }
+        .garment-chip-meta { font-size: 12px; color: var(--text-mid); margin-top: 2px; }
+        .garment-chip-price { font-size: 15px; font-weight: 700; color: var(--accent); margin-top: 4px; }
+
+        /* Share buttons */
+        .share-section { width: 100%; }
+        .share-title { font-size: 13px; color: var(--text-mid); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; text-align: center; }
+
+        .share-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+
+        .share-btn {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 14px; border-radius: 12px; border: none; cursor: pointer;
+            font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 600;
+            transition: all 0.2s; text-decoration: none;
+        }
+        .share-btn:active { transform: scale(0.96); }
+
+        .share-whatsapp { background: #25D366; color: #fff; }
+        .share-whatsapp:hover { background: #1da851; }
+        .share-instagram { background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045); color: #fff; }
+        .share-instagram:hover { filter: brightness(1.1); }
+        .share-facebook { background: #1877F2; color: #fff; }
+        .share-facebook:hover { background: #1565c0; }
+        .share-copy { background: var(--card); border: 1px solid var(--border); color: var(--text); }
+        .share-copy:hover { border-color: var(--accent); }
+        .share-download { background: var(--accent); color: var(--bg); grid-column: 1 / -1; }
+        .share-download:hover { filter: brightness(1.1); }
+
+        .share-icon { font-size: 20px; }
+
+        /* Toast */
+        .toast {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: var(--accent); color: var(--bg); padding: 12px 24px;
+            border-radius: 30px; font-weight: 600; font-size: 14px;
+            opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 100;
+        }
+        .toast.show { opacity: 1; }
+
+        /* Back link */
+        .back-link {
+            margin-top: 10px; margin-bottom: 20px;
+            color: var(--text-mid); font-size: 13px; text-decoration: none;
+        }
+        .back-link:hover { color: var(--accent); }
+
+        .powered-by {
+            font-size: 11px; color: var(--text-mid); margin-top: 8px; opacity: 0.6;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Header with store branding -->
+<div class="header-bar">
+    {% if store and store.logo_url %}
+    <img src="{{ store.logo_url }}" alt="{{ store.name }}">
+    {% endif %}
+    <div class="store-name" style="color: var(--accent);">{{ store.name if store else 'Fashion Try-On' }}</div>
+</div>
+
+<div class="result-container">
+
+    <!-- Result image with branded frame -->
+    <div class="result-frame">
+        <img src="{{ result.result_image_url }}" alt="Tu look virtual" id="resultImg">
+        <div class="frame-badge">
+            <div class="frame-store">{{ store.name if store else 'Fashion Try-On' }}</div>
+            {% if store and store.instagram %}
+            <div class="frame-ig">@{{ store.instagram }}</div>
+            {% endif %}
+            <div class="frame-tag">Probado con IA ✨ #FashionTryOn</div>
+        </div>
+    </div>
+
+    <!-- Garment info chips -->
+    {% if garments %}
+    <div class="garment-info">
+        {% for g in garments %}
+        <div class="garment-chip">
+            <div class="garment-chip-name">{{ '👕' if g.category == 'tops' else '👖' if g.category == 'bottoms' else '👗' }} {{ g.name }}</div>
+            <div class="garment-chip-meta">{{ g.size }} · {{ g.color or g.category }}</div>
+            {% if g.price and g.price > 0 %}
+            <div class="garment-chip-price">${{ "{:,.0f}".format(g.price) }}</div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Share buttons -->
+    <div class="share-section">
+        <div class="share-title">✨ Comparte tu look</div>
+        <div class="share-grid">
+            <button class="share-btn share-whatsapp" onclick="shareWhatsApp()">
+                <span class="share-icon">💬</span> WhatsApp
+            </button>
+            <button class="share-btn share-instagram" onclick="shareInstagram()">
+                <span class="share-icon">📸</span> Instagram
+            </button>
+            <button class="share-btn share-facebook" onclick="shareFacebook()">
+                <span class="share-icon">👤</span> Facebook
+            </button>
+            <button class="share-btn share-copy" onclick="copyLink()">
+                <span class="share-icon">🔗</span> Copiar link
+            </button>
+            <a class="share-btn share-download" href="/api/share-image/{{ result.id }}" download="mi_look.jpg" onclick="logShare('download')">
+                <span class="share-icon">⬇️</span> Descargar imagen para compartir
+            </a>
+        </div>
+    </div>
+
+    {% if store %}
+    <a href="/tienda/{{ store.slug }}" class="back-link">← Volver a {{ store.name }}</a>
+    {% endif %}
+    <div class="powered-by">Powered by Fashion Try-On ✨</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const RESULT_ID = '{{ result.id }}';
+const SHARE_URL = '{{ share_url }}';
+const STORE_NAME = '{{ store.name if store else "Fashion Try-On" }}';
+const STORE_IG = '{{ store.instagram if store else "" }}';
+
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+async function logShare(platform) {
+    try {
+        const form = new FormData();
+        form.append('platform', platform);
+        await fetch(`/api/share/${RESULT_ID}`, { method: 'POST', body: form });
+    } catch(e) { /* silent */ }
+}
+
+function shareWhatsApp() {
+    logShare('whatsapp');
+    const text = `Mira cómo me queda esto 🔥 ${STORE_NAME}${STORE_IG ? ' @'+STORE_IG : ''}\n\n${SHARE_URL}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+}
+
+function shareFacebook() {
+    logShare('facebook');
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(SHARE_URL)}`, '_blank');
+}
+
+function shareInstagram() {
+    logShare('instagram');
+    // Instagram doesn't have a direct share URL, so we download the branded image
+    showToast('📸 Descarga la imagen y súbela a tu historia');
+    setTimeout(() => {
+        window.location.href = `/api/share-image/${RESULT_ID}`;
+    }, 1000);
+}
+
+async function copyLink() {
+    logShare('copy_link');
+    try {
+        await navigator.clipboard.writeText(SHARE_URL);
+        showToast('✅ Link copiado');
+    } catch(e) {
+        // Fallback
+        const input = document.createElement('input');
+        input.value = SHARE_URL;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+        showToast('✅ Link copiado');
+    }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics - {{ store.name }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --accent: {{ store.primary_color if store else '#c9a55a' }};
+            --bg: #0c0b0f; --surface: #16151a; --card: #1a191f;
+            --border: #2a2930; --text: #eae6df; --text-mid: #9a9590;
+            --green: #4ade80; --green-soft: rgba(74,222,128,0.12);
+            --blue: #60a5fa; --blue-soft: rgba(96,165,250,0.12);
+            --red: #f87171; --purple: #a78bfa;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+        .header {
+            background: var(--surface); border-bottom: 3px solid var(--accent);
+            padding: 20px 24px; display: flex; align-items: center; justify-content: space-between;
+        }
+        .header-left { display: flex; align-items: center; gap: 14px; }
+        .header-left img { height: 40px; border-radius: 8px; }
+        .header-title { font-family: 'Fraunces', serif; font-size: 20px; }
+        .header-sub { font-size: 12px; color: var(--text-mid); }
+
+        .period-select {
+            background: var(--card); border: 1px solid var(--border); color: var(--text);
+            border-radius: 8px; padding: 8px 14px; font-family: 'Outfit', sans-serif; font-size: 13px;
+        }
+
+        .container { max-width: 900px; margin: 0 auto; padding: 24px 20px; }
+
+        /* Stats */
+        .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+        .stat-box {
+            background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+            padding: 18px; text-align: center;
+        }
+        .stat-box-icon { font-size: 28px; margin-bottom: 6px; }
+        .stat-box-value { font-size: 28px; font-weight: 700; }
+        .stat-box-label { font-size: 11px; color: var(--text-mid); text-transform: uppercase; letter-spacing: 0.8px; margin-top: 4px; }
+
+        /* Sections */
+        .section {
+            background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+            padding: 20px; margin-bottom: 20px;
+        }
+        .section-title { font-size: 15px; font-weight: 600; color: var(--accent); margin-bottom: 16px; }
+
+        /* Ranking */
+        .ranking-item {
+            display: grid; grid-template-columns: 40px 60px 1fr 80px 80px 80px 120px;
+            align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border);
+        }
+        .ranking-item:last-child { border-bottom: none; }
+        .rank-num { font-size: 20px; font-weight: 700; color: var(--text-mid); text-align: center; }
+        .rank-num.top { color: var(--accent); }
+        .rank-img { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; background: #111; }
+        .rank-name { font-weight: 600; font-size: 14px; }
+        .rank-ref { font-size: 11px; color: var(--text-mid); }
+        .rank-stat { text-align: center; }
+        .rank-stat-val { font-weight: 700; font-size: 16px; }
+        .rank-stat-label { font-size: 10px; color: var(--text-mid); }
+
+        .rank-bar-container { width: 100%; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+        .rank-bar { height: 100%; border-radius: 4px; transition: width 0.5s; }
+
+        /* Platform shares */
+        .platform-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; }
+        .platform-card {
+            background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+            padding: 16px; text-align: center;
+        }
+        .platform-icon { font-size: 28px; margin-bottom: 8px; }
+        .platform-count { font-size: 22px; font-weight: 700; }
+        .platform-name { font-size: 11px; color: var(--text-mid); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+
+        /* Insights */
+        .insight-box {
+            background: var(--bg); border-left: 3px solid var(--accent); border-radius: 0 10px 10px 0;
+            padding: 14px 18px; margin-bottom: 10px;
+        }
+        .insight-title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+        .insight-text { font-size: 13px; color: var(--text-mid); line-height: 1.5; }
+
+        .footer { text-align: center; padding: 30px; font-size: 11px; color: var(--text-mid); opacity: 0.5; }
+
+        @media (max-width: 700px) {
+            .stats-row { grid-template-columns: repeat(2, 1fr); }
+            .ranking-item { grid-template-columns: 30px 40px 1fr 50px 50px; font-size: 12px; }
+            .ranking-item .rank-stat:nth-child(6), .ranking-item > :nth-child(7) { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="header-left">
+        {% if store.logo_url %}
+        <img src="{{ store.logo_url }}" alt="{{ store.name }}">
+        {% endif %}
+        <div>
+            <div class="header-title">📊 Analytics · <span style="color:var(--accent)">{{ store.name }}</span></div>
+            <div class="header-sub">Reporte de rendimiento de tu colección</div>
+        </div>
+    </div>
+    <select class="period-select" id="periodSelect" onchange="loadAnalytics()">
+        <option value="7">Últimos 7 días</option>
+        <option value="30" selected>Últimos 30 días</option>
+        <option value="90">Últimos 90 días</option>
+    </select>
+</div>
+
+<div class="container">
+
+    <!-- Summary stats -->
+    <div class="stats-row" id="statsRow">
+        <div class="stat-box"><div class="stat-box-icon">👁️</div><div class="stat-box-value" id="totalViews">—</div><div class="stat-box-label">Visitas</div></div>
+        <div class="stat-box"><div class="stat-box-icon">✨</div><div class="stat-box-value" id="totalTryons">—</div><div class="stat-box-label">Pruebas IA</div></div>
+        <div class="stat-box"><div class="stat-box-icon">📤</div><div class="stat-box-value" id="totalShares">—</div><div class="stat-box-label">Compartidas</div></div>
+        <div class="stat-box"><div class="stat-box-icon">📈</div><div class="stat-box-value" id="convRate">—</div><div class="stat-box-label">Conversión</div></div>
+    </div>
+
+    <!-- Shares by platform -->
+    <div class="section">
+        <div class="section-title">📱 Compartidas por plataforma</div>
+        <div class="platform-grid" id="platformGrid">
+            <div style="color:var(--text-mid);font-size:13px;grid-column:1/-1;text-align:center;padding:20px;">Cargando datos...</div>
+        </div>
+    </div>
+
+    <!-- Garment ranking -->
+    <div class="section">
+        <div class="section-title">🏆 Ranking de prendas</div>
+        <div id="rankingList">
+            <div style="color:var(--text-mid);font-size:13px;text-align:center;padding:20px;">Cargando datos...</div>
+        </div>
+    </div>
+
+    <!-- AI Insights -->
+    <div class="section">
+        <div class="section-title">💡 Insights</div>
+        <div id="insightsList"></div>
+    </div>
+
+</div>
+
+<div class="footer">Reporte generado por Fashion Try-On · {{ store.name }}</div>
+
+<script>
+const STORE_ID = '{{ store.id }}';
+
+const platformIcons = {
+    'whatsapp': '💬', 'instagram': '📸', 'facebook': '👤',
+    'tiktok': '🎵', 'copy_link': '🔗', 'download': '⬇️',
+};
+const platformNames = {
+    'whatsapp': 'WhatsApp', 'instagram': 'Instagram', 'facebook': 'Facebook',
+    'tiktok': 'TikTok', 'copy_link': 'Link', 'download': 'Descargas',
+};
+const barColors = ['#d4a853', '#60a5fa', '#4ade80', '#a78bfa', '#f87171', '#fb923c', '#34d399'];
+
+async function loadAnalytics() {
+    const days = document.getElementById('periodSelect').value;
+    try {
+        const resp = await fetch(`/api/analytics/${STORE_ID}?days=${days}`);
+        const data = await resp.json();
+        renderStats(data);
+        renderPlatforms(data.shares_by_platform || {});
+        renderRanking(data.garment_ranking || []);
+        renderInsights(data);
+    } catch(e) {
+        console.error('Error loading analytics:', e);
+    }
+}
+
+function renderStats(data) {
+    const t = data.totals || {};
+    document.getElementById('totalViews').textContent = t.views || 0;
+    document.getElementById('totalTryons').textContent = t.tryons || 0;
+    document.getElementById('totalShares').textContent = t.shares || 0;
+    document.getElementById('convRate').textContent = (t.conversion_rate || 0) + '%';
+}
+
+function renderPlatforms(platforms) {
+    const grid = document.getElementById('platformGrid');
+    const entries = Object.entries(platforms);
+    if (!entries.length) {
+        grid.innerHTML = '<div style="color:var(--text-mid);font-size:13px;grid-column:1/-1;text-align:center;padding:20px;">Aún no hay compartidas en este período</div>';
+        return;
+    }
+    grid.innerHTML = entries.map(([platform, count]) => `
+        <div class="platform-card">
+            <div class="platform-icon">${platformIcons[platform] || '📱'}</div>
+            <div class="platform-count">${count}</div>
+            <div class="platform-name">${platformNames[platform] || platform}</div>
+        </div>
+    `).join('');
+}
+
+function renderRanking(ranking) {
+    const list = document.getElementById('rankingList');
+    if (!ranking.length) {
+        list.innerHTML = '<div style="color:var(--text-mid);font-size:13px;text-align:center;padding:20px;">Sin datos en este período</div>';
+        return;
+    }
+    const maxEng = ranking[0]?.engagement || 1;
+
+    list.innerHTML = ranking.map((g, i) => {
+        const pct = Math.round((g.engagement / maxEng) * 100);
+        const color = barColors[i % barColors.length];
+        return `
+        <div class="ranking-item">
+            <div class="rank-num ${i < 3 ? 'top' : ''}">${i + 1}</div>
+            <img src="${g.image_url}" class="rank-img" alt="${g.name}">
+            <div>
+                <div class="rank-name">${g.name}</div>
+                <div class="rank-ref">${g.reference || g.category}${g.price ? ' · $'+Number(g.price).toLocaleString('es-CO') : ''}</div>
+            </div>
+            <div class="rank-stat"><div class="rank-stat-val">${g.views}</div><div class="rank-stat-label">Visitas</div></div>
+            <div class="rank-stat"><div class="rank-stat-val" style="color:var(--accent)">${g.tryons}</div><div class="rank-stat-label">Pruebas</div></div>
+            <div class="rank-stat"><div class="rank-stat-val" style="color:var(--green)">${g.shares}</div><div class="rank-stat-label">Shares</div></div>
+            <div><div class="rank-bar-container"><div class="rank-bar" style="width:${pct}%;background:${color}"></div></div></div>
+        </div>`;
+    }).join('');
+}
+
+function renderInsights(data) {
+    const list = document.getElementById('insightsList');
+    const ranking = data.garment_ranking || [];
+    const totals = data.totals || {};
+    const insights = [];
+
+    if (ranking.length > 0) {
+        const top = ranking[0];
+        insights.push({
+            title: `🏆 Tu prenda estrella: ${top.name}`,
+            text: `Con ${top.tryons} pruebas virtuales y ${top.shares} compartidas, esta es la prenda que más interés genera. Considera darle más visibilidad en tu tienda física y redes sociales.`
+        });
+    }
+
+    if (ranking.length > 3) {
+        const bottom = ranking.slice(-2);
+        const names = bottom.map(g => g.name).join(' y ');
+        insights.push({
+            title: `📉 Menos interacción: ${names}`,
+            text: `Estas prendas tienen bajo engagement. Podrías mejorar su foto, cambiar su ubicación en tienda, o considerar si necesitan un descuento para mover inventario.`
+        });
+    }
+
+    if (totals.shares > 0) {
+        insights.push({
+            title: `📱 ${totals.shares} publicaciones en redes sociales`,
+            text: `Cada vez que un cliente comparte su prueba virtual, está haciendo publicidad gratuita para tu tienda. Equivale a ~$${(totals.shares * 5000).toLocaleString('es-CO')} COP en alcance orgánico estimado.`
+        });
+    }
+
+    if (totals.conversion_rate > 0) {
+        const rate = totals.conversion_rate;
+        const quality = rate > 30 ? 'excelente' : rate > 15 ? 'buena' : 'mejorable';
+        insights.push({
+            title: `📈 Tasa de conversión ${quality}: ${rate}%`,
+            text: rate > 30
+                ? 'Tu colección está generando mucho interés. Las personas que ven tus prendas quieren probárselas.'
+                : 'Podrías mejorar la conversión activando el probador IA en más prendas o mejorando las fotos del catálogo.'
+        });
+    }
+
+    if (!insights.length) {
+        insights.push({
+            title: '🚀 Empieza a generar datos',
+            text: 'Comparte el link de tu colección o los QR codes de tus prendas para empezar a ver analytics aquí.'
+        });
+    }
+
+    list.innerHTML = insights.map(i => `
+        <div class="insight-box">
+            <div class="insight-title">${i.title}</div>
+            <div class="insight-text">${i.text}</div>
+        </div>
+    `).join('');
+}
+
+// Init
+loadAnalytics();
+</script>
+</body>
+</html>

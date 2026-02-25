@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ collection.name }} - {{ store.name if store else 'Fashion' }}</title>
+    <meta property="og:title" content="{{ collection.name }} | {{ store.name if store else '' }}">
+    <meta property="og:description" content="{{ collection.description or 'Descubre la nueva colección y pruébatela con IA' }}">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --accent: {{ store.primary_color if store else '#c9a55a' }};
+            --bg: {{ collection.cover_color or '#0c0b0f' }};
+            --surface: #16151a; --card: #1a191f; --border: #2a2930;
+            --text: #eae6df; --text-mid: #9a9590;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+        /* Hero */
+        .hero {
+            text-align: center; padding: 60px 20px 40px; position: relative;
+            background: linear-gradient(180deg, rgba(0,0,0,0.3) 0%, var(--bg) 100%);
+        }
+        .hero-logo { height: 50px; border-radius: 12px; margin-bottom: 16px; }
+        .hero-collection {
+            font-family: 'Fraunces', serif; font-size: 42px; font-weight: 700;
+            color: var(--accent); line-height: 1.1; margin-bottom: 12px;
+        }
+        .hero-store { font-size: 16px; color: var(--text-mid); font-weight: 400; letter-spacing: 2px; text-transform: uppercase; }
+        .hero-desc { font-size: 15px; color: var(--text-mid); max-width: 500px; margin: 16px auto 0; line-height: 1.6; }
+        .hero-count {
+            display: inline-block; margin-top: 20px; background: rgba(255,255,255,0.08);
+            padding: 8px 20px; border-radius: 20px; font-size: 13px; color: var(--text-mid);
+        }
+
+        /* Filters */
+        .filters {
+            display: flex; justify-content: center; gap: 8px; padding: 0 20px 30px; flex-wrap: wrap;
+        }
+        .filter-btn {
+            padding: 8px 18px; border-radius: 20px; border: 1px solid var(--border);
+            background: transparent; color: var(--text-mid); cursor: pointer;
+            font-family: 'Outfit', sans-serif; font-size: 13px; transition: all 0.2s;
+        }
+        .filter-btn.active, .filter-btn:hover {
+            background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: 600;
+        }
+
+        /* Grid */
+        .garment-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 16px; padding: 0 20px 40px; max-width: 1100px; margin: 0 auto;
+        }
+
+        .garment-card {
+            background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+            overflow: hidden; transition: all 0.3s; cursor: pointer; position: relative;
+        }
+        .garment-card:hover { border-color: var(--accent); transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,0.3); }
+
+        .garment-card img { width: 100%; height: 280px; object-fit: cover; background: #111; }
+
+        .garment-card-body { padding: 14px 16px; }
+        .garment-card-name { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
+        .garment-card-meta { font-size: 12px; color: var(--text-mid); }
+        .garment-card-price { font-size: 17px; font-weight: 700; color: var(--accent); margin-top: 6px; }
+
+        .garment-card-tryon {
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+            margin-top: 10px; padding: 10px; border-radius: 10px;
+            background: var(--accent); color: var(--bg); font-weight: 600; font-size: 13px;
+            border: none; width: 100%; cursor: pointer; transition: all 0.2s;
+        }
+        .garment-card-tryon:hover { filter: brightness(1.15); }
+
+        .badge-tryon {
+            position: absolute; top: 10px; right: 10px;
+            background: var(--accent); color: var(--bg);
+            padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700;
+        }
+
+        /* Share collection */
+        .share-collection {
+            text-align: center; padding: 30px 20px 50px;
+        }
+        .share-collection-title { font-size: 13px; color: var(--text-mid); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+        .share-collection-btns { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+        .share-coll-btn {
+            padding: 10px 20px; border-radius: 10px; border: 1px solid var(--border);
+            background: var(--card); color: var(--text); cursor: pointer;
+            font-family: 'Outfit', sans-serif; font-size: 13px; text-decoration: none;
+            transition: all 0.2s;
+        }
+        .share-coll-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+        .footer-powered {
+            text-align: center; padding: 20px; font-size: 11px; color: var(--text-mid); opacity: 0.5;
+        }
+
+        @media (max-width: 600px) {
+            .hero-collection { font-size: 30px; }
+            .garment-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 0 12px 30px; }
+            .garment-card img { height: 200px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="hero">
+    {% if store and store.logo_url %}
+    <img src="{{ store.logo_url }}" alt="{{ store.name }}" class="hero-logo">
+    {% endif %}
+    <div class="hero-store">{{ store.name if store else '' }}</div>
+    <h1 class="hero-collection">{{ collection.name }}</h1>
+    {% if collection.description %}
+    <p class="hero-desc">{{ collection.description }}</p>
+    {% endif %}
+    <div class="hero-count">{{ garments|length }} prendas en esta colección</div>
+</div>
+
+<div class="filters">
+    <button class="filter-btn active" onclick="filterGarments('all')">Todas</button>
+    <button class="filter-btn" onclick="filterGarments('tops')">👕 Tops</button>
+    <button class="filter-btn" onclick="filterGarments('bottoms')">👖 Bottoms</button>
+    <button class="filter-btn" onclick="filterGarments('one-pieces')">👗 Completos</button>
+</div>
+
+<div class="garment-grid" id="garmentGrid">
+    {% for g in garments %}
+    <div class="garment-card" data-category="{{ g.category }}" data-id="{{ g.id }}">
+        {% if g.tryon_enabled %}
+        <div class="badge-tryon">✨ Probador IA</div>
+        {% endif %}
+        <img src="{{ g.image_url }}" alt="{{ g.name }}" loading="lazy">
+        <div class="garment-card-body">
+            <div class="garment-card-name">{{ g.name }}</div>
+            <div class="garment-card-meta">{{ g.size }} · {{ g.color or g.category }}{% if g.reference %} · {{ g.reference }}{% endif %}</div>
+            {% if g.price and g.price > 0 %}
+            <div class="garment-card-price">${{ "{:,.0f}".format(g.price) }}</div>
+            {% endif %}
+            {% if g.tryon_enabled %}
+            <a href="/prenda/{{ g.id }}" class="garment-card-tryon" style="text-decoration:none;">
+                ✨ Probármela con IA
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="share-collection">
+    <div class="share-collection-title">Comparte esta colección</div>
+    <div class="share-collection-btns">
+        <a class="share-coll-btn" onclick="shareCollWhatsApp()">💬 WhatsApp</a>
+        <a class="share-coll-btn" onclick="shareCollFacebook()">👤 Facebook</a>
+        <a class="share-coll-btn" onclick="copyCollLink()">🔗 Copiar link</a>
+    </div>
+</div>
+
+<div class="footer-powered">Powered by Fashion Try-On ✨</div>
+
+<script>
+function filterGarments(cat) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+    document.querySelectorAll('.garment-card').forEach(card => {
+        if (cat === 'all' || card.dataset.category === cat) {
+            card.style.display = '';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+
+const PAGE_URL = window.location.href;
+const COLL_NAME = '{{ collection.name }}';
+const STORE_NAME = '{{ store.name if store else "" }}';
+
+function shareCollWhatsApp() {
+    const text = `${COLL_NAME} de ${STORE_NAME} 🔥 Pruébatelas con IA ✨\n${PAGE_URL}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+}
+function shareCollFacebook() {
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(PAGE_URL)}`, '_blank');
+}
+function copyCollLink() {
+    navigator.clipboard.writeText(PAGE_URL).then(() => alert('✅ Link copiado'));
+}
+</script>
+</body>
+</html>

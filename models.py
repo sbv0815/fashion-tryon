@@ -21,13 +21,15 @@ class Store(Base):
     __tablename__ = "stores"
     id = Column(String(20), primary_key=True)
     name = Column(String(200), nullable=False)
-    slug = Column(String(100), nullable=False, unique=True)  # URL-friendly name: /tienda/slug
+    slug = Column(String(100), nullable=False, unique=True)
     logo_url = Column(Text, nullable=True)
     logo_path = Column(Text, nullable=True)
-    primary_color = Column(String(10), default="#c9a55a")  # brand color
+    primary_color = Column(String(10), default="#c9a55a")
     phone = Column(String(50), nullable=True)
     email = Column(String(200), nullable=True)
     address = Column(Text, nullable=True)
+    instagram = Column(String(100), nullable=True)
+    website = Column(Text, nullable=True)
     active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -42,12 +44,12 @@ class Garment(Base):
     price = Column(Float, default=0)
     image_url = Column(Text, nullable=False)
     image_path = Column(Text, nullable=True)
-    image_data = Column(Text, nullable=True)  # base64 encoded image for persistence
-    store_id = Column(String(20), nullable=True)  # links to Store
-    reference = Column(String(100), nullable=True)  # product reference/SKU
+    image_data = Column(Text, nullable=True)
+    store_id = Column(String(20), nullable=True)
+    reference = Column(String(100), nullable=True)
     color = Column(String(50), nullable=True)
     material = Column(String(100), nullable=True)
-    tryon_enabled = Column(Boolean, default=False)  # Only enabled garments allow virtual try-on
+    tryon_enabled = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -60,6 +62,8 @@ class TryOnResult(Base):
     video_url = Column(Text, nullable=True)
     gender = Column(String(20), nullable=True)
     size = Column(String(10), nullable=True)
+    store_id = Column(String(20), nullable=True)
+    shared = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -79,7 +83,7 @@ class UsageLog(Base):
     __tablename__ = "usage_logs"
     id = Column(String(20), primary_key=True)
     client_id = Column(String(20), nullable=False)
-    usage_type = Column(String(30), nullable=False)  # tryon, video-480p, video-720p, video-1080p
+    usage_type = Column(String(30), nullable=False)
     garments_desc = Column(Text, nullable=True)
     credits_used = Column(Integer, default=1)
     cost_usd = Column(Float, default=0)
@@ -92,9 +96,44 @@ class UsageLog(Base):
 class AdminSettings(Base):
     __tablename__ = "admin_settings"
     id = Column(Integer, primary_key=True, autoincrement=True)
-    fashn_plan = Column(String(20), default="tier1")  # ondemand, tier1, tier2, tier3
+    fashn_plan = Column(String(20), default="tier1")
     cop_rate = Column(Float, default=4200)
     updated_at = Column(DateTime, default=datetime.utcnow)
+
+
+class ShareLog(Base):
+    """Track when users share their try-on results on social media."""
+    __tablename__ = "share_logs"
+    id = Column(String(20), primary_key=True)
+    result_id = Column(String(20), nullable=False)
+    garment_id = Column(String(20), nullable=True)
+    store_id = Column(String(20), nullable=True)
+    platform = Column(String(30), nullable=False)  # instagram, whatsapp, tiktok, facebook, copy_link
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class TryOnView(Base):
+    """Track each time someone opens the try-on for a garment (from QR scan etc)."""
+    __tablename__ = "tryon_views"
+    id = Column(String(20), primary_key=True)
+    garment_id = Column(String(20), nullable=False)
+    store_id = Column(String(20), nullable=True)
+    source = Column(String(30), nullable=True)  # qr, collection_page, direct
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class Collection(Base):
+    """A curated collection/lookbook for a store."""
+    __tablename__ = "collections"
+    id = Column(String(20), primary_key=True)
+    store_id = Column(String(20), nullable=False)
+    name = Column(String(200), nullable=False)
+    slug = Column(String(100), nullable=False)
+    description = Column(Text, nullable=True)
+    cover_color = Column(String(10), default="#1a1a1a")
+    active = Column(Boolean, default=True)
+    garment_ids = Column(Text, nullable=True)  # comma-separated garment IDs
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 
 def init_db():
@@ -108,51 +147,49 @@ def init_db():
     try:
         from sqlalchemy import text, inspect
         insp = inspect(engine)
+        existing_tables = insp.get_table_names()
 
-        # Create stores table if not exists
-        if 'stores' not in insp.get_table_names():
-            Base.metadata.tables['stores'].create(bind=engine)
-            print("Created stores table")
+        # Create new tables if not exist
+        for table_name in ['stores', 'clients', 'usage_logs', 'admin_settings',
+                           'share_logs', 'tryon_views', 'collections']:
+            if table_name not in existing_tables:
+                Base.metadata.tables[table_name].create(bind=engine)
+                print(f"Created {table_name} table")
 
         # Check garments table for new columns
-        if 'garments' in insp.get_table_names():
+        if 'garments' in existing_tables:
             existing_cols = [c['name'] for c in insp.get_columns('garments')]
             with engine.connect() as conn:
-                if 'image_data' not in existing_cols:
-                    conn.execute(text("ALTER TABLE garments ADD COLUMN image_data TEXT"))
-                    conn.commit()
-                    print("Added image_data column to garments")
-                if 'store_id' not in existing_cols:
-                    conn.execute(text("ALTER TABLE garments ADD COLUMN store_id VARCHAR(20)"))
-                    conn.commit()
-                    print("Added store_id column to garments")
-                if 'reference' not in existing_cols:
-                    conn.execute(text("ALTER TABLE garments ADD COLUMN reference VARCHAR(100)"))
-                    conn.commit()
-                    print("Added reference column to garments")
-                if 'color' not in existing_cols:
-                    conn.execute(text("ALTER TABLE garments ADD COLUMN color VARCHAR(50)"))
-                    conn.commit()
-                    print("Added color column to garments")
-                if 'material' not in existing_cols:
-                    conn.execute(text("ALTER TABLE garments ADD COLUMN material VARCHAR(100)"))
-                    conn.commit()
-                    print("Added material column to garments")
-                if 'tryon_enabled' not in existing_cols:
-                    conn.execute(text("ALTER TABLE garments ADD COLUMN tryon_enabled BOOLEAN DEFAULT FALSE"))
-                    conn.commit()
-                    print("Added tryon_enabled column to garments")
+                new_cols = {
+                    'image_data': 'TEXT', 'store_id': 'VARCHAR(20)',
+                    'reference': 'VARCHAR(100)', 'color': 'VARCHAR(50)',
+                    'material': 'VARCHAR(100)', 'tryon_enabled': 'BOOLEAN DEFAULT FALSE',
+                }
+                for col_name, col_type in new_cols.items():
+                    if col_name not in existing_cols:
+                        conn.execute(text(f"ALTER TABLE garments ADD COLUMN {col_name} {col_type}"))
+                        conn.commit()
+                        print(f"Added {col_name} column to garments")
 
-        # Check for other tables
-        if 'clients' not in insp.get_table_names():
-            Base.metadata.tables['clients'].create(bind=engine)
-            print("Created clients table")
-        if 'usage_logs' not in insp.get_table_names():
-            Base.metadata.tables['usage_logs'].create(bind=engine)
-            print("Created usage_logs table")
-        if 'admin_settings' not in insp.get_table_names():
-            Base.metadata.tables['admin_settings'].create(bind=engine)
-            print("Created admin_settings table")
+        # Check tryon_results for new columns
+        if 'tryon_results' in existing_tables:
+            existing_cols = [c['name'] for c in insp.get_columns('tryon_results')]
+            with engine.connect() as conn:
+                for col_name, col_type in {'store_id': 'VARCHAR(20)', 'shared': 'BOOLEAN DEFAULT FALSE'}.items():
+                    if col_name not in existing_cols:
+                        conn.execute(text(f"ALTER TABLE tryon_results ADD COLUMN {col_name} {col_type}"))
+                        conn.commit()
+                        print(f"Added {col_name} to tryon_results")
+
+        # Check stores for new columns
+        if 'stores' in existing_tables:
+            existing_cols = [c['name'] for c in insp.get_columns('stores')]
+            with engine.connect() as conn:
+                for col_name, col_type in {'instagram': 'VARCHAR(100)', 'website': 'TEXT'}.items():
+                    if col_name not in existing_cols:
+                        conn.execute(text(f"ALTER TABLE stores ADD COLUMN {col_name} {col_type}"))
+                        conn.commit()
+                        print(f"Added {col_name} to stores")
 
     except Exception as e:
         print(f"Migration note: {e}")

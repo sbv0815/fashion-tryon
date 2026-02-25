@@ -11,7 +11,7 @@ import httpx
 import asyncio
 from pathlib import Path
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 from fastapi import FastAPI, UploadFile, File, Form, Request, HTTPException, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -23,7 +23,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from models import init_db, get_db, Garment, TryOnResult, Client, UsageLog, AdminSettings, Store
+from models import (init_db, get_db, Garment, TryOnResult, Client, UsageLog,
+                    AdminSettings, Store, ShareLog, TryOnView, Collection)
 
 # ============================================================
 # CONFIGURATION
@@ -59,7 +60,7 @@ SIZE_CHART = {
 # ============================================================
 # APP SETUP
 # ============================================================
-app = FastAPI(title="Fashion Virtual Try-On", version="2.0.0")
+app = FastAPI(title="Fashion Virtual Try-On", version="3.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -74,7 +75,6 @@ templates = Jinja2Templates(directory="templates")
 @app.on_event("startup")
 def on_startup():
     init_db()
-    # Ensure admin settings exist
     db = next(get_db())
     try:
         settings = db.query(AdminSettings).first()
@@ -100,10 +100,8 @@ def get_settings(db: Session) -> AdminSettings:
 
 def log_usage(db: Session, client_id: str, usage_type: str, credits: int,
               garments_desc: str = "", result_id: str = "", notes: str = ""):
-    """Automatically log usage and calculate costs."""
     settings = get_settings(db)
     cost_usd = credits * PRICE_PER_CREDIT.get(settings.fashn_plan, 0.0675)
-
     client = db.query(Client).filter(Client.id == client_id).first()
     charge_cop = 0
     if client:
@@ -111,22 +109,25 @@ def log_usage(db: Session, client_id: str, usage_type: str, credits: int,
             charge_cop = client.price_per_outfit * credits
         else:
             charge_cop = client.price_per_video
-
     log = UsageLog(
-        id=uuid.uuid4().hex[:12],
-        client_id=client_id,
-        usage_type=usage_type,
-        garments_desc=garments_desc,
-        credits_used=credits,
-        cost_usd=round(cost_usd, 4),
-        charge_cop=charge_cop,
-        result_id=result_id,
-        notes=notes,
-        created_at=datetime.utcnow(),
+        id=uuid.uuid4().hex[:12], client_id=client_id, usage_type=usage_type,
+        garments_desc=garments_desc, credits_used=credits,
+        cost_usd=round(cost_usd, 4), charge_cop=charge_cop,
+        result_id=result_id, notes=notes, created_at=datetime.utcnow(),
     )
     db.add(log)
     db.commit()
     return log
+
+
+def track_view(db: Session, garment_id: str, store_id: str = None, source: str = "qr"):
+    """Track a garment view/interaction."""
+    view = TryOnView(
+        id=uuid.uuid4().hex[:12], garment_id=garment_id,
+        store_id=store_id, source=source, created_at=datetime.utcnow()
+    )
+    db.add(view)
+    db.commit()
 
 
 async def fashn_run(model_name: str, inputs: dict, timeout: int = 120) -> dict:
@@ -135,31 +136,25 @@ async def fashn_run(model_name: str, inputs: dict, timeout: int = 120) -> dict:
         "Authorization": f"Bearer {FASHN_API_KEY}"
     }
     payload = {"model_name": model_name, "inputs": inputs}
-
     async with httpx.AsyncClient(timeout=120) as client:
         resp = await client.post(f"{FASHN_BASE_URL}/run", json=payload, headers=headers)
         if resp.status_code != 200:
             raise HTTPException(status_code=resp.status_code, detail=f"FASHN API error: {resp.text}")
-
         data = resp.json()
         prediction_id = data.get("id")
         if not prediction_id:
             raise HTTPException(status_code=500, detail="No prediction ID returned")
-
         start = time.time()
         while time.time() - start < timeout:
             status_resp = await client.get(f"{FASHN_BASE_URL}/status/{prediction_id}", headers=headers)
             status_data = status_resp.json()
             status = status_data.get("status")
-
             if status == "completed":
                 return status_data
             elif status == "failed":
                 error_msg = status_data.get("error", {}).get("message", "Unknown error")
                 raise HTTPException(status_code=500, detail=f"FASHN generation failed: {error_msg}")
-
             await asyncio.sleep(1.5)
-
         raise HTTPException(status_code=504, detail="FASHN API timeout")
 
 
@@ -181,11 +176,8 @@ def image_to_base64_url(filepath: str) -> str:
 
 
 def ensure_garment_file(garment, db: Session) -> str:
-    """Ensure garment image exists as local file. Restore from DB if needed."""
     if garment.image_path and Path(garment.image_path).exists():
         return garment.image_path
-
-    # Restore from base64 in database
     if garment.image_data:
         import re
         match = re.match(r'data:(image/\w+);base64,(.+)', garment.image_data)
@@ -198,7 +190,6 @@ def ensure_garment_file(garment, db: Session) -> str:
             garment.image_path = str(restored_path)
             db.commit()
             return str(restored_path)
-
     raise HTTPException(status_code=404, detail=f"Image for garment {garment.id} not found")
 
 
@@ -207,19 +198,16 @@ def ensure_garment_file(garment, db: Session) -> str:
 # ============================================================
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
-    """Admin/management view"""
     return templates.TemplateResponse("index.html", {"request": request})
 
 
 @app.get("/tienda", response_class=HTMLResponse)
 async def store_view(request: Request):
-    """Client-facing store view - no admin elements"""
     return templates.TemplateResponse("store.html", {"request": request})
 
 
 @app.get("/tienda/{store_slug}", response_class=HTMLResponse)
 async def store_branded_view(store_slug: str, request: Request, db: Session = Depends(get_db)):
-    """Client-facing branded store for a specific company."""
     store = db.query(Store).filter(Store.slug == store_slug, Store.active == True).first()
     if not store:
         raise HTTPException(status_code=404, detail="Tienda no encontrada")
@@ -239,6 +227,7 @@ async def create_store(
     name: str = Form(...), slug: str = Form(...),
     phone: str = Form(""), email: str = Form(""),
     address: str = Form(""), primary_color: str = Form("#c9a55a"),
+    instagram: str = Form(""), website: str = Form(""),
     logo: UploadFile = File(None),
     db: Session = Depends(get_db)
 ):
@@ -247,7 +236,6 @@ async def create_store(
     existing = db.query(Store).filter(Store.slug == slug).first()
     if existing:
         raise HTTPException(status_code=400, detail="Slug ya existe")
-
     store_id = uuid.uuid4().hex[:12]
     logo_path = None
     if logo and logo.filename:
@@ -255,11 +243,10 @@ async def create_store(
         logo_path = str(UPLOAD_DIR / f"logo_{store_id}{ext}")
         content = await logo.read()
         Path(logo_path).write_bytes(content)
-
     store = Store(
         id=store_id, name=name, slug=slug,
         phone=phone, email=email, address=address,
-        primary_color=primary_color,
+        primary_color=primary_color, instagram=instagram, website=website,
         logo_path=logo_path,
         logo_url=f"/api/store-logo/{store_id}" if logo_path else None
     )
@@ -273,6 +260,7 @@ async def list_stores(db: Session = Depends(get_db)):
     stores = db.query(Store).order_by(Store.created_at.desc()).all()
     return [{"id": s.id, "name": s.name, "slug": s.slug, "phone": s.phone,
              "email": s.email, "primary_color": s.primary_color,
+             "instagram": s.instagram, "website": s.website,
              "logo_url": s.logo_url, "active": s.active,
              "garment_count": db.query(Garment).filter(Garment.store_id == s.id).count(),
              "store_url": f"/tienda/{s.slug}",
@@ -300,7 +288,6 @@ async def delete_store(store_id: str, db: Session = Depends(get_db)):
 
 @app.get("/api/catalog/{store_id}")
 async def get_store_catalog(store_id: str, gender: Optional[str] = None, db: Session = Depends(get_db)):
-    """Get catalog for a specific store."""
     query = db.query(Garment).filter(Garment.store_id == store_id)
     if gender:
         query = query.filter(Garment.gender == gender)
@@ -323,22 +310,17 @@ async def upload_garment(
     color: str = Form(""), material: str = Form(""),
     db: Session = Depends(get_db)
 ):
-    # Save file locally for FASHN API use
     filepath = await save_upload(image, prefix=f"garment_{gender}_{size}_")
-
-    # Also store as base64 in database for persistence across deploys
     img_bytes = Path(filepath).read_bytes()
     ext = Path(filepath).suffix.lower()
     mime = "image/jpeg" if ext in [".jpg", ".jpeg"] else "image/png"
     img_b64 = f"data:{mime};base64,{base64.b64encode(img_bytes).decode()}"
-
     garment_id = uuid.uuid4().hex[:12]
     garment = Garment(
         id=garment_id, name=name, category=category,
         gender=gender, size=size, price=price,
         image_url=f"/api/garment-image/{garment_id}",
-        image_path=filepath,
-        image_data=img_b64,
+        image_path=filepath, image_data=img_b64,
         store_id=store_id if store_id else None,
         reference=reference if reference else None,
         color=color if color else None,
@@ -356,39 +338,31 @@ async def upload_garment(
 
 @app.get("/api/garment-image/{garment_id}")
 async def get_garment_image(garment_id: str, db: Session = Depends(get_db)):
-    """Serve garment image from database (persistent) or local file."""
     garment = db.query(Garment).filter(Garment.id == garment_id).first()
     if not garment:
         raise HTTPException(status_code=404, detail="Garment not found")
-
-    # Try local file first (faster)
     if garment.image_path and Path(garment.image_path).exists():
         from fastapi.responses import FileResponse
         return FileResponse(garment.image_path)
-
-    # Fall back to base64 from database
     if garment.image_data:
         import re
         match = re.match(r'data:(image/\w+);base64,(.+)', garment.image_data)
         if match:
             mime_type = match.group(1)
             img_bytes = base64.b64decode(match.group(2))
-
-            # Restore local file for FASHN API use
             ext = ".jpg" if "jpeg" in mime_type else ".png"
             restored_path = UPLOAD_DIR / f"restored_{garment_id}{ext}"
             restored_path.write_bytes(img_bytes)
             garment.image_path = str(restored_path)
             db.commit()
-
             from fastapi.responses import Response
             return Response(content=img_bytes, media_type=mime_type)
-
     raise HTTPException(status_code=404, detail="Image not found")
 
 
 @app.get("/api/catalog")
-async def get_catalog(gender: Optional[str] = None, size: Optional[str] = None, store_id: Optional[str] = None, db: Session = Depends(get_db)):
+async def get_catalog(gender: Optional[str] = None, size: Optional[str] = None,
+                      store_id: Optional[str] = None, db: Session = Depends(get_db)):
     query = db.query(Garment)
     if store_id:
         query = query.filter(Garment.store_id == store_id)
@@ -397,14 +371,11 @@ async def get_catalog(gender: Optional[str] = None, size: Optional[str] = None, 
     if size:
         query = query.filter(Garment.size == size)
     garments = query.order_by(Garment.created_at.desc()).all()
-
-    # Get store name if filtered
     store_name = None
     if store_id:
         client = db.query(Client).filter(Client.id == store_id).first()
         if client:
             store_name = client.name
-
     return {"garments": [{
         "id": g.id, "name": g.name, "category": g.category,
         "gender": g.gender, "size": g.size, "price": g.price,
@@ -415,7 +386,6 @@ async def get_catalog(gender: Optional[str] = None, size: Optional[str] = None, 
 
 @app.get("/api/store-info/{store_id}")
 async def get_store_info(store_id: str, db: Session = Depends(get_db)):
-    """Get store/client name for display."""
     client = db.query(Client).filter(Client.id == store_id).first()
     if not client:
         raise HTTPException(status_code=404, detail="Tienda no encontrada")
@@ -453,7 +423,8 @@ async def update_garment(
     if tryon_enabled is not None:
         garment.tryon_enabled = tryon_enabled.lower() in ('true', '1', 'yes')
     db.commit()
-    return {"success": True, "garment": {"id": garment.id, "name": garment.name, "category": garment.category, "tryon_enabled": garment.tryon_enabled}}
+    return {"success": True, "garment": {"id": garment.id, "name": garment.name,
+            "category": garment.category, "tryon_enabled": garment.tryon_enabled}}
 
 
 # ============================================================
@@ -461,48 +432,35 @@ async def update_garment(
 # ============================================================
 @app.get("/api/garment/{garment_id}/qr")
 async def get_garment_qr(garment_id: str, request: Request, db: Session = Depends(get_db)):
-    """Generate QR code for a garment that links to its try-on page."""
     garment = db.query(Garment).filter(Garment.id == garment_id).first()
     if not garment:
         raise HTTPException(status_code=404, detail="Garment not found")
-
     import qrcode
     from io import BytesIO
-
-    # Build URL to garment landing page
     base_url = str(request.base_url).rstrip('/')
     garment_url = f"{base_url}/prenda/{garment_id}"
-
-    # Generate QR
     qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_H, box_size=10, border=2)
     qr.add_data(garment_url)
     qr.make(fit=True)
-
     img = qr.make_image(fill_color="#1a1a1a", back_color="#ffffff")
-
-    # Add garment name as label below QR
     from PIL import Image, ImageDraw, ImageFont
     qr_size = img.size[0]
     label_height = 50
     final = Image.new('RGB', (qr_size, qr_size + label_height), '#ffffff')
     final.paste(img, (0, 0))
-
     draw = ImageDraw.Draw(final)
     try:
         font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20)
     except:
         font = ImageFont.load_default()
-
     text = garment.name[:30]
     bbox = draw.textbbox((0, 0), text, font=font)
     tw = bbox[2] - bbox[0]
     x = (qr_size - tw) // 2
     draw.text((x, qr_size + 10), text, fill="#1a1a1a", font=font)
-
     buf = BytesIO()
     final.save(buf, format='PNG')
     buf.seek(0)
-
     from fastapi.responses import StreamingResponse
     return StreamingResponse(buf, media_type="image/png",
         headers={"Content-Disposition": f"attachment; filename=qr_{garment.name}_{garment_id}.png"})
@@ -510,83 +468,65 @@ async def get_garment_qr(garment_id: str, request: Request, db: Session = Depend
 
 @app.get("/api/garments/qr-all")
 async def get_all_qr_codes(request: Request, store_id: Optional[str] = None, db: Session = Depends(get_db)):
-    """Generate a printable sheet with QR codes. Optionally filter by store."""
     query = db.query(Garment)
     if store_id:
         query = query.filter(Garment.store_id == store_id)
     garments = query.all()
     if not garments:
         raise HTTPException(status_code=404, detail="No garments found")
-
     import qrcode
     from PIL import Image, ImageDraw, ImageFont
     from io import BytesIO
-
     base_url = str(request.base_url).rstrip('/')
-
-    # Get store name for title
     store_name = ""
     if store_id:
         store = db.query(Store).filter(Store.id == store_id).first()
         if store:
             store_name = store.name
-
-    # Each QR is 250x310
     qr_w, qr_h = 250, 310
     cols = 3
     rows = (len(garments) + cols - 1) // cols
     title_h = 60 if store_name else 0
     sheet = Image.new('RGB', (cols * qr_w + 40, rows * qr_h + 40 + title_h), '#ffffff')
     draw = ImageDraw.Draw(sheet)
-
     try:
         font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 14)
         font_bold = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20)
         font_small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 11)
     except:
         font = font_bold = font_small = ImageFont.load_default()
-
-    # Store title
     if store_name:
         bbox = draw.textbbox((0, 0), store_name, font=font_bold)
         tw = bbox[2] - bbox[0]
         draw.text(((cols * qr_w + 40 - tw) // 2, 15), store_name, fill="#1a1a1a", font=font_bold)
-
     for i, g in enumerate(garments):
         col = i % cols
         row = i // cols
         x = 20 + col * qr_w
         y = 20 + row * qr_h + title_h
-
         qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_H, box_size=6, border=2)
         qr.add_data(f"{base_url}/prenda/{g.id}")
         qr.make(fit=True)
         qr_img = qr.make_image(fill_color="#1a1a1a", back_color="#ffffff").resize((220, 220))
         sheet.paste(qr_img, (x + 15, y))
-
-        # Labels
         text = g.name[:25]
         bbox = draw.textbbox((0, 0), text, font=font)
         tw = bbox[2] - bbox[0]
         draw.text((x + (qr_w - tw) // 2, y + 225), text, fill="#1a1a1a", font=font)
-
         meta = f"{g.size} · {g.category}"
         if g.reference:
             meta += f" · Ref: {g.reference}"
         bbox2 = draw.textbbox((0, 0), meta, font=font_small)
         tw2 = bbox2[2] - bbox2[0]
         draw.text((x + (qr_w - tw2) // 2, y + 248), meta, fill="#666666", font=font_small)
-
         if g.price and g.price > 0:
             price_text = f"${g.price:,.0f}"
             bbox3 = draw.textbbox((0, 0), price_text, font=font)
             tw3 = bbox3[2] - bbox3[0]
             draw.text((x + (qr_w - tw3) // 2, y + 268), price_text, fill="#1a7a3a", font=font)
-
     buf = BytesIO()
     sheet.save(buf, format='PNG')
     buf.seek(0)
-
     filename = f"qr_codes_{store_name or 'all'}.png".replace(' ', '_')
     from fastapi.responses import StreamingResponse
     return StreamingResponse(buf, media_type="image/png",
@@ -594,26 +534,25 @@ async def get_all_qr_codes(request: Request, store_id: Optional[str] = None, db:
 
 
 # ============================================================
-# GARMENT LANDING PAGE (from QR scan)
+# GARMENT LANDING PAGE (from QR scan) — with view tracking
 # ============================================================
 @app.get("/prenda/{garment_id}")
 async def garment_landing(garment_id: str, request: Request, db: Session = Depends(get_db)):
-    """Landing page when someone scans a garment QR code."""
     garment = db.query(Garment).filter(Garment.id == garment_id).first()
     if not garment:
         raise HTTPException(status_code=404, detail="Prenda no encontrada")
 
-    # Get store/client name
-    store_name = ""
+    # Track the view
+    track_view(db, garment_id, garment.store_id, source="qr")
+
+    store = None
     if garment.store_id:
-        client = db.query(Client).filter(Client.id == garment.store_id).first()
-        if client:
-            store_name = client.name
+        store = db.query(Store).filter(Store.id == garment.store_id).first()
 
     return templates.TemplateResponse("garment_landing.html", {
-        "request": request,
-        "garment": garment,
-        "store_name": store_name,
+        "request": request, "garment": garment,
+        "store_name": store.name if store else "",
+        "store": store,
     })
 
 
@@ -632,7 +571,6 @@ async def estimate_size(
     if not waist_cm:
         bmi = weight_kg / ((height_cm / 100) ** 2)
         waist_cm = (52 + bmi * 1.0) if gender == "mujer" else (62 + bmi * 1.1)
-
     chart = SIZE_CHART.get(gender, SIZE_CHART["mujer"])
     estimated_size = "M"
     for size_name, ranges in chart.items():
@@ -644,7 +582,6 @@ async def estimate_size(
             estimated_size = "S"
         elif chest_cm > chart["L"]["max_chest"]:
             estimated_size = "L"
-
     return {
         "estimated_size": estimated_size, "gender": gender,
         "measurements": {
@@ -655,7 +592,7 @@ async def estimate_size(
 
 
 # ============================================================
-# ROUTES - VIRTUAL TRY-ON (with auto usage logging)
+# ROUTES - VIRTUAL TRY-ON
 # ============================================================
 @app.post("/api/try-on")
 async def virtual_try_on(
@@ -667,44 +604,51 @@ async def virtual_try_on(
     garment = db.query(Garment).filter(Garment.id == garment_id).first()
     if not garment:
         raise HTTPException(status_code=404, detail="Garment not found")
-
-    # Auto-resolve client_id from garment's store
     if not client_id and garment.store_id:
         client_id = garment.store_id
-
     model_path = await save_upload(model_image, prefix="model_")
     model_b64 = image_to_base64_url(model_path)
     garment_filepath = ensure_garment_file(garment, db)
     garment_b64 = image_to_base64_url(garment_filepath)
-
     result = await fashn_run("tryon-v1.6", {
         "model_image": model_b64, "garment_image": garment_b64,
         "category": garment.category, "mode": "performance", "garment_photo_type": "auto"
     })
-
     output_urls = result.get("output", [])
     if not output_urls:
         raise HTTPException(status_code=500, detail="No output generated")
-
     result_url = output_urls[0]
     result_id = uuid.uuid4().hex[:8]
     result_path = RESULTS_DIR / f"tryon_{result_id}.png"
     async with httpx.AsyncClient() as client:
         img_resp = await client.get(result_url)
         result_path.write_bytes(img_resp.content)
-
-    tryon = TryOnResult(id=result_id, garment_ids=garment_id, result_image_url=f"/static/results/tryon_{result_id}.png")
+    tryon = TryOnResult(
+        id=result_id, garment_ids=garment_id,
+        result_image_url=f"/static/results/tryon_{result_id}.png",
+        store_id=garment.store_id
+    )
     db.add(tryon)
     db.commit()
-
-    # Auto log usage
     if client_id:
-        log_usage(db, client_id, "tryon", 1, garments_desc=garment.name, result_id=result_id, notes="Try-on individual")
+        log_usage(db, client_id, "tryon", 1, garments_desc=garment.name,
+                  result_id=result_id, notes="Try-on individual")
+
+    # Get store info for share page
+    store = None
+    if garment.store_id:
+        store = db.query(Store).filter(Store.id == garment.store_id).first()
 
     return {
-        "success": True, "result_image": f"/static/results/tryon_{result_id}.png",
+        "success": True,
+        "result_image": f"/static/results/tryon_{result_id}.png",
+        "result_id": result_id,
+        "share_url": f"/resultado/{result_id}",
         "fashn_url": result_url,
-        "garment": {"id": garment.id, "name": garment.name, "category": garment.category, "size": garment.size, "price": garment.price}
+        "garment": {"id": garment.id, "name": garment.name, "category": garment.category,
+                    "size": garment.size, "price": garment.price},
+        "store": {"name": store.name, "instagram": store.instagram,
+                  "primary_color": store.primary_color} if store else None,
     }
 
 
@@ -719,11 +663,8 @@ async def virtual_try_on_outfit(
         garment = db.query(Garment).filter(Garment.id == onepiece_id).first()
         if not garment:
             raise HTTPException(status_code=404, detail="One-piece not found")
-
-        # Auto-resolve client_id from garment's store
         if not client_id and garment.store_id:
             client_id = garment.store_id
-
         model_path = await save_upload(model_image, prefix="model_")
         result = await fashn_run("tryon-v1.6", {
             "model_image": image_to_base64_url(model_path),
@@ -733,47 +674,49 @@ async def virtual_try_on_outfit(
         output_urls = result.get("output", [])
         if not output_urls:
             raise HTTPException(status_code=500, detail="No output generated")
-
         result_url = output_urls[0]
         result_id = uuid.uuid4().hex[:8]
         result_path = RESULTS_DIR / f"outfit_{result_id}.png"
         async with httpx.AsyncClient() as client:
             img_resp = await client.get(result_url)
             result_path.write_bytes(img_resp.content)
-
-        db.add(TryOnResult(id=result_id, garment_ids=onepiece_id, result_image_url=f"/static/results/outfit_{result_id}.png"))
+        db.add(TryOnResult(id=result_id, garment_ids=onepiece_id,
+               result_image_url=f"/static/results/outfit_{result_id}.png", store_id=garment.store_id))
         db.commit()
-
         if client_id:
-            log_usage(db, client_id, "tryon", 1, garments_desc=garment.name, result_id=result_id, notes="One-piece")
-
+            log_usage(db, client_id, "tryon", 1, garments_desc=garment.name,
+                      result_id=result_id, notes="One-piece")
+        store = db.query(Store).filter(Store.id == garment.store_id).first() if garment.store_id else None
         return {
             "success": True, "result_image": f"/static/results/outfit_{result_id}.png",
+            "result_id": result_id, "share_url": f"/resultado/{result_id}",
             "fashn_url": result_url,
-            "garments_used": [{"id": garment.id, "name": garment.name, "category": garment.category, "size": garment.size, "price": garment.price}]
+            "garments_used": [{"id": garment.id, "name": garment.name, "category": garment.category,
+                               "size": garment.size, "price": garment.price}],
+            "store": {"name": store.name, "instagram": store.instagram,
+                      "primary_color": store.primary_color} if store else None,
         }
 
     if not top_id and not bottom_id:
         raise HTTPException(status_code=400, detail="Select at least one garment")
-
-    # Auto-resolve client_id from garment's store
     if not client_id:
         check_id = top_id or bottom_id
         if check_id:
             check_garment = db.query(Garment).filter(Garment.id == check_id).first()
             if check_garment and check_garment.store_id:
                 client_id = check_garment.store_id
-
     model_path = await save_upload(model_image, prefix="model_")
     current_image_b64 = image_to_base64_url(model_path)
     current_fashn_url = None
     garments_used = []
     total_credits = 0
+    store_id_for_result = None
 
     if top_id:
         top = db.query(Garment).filter(Garment.id == top_id).first()
         if not top:
             raise HTTPException(status_code=404, detail="Top not found")
+        store_id_for_result = top.store_id
         result_top = await fashn_run("tryon-v1.6", {
             "model_image": current_image_b64,
             "garment_image": image_to_base64_url(ensure_garment_file(top, db)),
@@ -784,9 +727,9 @@ async def virtual_try_on_outfit(
         if not output_urls:
             raise HTTPException(status_code=500, detail="Failed generating top")
         current_fashn_url = output_urls[0]
-        garments_used.append({"id": top.id, "name": top.name, "category": top.category, "size": top.size, "price": top.price})
+        garments_used.append({"id": top.id, "name": top.name, "category": top.category,
+                              "size": top.size, "price": top.price})
         total_credits += 1
-
         intermediate_path = RESULTS_DIR / f"intermediate_{uuid.uuid4().hex[:8]}.png"
         async with httpx.AsyncClient() as client:
             img_resp = await client.get(current_fashn_url)
@@ -797,6 +740,8 @@ async def virtual_try_on_outfit(
         bottom = db.query(Garment).filter(Garment.id == bottom_id).first()
         if not bottom:
             raise HTTPException(status_code=404, detail="Bottom not found")
+        if not store_id_for_result:
+            store_id_for_result = bottom.store_id
         result_bottom = await fashn_run("tryon-v1.6", {
             "model_image": current_image_b64,
             "garment_image": image_to_base64_url(ensure_garment_file(bottom, db)),
@@ -807,7 +752,8 @@ async def virtual_try_on_outfit(
         if not output_urls:
             raise HTTPException(status_code=500, detail="Failed generating bottom")
         current_fashn_url = output_urls[0]
-        garments_used.append({"id": bottom.id, "name": bottom.name, "category": bottom.category, "size": bottom.size, "price": bottom.price})
+        garments_used.append({"id": bottom.id, "name": bottom.name, "category": bottom.category,
+                              "size": bottom.size, "price": bottom.price})
         total_credits += 1
 
     result_id = uuid.uuid4().hex[:8]
@@ -815,44 +761,323 @@ async def virtual_try_on_outfit(
     async with httpx.AsyncClient() as client:
         img_resp = await client.get(current_fashn_url)
         result_path.write_bytes(img_resp.content)
-
-    db.add(TryOnResult(id=result_id, garment_ids=",".join([g["id"] for g in garments_used]), result_image_url=f"/static/results/outfit_{result_id}.png"))
+    db.add(TryOnResult(id=result_id, garment_ids=",".join([g["id"] for g in garments_used]),
+           result_image_url=f"/static/results/outfit_{result_id}.png", store_id=store_id_for_result))
     db.commit()
-
-    # Auto log usage
     if client_id:
         garment_names = " + ".join([g["name"] for g in garments_used])
-        log_usage(db, client_id, "tryon", total_credits, garments_desc=garment_names, result_id=result_id, notes=f"Outfit ({total_credits} prendas)")
+        log_usage(db, client_id, "tryon", total_credits, garments_desc=garment_names,
+                  result_id=result_id, notes=f"Outfit ({total_credits} prendas)")
 
+    store = db.query(Store).filter(Store.id == store_id_for_result).first() if store_id_for_result else None
     return {
         "success": True, "result_image": f"/static/results/outfit_{result_id}.png",
-        "fashn_url": current_fashn_url, "garments_used": garments_used
+        "result_id": result_id, "share_url": f"/resultado/{result_id}",
+        "fashn_url": current_fashn_url, "garments_used": garments_used,
+        "store": {"name": store.name, "instagram": store.instagram,
+                  "primary_color": store.primary_color} if store else None,
     }
 
 
 # ============================================================
-# ROUTES - VIDEO (with auto usage logging)
+# SHARE RESULT PAGE — branded frame + social sharing
+# ============================================================
+@app.get("/resultado/{result_id}", response_class=HTMLResponse)
+async def share_result_page(result_id: str, request: Request, db: Session = Depends(get_db)):
+    """Public page showing try-on result with branded frame and share buttons."""
+    result = db.query(TryOnResult).filter(TryOnResult.id == result_id).first()
+    if not result:
+        raise HTTPException(status_code=404, detail="Resultado no encontrado")
+
+    # Get garment info
+    garment_ids = result.garment_ids.split(",") if result.garment_ids else []
+    garments = db.query(Garment).filter(Garment.id.in_(garment_ids)).all() if garment_ids else []
+
+    # Get store info
+    store = None
+    if result.store_id:
+        store = db.query(Store).filter(Store.id == result.store_id).first()
+
+    base_url = str(request.base_url).rstrip('/')
+    share_url = f"{base_url}/resultado/{result_id}"
+
+    return templates.TemplateResponse("share_result.html", {
+        "request": request, "result": result, "garments": garments,
+        "store": store, "share_url": share_url, "base_url": base_url,
+    })
+
+
+@app.post("/api/share/{result_id}")
+async def log_share(result_id: str, platform: str = Form(...), db: Session = Depends(get_db)):
+    """Log when a user shares their result on social media."""
+    result = db.query(TryOnResult).filter(TryOnResult.id == result_id).first()
+    if not result:
+        raise HTTPException(status_code=404, detail="Result not found")
+
+    # Get garment/store info
+    garment_id = result.garment_ids.split(",")[0] if result.garment_ids else None
+
+    share = ShareLog(
+        id=uuid.uuid4().hex[:12], result_id=result_id,
+        garment_id=garment_id, store_id=result.store_id,
+        platform=platform, created_at=datetime.utcnow()
+    )
+    db.add(share)
+    result.shared = True
+    db.commit()
+    return {"success": True}
+
+
+@app.get("/api/share-image/{result_id}")
+async def get_branded_share_image(result_id: str, db: Session = Depends(get_db)):
+    """Generate a branded image with store frame for sharing."""
+    result = db.query(TryOnResult).filter(TryOnResult.id == result_id).first()
+    if not result:
+        raise HTTPException(status_code=404, detail="Result not found")
+
+    from PIL import Image, ImageDraw, ImageFont
+    from io import BytesIO
+
+    # Load result image
+    result_path = Path(result.result_image_url.lstrip('/'))
+    if not result_path.exists():
+        raise HTTPException(status_code=404, detail="Image not found")
+
+    img = Image.open(result_path).convert('RGB')
+
+    # Get store info
+    store = None
+    if result.store_id:
+        store = db.query(Store).filter(Store.id == result.store_id).first()
+
+    # Create branded frame
+    padding = 40
+    footer_h = 80
+    w, h = img.size
+    canvas = Image.new('RGB', (w + padding * 2, h + padding + footer_h), '#ffffff')
+    canvas.paste(img, (padding, padding // 2))
+
+    draw = ImageDraw.Draw(canvas)
+
+    try:
+        font_name = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 22)
+        font_sub = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 14)
+        font_tag = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 12)
+    except:
+        font_name = font_sub = font_tag = ImageFont.load_default()
+
+    footer_y = h + padding // 2 + 8
+
+    if store:
+        # Store name
+        draw.text((padding, footer_y), store.name, fill="#1a1a1a", font=font_name)
+        # Instagram handle
+        if store.instagram:
+            draw.text((padding, footer_y + 30), f"@{store.instagram}", fill="#666666", font=font_sub)
+        # Hashtag
+        draw.text((padding, footer_y + 52), "Probado con IA ✨ #FashionTryOn", fill="#999999", font=font_tag)
+    else:
+        draw.text((padding, footer_y), "Fashion Try-On", fill="#1a1a1a", font=font_name)
+        draw.text((padding, footer_y + 30), "Probado con IA ✨", fill="#999999", font=font_sub)
+
+    # Color accent bar at top
+    accent_color = store.primary_color if store else "#c9a55a"
+    draw.rectangle([(0, 0), (canvas.size[0], 4)], fill=accent_color)
+
+    buf = BytesIO()
+    canvas.save(buf, format='JPEG', quality=92)
+    buf.seek(0)
+
+    from fastapi.responses import StreamingResponse
+    return StreamingResponse(buf, media_type="image/jpeg",
+        headers={"Content-Disposition": f"inline; filename=tryon_{result_id}.jpg"})
+
+
+# ============================================================
+# COLLECTIONS / LOOKBOOK
+# ============================================================
+@app.post("/api/collection")
+async def create_collection(
+    store_id: str = Form(...), name: str = Form(...),
+    slug: str = Form(""), description: str = Form(""),
+    cover_color: str = Form("#1a1a1a"), garment_ids: str = Form(""),
+    db: Session = Depends(get_db)
+):
+    import re
+    if not slug:
+        slug = re.sub(r'[^a-z0-9-]', '', name.lower().replace(' ', '-'))
+    slug = f"{slug}-{uuid.uuid4().hex[:4]}"
+
+    collection = Collection(
+        id=uuid.uuid4().hex[:12], store_id=store_id, name=name,
+        slug=slug, description=description, cover_color=cover_color,
+        garment_ids=garment_ids, active=True
+    )
+    db.add(collection)
+    db.commit()
+    return {"success": True, "collection": {
+        "id": collection.id, "name": collection.name, "slug": collection.slug,
+        "url": f"/coleccion/{collection.slug}"
+    }}
+
+
+@app.get("/api/collections")
+async def list_collections(store_id: Optional[str] = None, db: Session = Depends(get_db)):
+    query = db.query(Collection).filter(Collection.active == True)
+    if store_id:
+        query = query.filter(Collection.store_id == store_id)
+    collections = query.order_by(Collection.created_at.desc()).all()
+    result = []
+    for c in collections:
+        garment_count = len(c.garment_ids.split(",")) if c.garment_ids else 0
+        store = db.query(Store).filter(Store.id == c.store_id).first()
+        result.append({
+            "id": c.id, "name": c.name, "slug": c.slug,
+            "description": c.description, "cover_color": c.cover_color,
+            "store_name": store.name if store else "", "garment_count": garment_count,
+            "url": f"/coleccion/{c.slug}", "created_at": c.created_at.isoformat() if c.created_at else "",
+        })
+    return {"collections": result}
+
+
+@app.delete("/api/collection/{collection_id}")
+async def delete_collection(collection_id: str, db: Session = Depends(get_db)):
+    coll = db.query(Collection).filter(Collection.id == collection_id).first()
+    if not coll:
+        raise HTTPException(status_code=404, detail="Collection not found")
+    coll.active = False
+    db.commit()
+    return {"success": True}
+
+
+@app.get("/coleccion/{collection_slug}", response_class=HTMLResponse)
+async def collection_page(collection_slug: str, request: Request, db: Session = Depends(get_db)):
+    """Public collection/lookbook page."""
+    collection = db.query(Collection).filter(
+        Collection.slug == collection_slug, Collection.active == True
+    ).first()
+    if not collection:
+        raise HTTPException(status_code=404, detail="Colección no encontrada")
+
+    store = db.query(Store).filter(Store.id == collection.store_id).first()
+
+    # Get garments in collection
+    garment_ids = [gid.strip() for gid in collection.garment_ids.split(",") if gid.strip()] if collection.garment_ids else []
+    if garment_ids:
+        garments = db.query(Garment).filter(Garment.id.in_(garment_ids)).all()
+    else:
+        # If no specific garments, show all from store
+        garments = db.query(Garment).filter(Garment.store_id == collection.store_id).all()
+
+    # Track views for analytics
+    for g in garments:
+        track_view(db, g.id, collection.store_id, source="collection_page")
+
+    return templates.TemplateResponse("collection.html", {
+        "request": request, "collection": collection,
+        "store": store, "garments": garments,
+    })
+
+
+# ============================================================
+# ANALYTICS API
+# ============================================================
+@app.get("/api/analytics/{store_id}")
+async def get_store_analytics(store_id: str, days: int = 30, db: Session = Depends(get_db)):
+    """Get analytics data for a store."""
+    since = datetime.utcnow() - timedelta(days=days)
+
+    # Views per garment
+    views = db.query(
+        TryOnView.garment_id, func.count(TryOnView.id).label('views')
+    ).filter(
+        TryOnView.store_id == store_id, TryOnView.created_at >= since
+    ).group_by(TryOnView.garment_id).all()
+
+    views_dict = {v.garment_id: v.views for v in views}
+
+    # Try-ons per garment
+    results = db.query(TryOnResult).filter(
+        TryOnResult.store_id == store_id, TryOnResult.created_at >= since
+    ).all()
+
+    tryon_count = {}
+    for r in results:
+        for gid in r.garment_ids.split(","):
+            gid = gid.strip()
+            tryon_count[gid] = tryon_count.get(gid, 0) + 1
+
+    # Shares per garment
+    shares = db.query(
+        ShareLog.garment_id, ShareLog.platform, func.count(ShareLog.id).label('count')
+    ).filter(
+        ShareLog.store_id == store_id, ShareLog.created_at >= since
+    ).group_by(ShareLog.garment_id, ShareLog.platform).all()
+
+    shares_by_garment = {}
+    shares_by_platform = {}
+    for s in shares:
+        if s.garment_id:
+            shares_by_garment[s.garment_id] = shares_by_garment.get(s.garment_id, 0) + s.count
+        shares_by_platform[s.platform] = shares_by_platform.get(s.platform, 0) + s.count
+
+    # Build garment ranking
+    garments = db.query(Garment).filter(Garment.store_id == store_id).all()
+    ranking = []
+    for g in garments:
+        ranking.append({
+            "id": g.id, "name": g.name, "category": g.category,
+            "reference": g.reference, "price": g.price,
+            "image_url": g.image_url,
+            "views": views_dict.get(g.id, 0),
+            "tryons": tryon_count.get(g.id, 0),
+            "shares": shares_by_garment.get(g.id, 0),
+            "engagement": views_dict.get(g.id, 0) + tryon_count.get(g.id, 0) * 3 + shares_by_garment.get(g.id, 0) * 5,
+        })
+    ranking.sort(key=lambda x: x['engagement'], reverse=True)
+
+    total_views = sum(v.views for v in views)
+    total_tryons = sum(tryon_count.values())
+    total_shares = sum(shares_by_platform.values())
+
+    return {
+        "period_days": days,
+        "totals": {
+            "views": total_views, "tryons": total_tryons,
+            "shares": total_shares,
+            "conversion_rate": round(total_tryons / total_views * 100, 1) if total_views > 0 else 0,
+        },
+        "shares_by_platform": shares_by_platform,
+        "garment_ranking": ranking,
+    }
+
+
+@app.get("/analytics/{store_slug}", response_class=HTMLResponse)
+async def analytics_page(store_slug: str, request: Request, db: Session = Depends(get_db)):
+    """Client-facing analytics report page."""
+    store = db.query(Store).filter(Store.slug == store_slug).first()
+    if not store:
+        raise HTTPException(status_code=404, detail="Tienda no encontrada")
+    return templates.TemplateResponse("analytics.html", {"request": request, "store": store})
+
+
+# ============================================================
+# ROUTES - VIDEO
 # ============================================================
 @app.post("/api/generate-video")
 async def generate_video(
-    image_url: str = Form(...),
-    client_id: str = Form(""),
-    resolution: str = Form("720p"),
-    db: Session = Depends(get_db)
+    image_url: str = Form(...), client_id: str = Form(""),
+    resolution: str = Form("720p"), db: Session = Depends(get_db)
 ):
     result = await fashn_run("image-to-video", {"image": image_url}, timeout=180)
     output = result.get("output", [])
     if not output:
         raise HTTPException(status_code=500, detail="No video generated")
-
     video_url = output[0] if isinstance(output, list) else output
-
-    # Auto log usage
     if client_id:
         credit_map = {"480p": 1, "720p": 3, "1080p": 6}
         credits = credit_map.get(resolution, 3)
         log_usage(db, client_id, f"video-{resolution}", credits, notes=f"Video desfile {resolution}")
-
     return {"success": True, "video_url": video_url}
 
 
@@ -880,10 +1105,8 @@ async def get_clients(db: Session = Depends(get_db)):
         total_charge_cop = sum(l.charge_cop for l in logs)
         fotos = len([l for l in logs if l.usage_type == "tryon"])
         videos = len([l for l in logs if l.usage_type.startswith("video")])
-
         settings = get_settings(db)
         cost_cop = total_cost_usd * settings.cop_rate
-
         result.append({
             "id": c.id, "name": c.name, "email": c.email, "phone": c.phone,
             "price_per_outfit": c.price_per_outfit, "price_per_video": c.price_per_video,
@@ -951,17 +1174,12 @@ async def delete_client(client_id: str, db: Session = Depends(get_db)):
 # ADMIN API - USAGE LOGS
 # ============================================================
 @app.get("/api/admin/usage")
-async def get_usage_logs(
-    client_id: Optional[str] = None,
-    db: Session = Depends(get_db)
-):
+async def get_usage_logs(client_id: Optional[str] = None, db: Session = Depends(get_db)):
     query = db.query(UsageLog)
     if client_id:
         query = query.filter(UsageLog.client_id == client_id)
     logs = query.order_by(UsageLog.created_at.desc()).limit(200).all()
-
     settings = get_settings(db)
-
     result = []
     for l in logs:
         client = db.query(Client).filter(Client.id == l.client_id).first()
@@ -981,8 +1199,7 @@ async def get_usage_logs(
 async def manual_log_usage(
     client_id: str = Form(...), usage_type: str = Form(...),
     credits_used: int = Form(1), garments_desc: str = Form(""),
-    notes: str = Form(""),
-    db: Session = Depends(get_db)
+    notes: str = Form(""), db: Session = Depends(get_db)
 ):
     log = log_usage(db, client_id, usage_type, credits_used,
                     garments_desc=garments_desc, notes=notes)
@@ -1007,22 +1224,17 @@ async def admin_dashboard_stats(db: Session = Depends(get_db)):
     settings = get_settings(db)
     logs = db.query(UsageLog).all()
     clients = db.query(Client).filter(Client.active == True).all()
-
     total_credits = sum(l.credits_used for l in logs)
     total_cost_usd = sum(l.cost_usd for l in logs)
     total_charge_cop = sum(l.charge_cop for l in logs)
     total_cost_cop = total_cost_usd * settings.cop_rate
     fotos = len([l for l in logs if l.usage_type == "tryon"])
     videos = len([l for l in logs if l.usage_type.startswith("video")])
-
     return {
-        "plan": settings.fashn_plan,
-        "cop_rate": settings.cop_rate,
+        "plan": settings.fashn_plan, "cop_rate": settings.cop_rate,
         "price_per_credit": PRICE_PER_CREDIT.get(settings.fashn_plan, 0.0675),
-        "total_clients": len(clients),
-        "total_generations": len(logs),
-        "total_fotos": fotos,
-        "total_videos": videos,
+        "total_clients": len(clients), "total_generations": len(logs),
+        "total_fotos": fotos, "total_videos": videos,
         "total_credits": total_credits,
         "total_cost_usd": round(total_cost_usd, 2),
         "total_cost_cop": round(total_cost_cop),
@@ -1055,7 +1267,6 @@ async def health():
 
 @app.delete("/api/admin/cleanup-garments")
 async def cleanup_garments(db: Session = Depends(get_db)):
-    """Remove garments that have no image_data (old uploads lost after deploy)."""
     old_garments = db.query(Garment).filter(Garment.image_data == None).all()
     count = len(old_garments)
     for g in old_garments:
