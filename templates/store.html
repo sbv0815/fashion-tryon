@@ -20,7 +20,6 @@
         * { margin:0; padding:0; box-sizing:border-box; }
         body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
 
-        /* Header */
         .header {
             background:var(--bg2); border-bottom:1px solid var(--border);
             padding:0.8rem 1.2rem; display:flex; align-items:center; justify-content:center;
@@ -34,34 +33,21 @@
 
         .container { max-width:600px; margin:0 auto; padding:1rem; }
 
-        /* Steps */
         .steps { display:flex; justify-content:center; gap:0.3rem; margin:1rem 0 1.5rem; }
-        .step {
-            width:10px; height:10px; border-radius:50%;
-            background:var(--border); transition:all 0.3s;
-        }
+        .step { width:10px; height:10px; border-radius:50%; background:var(--border); transition:all 0.3s; }
         .step.active { background:var(--accent); width:28px; border-radius:5px; }
         .step.done { background:var(--success); }
 
-        /* Sections */
         .section { display:none; }
         .section.active { display:block; animation:fadeIn 0.3s; }
         @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
 
-        .section-title {
-            font-family:'Playfair Display',serif; font-size:1.4rem;
-            font-weight:700; margin-bottom:0.3rem;
-        }
+        .section-title { font-family:'Playfair Display',serif; font-size:1.4rem; font-weight:700; margin-bottom:0.3rem; }
         .section-sub { color:var(--text2); font-size:0.85rem; margin-bottom:1.2rem; }
 
-        /* Cards */
-        .card {
-            background:var(--bg2); border:1px solid var(--border);
-            border-radius:var(--radius); padding:1.2rem; margin-bottom:1rem;
-        }
+        .card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); padding:1.2rem; margin-bottom:1rem; }
         .card-title { font-weight:600; margin-bottom:0.8rem; font-size:0.95rem; }
 
-        /* Gender */
         .gender-opts { display:flex; gap:0.75rem; }
         .gender-opt {
             flex:1; padding:1.2rem; text-align:center; border-radius:var(--radius);
@@ -72,7 +58,6 @@
         .gender-opt .icon { font-size:2rem; margin-bottom:0.3rem; }
         .gender-opt .label { font-size:0.85rem; font-weight:500; }
 
-        /* Form */
         .form-row { display:flex; gap:0.75rem; margin-top:1rem; }
         .form-row .field { flex:1; }
         .form-row label { display:block; font-size:0.8rem; color:var(--text2); margin-bottom:4px; }
@@ -81,11 +66,7 @@
             border-radius:8px; color:var(--text); font-family:inherit; font-size:0.95rem;
         }
 
-        /* Size result */
-        .size-result {
-            display:none; text-align:center; margin-top:1rem;
-            padding:1rem; background:var(--accent-soft); border-radius:var(--radius);
-        }
+        .size-result { display:none; text-align:center; margin-top:1rem; padding:1rem; background:var(--accent-soft); border-radius:var(--radius); }
         .size-result.visible { display:block; }
         .size-big { font-size:2.5rem; font-weight:700; color:var(--accent); }
 
@@ -96,6 +77,7 @@
             overflow:hidden; cursor:pointer; transition:all 0.3s; position:relative;
         }
         .garment.selected { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); }
+        .garment.disabled { cursor:default; opacity:0.5; }
         .garment img { width:100%; height:160px; object-fit:cover; background:#111; }
         .garment .info { padding:0.6rem 0.8rem; }
         .garment .name { font-weight:600; font-size:0.85rem; }
@@ -107,8 +89,17 @@
             align-items:center; justify-content:center; color:#0a0a0a; font-size:0.8rem; font-weight:700;
         }
         .garment.selected .check { display:flex; }
+        .garment .tryon-badge {
+            position:absolute; top:8px; left:8px;
+            background:var(--accent); color:#0a0a0a; padding:2px 8px; border-radius:10px;
+            font-size:0.65rem; font-weight:700;
+        }
+        .garment .no-tryon-badge {
+            position:absolute; top:8px; left:8px;
+            background:rgba(0,0,0,0.7); color:var(--text2); padding:2px 8px; border-radius:10px;
+            font-size:0.65rem; font-weight:500;
+        }
 
-        /* Filters */
         .filters { display:flex; gap:0.5rem; margin-bottom:1rem; flex-wrap:wrap; }
         .filter-btn {
             padding:6px 14px; border-radius:20px; border:1px solid var(--border);
@@ -117,7 +108,6 @@
         }
         .filter-btn.active { background:var(--accent); color:#0a0a0a; border-color:var(--accent); font-weight:600; }
 
-        /* Outfit summary */
         .outfit-bar {
             display:none; background:var(--bg2); border:1px solid var(--border);
             border-radius:var(--radius); padding:0.8rem 1rem; margin-bottom:1rem;
@@ -129,7 +119,6 @@
             padding:3px 10px; border-radius:20px; font-size:0.8rem; color:var(--accent);
         }
 
-        /* Buttons */
         .btn {
             padding:14px 24px; border-radius:var(--radius); border:none; cursor:pointer;
             font-family:inherit; font-size:0.95rem; font-weight:600; transition:all 0.2s;
@@ -172,15 +161,12 @@
             box-shadow:0 4px 15px rgba(0,0,0,0.4);
         }
 
-        /* Photo preview */
         .preview { display:none; text-align:center; }
         .preview img { max-width:100%; max-height:45vh; border-radius:var(--radius); }
 
-        /* Result */
         .result { display:none; text-align:center; }
         .result img { max-width:100%; border-radius:var(--radius); margin-bottom:1rem; }
 
-        /* Loader */
         .loader { display:none; position:fixed; top:0;left:0;right:0;bottom:0; background:rgba(10,10,10,0.92); z-index:500; justify-content:center; align-items:center; flex-direction:column; gap:1rem; }
         .loader.visible { display:flex; }
         .spinner { width:50px;height:50px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite; }
@@ -188,7 +174,6 @@
         .progress { width:250px;height:4px;background:var(--border);border-radius:4px;overflow:hidden; }
         .progress-bar { height:100%;background:var(--accent);width:0%;transition:width 0.5s; }
 
-        /* Toast */
         .toast {
             position:fixed; bottom:2rem; left:50%; transform:translateX(-50%) translateY(100px);
             background:var(--card); border:1px solid var(--border); border-radius:8px;
@@ -199,8 +184,21 @@
         .toast.success { border-color:var(--success); }
         .toast.error { border-color:var(--danger); }
 
-        .share-btns { display:flex; gap:0.75rem; margin-top:1rem; }
-        .btn-whatsapp { background:#25D366; border:none; color:#fff; font-weight:600; }
+        /* Share section */
+        .share-section { margin-top:1.2rem; }
+        .share-title-sm { font-size:0.8rem; color:var(--text2); text-transform:uppercase; letter-spacing:1px; margin-bottom:0.6rem; text-align:center; }
+        .share-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:0.5rem; }
+        .share-btn {
+            display:flex; align-items:center; justify-content:center; gap:6px;
+            padding:11px; border-radius:10px; border:none; cursor:pointer;
+            font-family:'DM Sans',sans-serif; font-size:0.8rem; font-weight:600; transition:all 0.2s;
+        }
+        .share-btn:active { transform:scale(0.96); }
+        .share-whatsapp { background:#25D366; color:#fff; }
+        .share-instagram { background:linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045); color:#fff; }
+        .share-facebook { background:#1877F2; color:#fff; }
+        .share-copy { background:var(--card); border:1px solid var(--border); color:var(--text); }
+        .share-download { background:var(--accent); color:#0a0a0a; grid-column:1/-1; }
     </style>
 </head>
 <body>
@@ -221,7 +219,6 @@
     <div class="section active" id="step-1">
         <div class="section-title">¿Quién eres?</div>
         <div class="section-sub">Selecciona tu género y medidas para recomendarte la talla</div>
-
         <div class="card">
             <div class="gender-opts">
                 <button class="gender-opt" onclick="selectGender('mujer')">
@@ -232,21 +229,14 @@
                 </button>
             </div>
             <div class="form-row">
-                <div class="field">
-                    <label>Estatura (cm)</label>
-                    <input type="number" id="height" placeholder="165" min="100" max="220">
-                </div>
-                <div class="field">
-                    <label>Peso (kg)</label>
-                    <input type="number" id="weight" placeholder="65" min="30" max="200">
-                </div>
+                <div class="field"><label>Estatura (cm)</label><input type="number" id="height" placeholder="165" min="100" max="220"></div>
+                <div class="field"><label>Peso (kg)</label><input type="number" id="weight" placeholder="65" min="30" max="200"></div>
             </div>
             <div class="size-result" id="size-result">
                 <div style="font-size:0.8rem; color:var(--text2);">Tu talla recomendada</div>
                 <div class="size-big" id="size-display">M</div>
             </div>
         </div>
-
         <div class="btn-row">
             <button class="btn btn-primary" onclick="calcSize()" style="width:100%;">Continuar →</button>
         </div>
@@ -255,13 +245,13 @@
     <!-- STEP 2: GARMENTS -->
     <div class="section" id="step-2">
         <div class="section-title">Escoge tu ropa</div>
-        <div class="section-sub" id="step2-sub">Selecciona una prenda superior, inferior, o un vestido</div>
+        <div class="section-sub" id="step2-sub">Selecciona las prendas marcadas con ✨</div>
 
         <div class="filters" id="filters">
-            <button class="filter-btn active" onclick="filter('all')">Todas</button>
-            <button class="filter-btn" onclick="filter('tops')">Tops</button>
-            <button class="filter-btn" onclick="filter('bottoms')">Bottoms</button>
-            <button class="filter-btn" onclick="filter('one-pieces')">Vestidos</button>
+            <button class="filter-btn active" onclick="filterCat('all')">Todas</button>
+            <button class="filter-btn" onclick="filterCat('tops')">👕 Tops</button>
+            <button class="filter-btn" onclick="filterCat('bottoms')">👖 Bottoms</button>
+            <button class="filter-btn" onclick="filterCat('one-pieces')">👗 Vestidos</button>
         </div>
 
         <div class="outfit-bar" id="outfit-bar">
@@ -281,25 +271,18 @@
     <div class="section" id="step-3">
         <div class="section-title">Tu foto</div>
         <div class="section-sub">Foto de cuerpo completo para la prueba virtual</div>
-
         <div class="card" id="photo-guide">
             <div class="card-title">📋 Tips para la mejor foto</div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; font-size:0.8rem;">
-                <div style="color:var(--success);">
-                    ✅ Cuerpo completo<br>✅ De frente<br>✅ Buena luz<br>✅ Fondo limpio
-                </div>
-                <div style="color:var(--danger);">
-                    ❌ Foto cortada<br>❌ De lado<br>❌ Muy oscura<br>❌ Fondo desordenado
-                </div>
+                <div style="color:var(--success);">✅ Cuerpo completo<br>✅ De frente<br>✅ Buena luz<br>✅ Fondo limpio</div>
+                <div style="color:var(--danger);">❌ Foto cortada<br>❌ De lado<br>❌ Muy oscura<br>❌ Fondo desordenado</div>
             </div>
         </div>
-
         <div id="capture-btns" style="display:flex; gap:0.75rem;">
             <button class="btn btn-primary" onclick="openCam()" style="flex:1;padding:1rem;">📷 Cámara</button>
             <button class="btn btn-secondary" onclick="document.getElementById('gal-input').click()" style="flex:1;padding:1rem;">🖼️ Galería</button>
         </div>
         <input type="file" id="gal-input" accept="image/*" onchange="galPhoto(this)" style="display:none">
-
         <div class="preview" id="photo-preview">
             <img id="preview-img" alt="Tu foto">
             <div class="btn-row" style="margin-top:0.75rem;">
@@ -307,7 +290,6 @@
                 <button class="btn btn-primary" id="btn-gen" onclick="generate()">✨ Generar</button>
             </div>
         </div>
-
         <div class="btn-row" id="photo-nav">
             <button class="btn btn-secondary" onclick="goStep(2)">← Atrás</button>
         </div>
@@ -317,14 +299,25 @@
     <div class="section" id="step-4">
         <div class="section-title">¡Así te queda!</div>
         <div class="section-sub" id="result-garments"></div>
-
         <div class="result" id="result-area">
             <img id="result-img" alt="Resultado">
-            <div class="share-btns">
-                <button class="btn btn-whatsapp" onclick="shareWA()" style="flex:1;">💬 Compartir</button>
-                <button class="btn btn-secondary" onclick="goStep(3)" style="flex:1;">🔄 Otra foto</button>
+
+            <!-- Share section -->
+            <div class="share-section">
+                <div class="share-title-sm">✨ Comparte tu look</div>
+                <div class="share-grid">
+                    <button class="share-btn share-whatsapp" onclick="shareWhatsApp()">💬 WhatsApp</button>
+                    <button class="share-btn share-instagram" onclick="shareInstagram()">📸 Instagram</button>
+                    <button class="share-btn share-facebook" onclick="shareFacebook()">👤 Facebook</button>
+                    <button class="share-btn share-copy" onclick="copyShareLink()">🔗 Copiar link</button>
+                    <a class="share-btn share-download" id="downloadBtn" href="#" download="mi_look.jpg">⬇️ Descargar imagen branded</a>
+                </div>
             </div>
-            <button class="btn btn-secondary" onclick="goStep(2)" style="width:100%; margin-top:0.75rem;">👗 Probar otra ropa</button>
+
+            <div class="btn-row" style="margin-top:1rem;">
+                <button class="btn btn-secondary" onclick="goStep(3)">🔄 Otra foto</button>
+                <button class="btn btn-secondary" onclick="goStep(2)">👗 Otra ropa</button>
+            </div>
         </div>
     </div>
 </div>
@@ -354,346 +347,390 @@
 <div class="toast" id="toast"></div>
 
 <script>
-    // State
-    const STORE_ID = new URLSearchParams(window.location.search).get('store') || '';
-    let profile = { gender:null, size:'M' };
-    let outfit = { top:null, bottom:null, onepiece:null };
-    let catalog = [];
-    let photoFile = null;
-    let camStream = null;
-    let frontCam = false;
-    let storeName = '';
+// ============================================================
+// STATE
+// ============================================================
+const STORE_ID = new URLSearchParams(window.location.search).get('store') || '';
+let profile = { gender:null, size:'M' };
+let outfit = { top:null, bottom:null, onepiece:null };
+let catalog = [];
+let photoFile = null;
+let camStream = null;
+let frontCam = false;
+let storeName = '';
+let lastResultId = null;
+let lastShareUrl = null;
+let lastStoreData = null;
 
-    // Load store info if filtered
-    async function loadStoreInfo() {
-        if (!STORE_ID) return;
-        try {
-            const r = await fetch(`/api/store-info/${STORE_ID}`);
-            if (r.ok) {
-                const d = await r.json();
-                storeName = d.name;
-                document.getElementById('header-title').textContent = d.name;
-                document.title = d.name + ' - Probador Virtual';
-            }
-        } catch(e) {}
-    }
-    loadStoreInfo();
-
-    // Navigation
-    function goStep(n) {
-        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-        document.getElementById(`step-${n}`).classList.add('active');
-        document.querySelectorAll('.step').forEach((d,i) => {
-            d.className = 'step';
-            if (i+1 === n) d.classList.add('active');
-            else if (i+1 < n) d.classList.add('done');
-        });
-        if (n === 2) loadCatalog();
-        if (n === 4) document.getElementById('result-area').style.display = 'block';
-    }
-
-    // Step 1
-    function selectGender(g) {
-        profile.gender = g;
-        document.querySelectorAll('.gender-opt').forEach(b => b.classList.remove('selected'));
-        event.currentTarget.classList.add('selected');
-    }
-
-    async function calcSize() {
-        if (!profile.gender) { toast('Selecciona tu género','error'); return; }
-        const h = parseFloat(document.getElementById('height').value);
-        const w = parseFloat(document.getElementById('weight').value);
-        if (!h || !w) { toast('Ingresa estatura y peso','error'); return; }
-
-        const form = new FormData();
-        form.append('gender', profile.gender);
-        form.append('height_cm', h);
-        form.append('weight_kg', w);
-
-        try {
-            const r = await fetch('/api/estimate-size', {method:'POST', body:form});
+// Load store info
+async function loadStoreInfo() {
+    if (!STORE_ID) return;
+    try {
+        const r = await fetch(`/api/store-info/${STORE_ID}`);
+        if (r.ok) {
             const d = await r.json();
-            profile.size = d.estimated_size;
-            document.getElementById('size-display').textContent = d.estimated_size;
-            document.getElementById('size-result').classList.add('visible');
-            toast(`Talla: ${d.estimated_size}`, 'success');
-            setTimeout(() => goStep(2), 600);
-        } catch(e) { toast('Error calculando talla','error'); }
-    }
-
-    // Step 2
-    async function loadCatalog() {
-        try {
-            const g = profile.gender || '';
-            const storeParam = STORE_ID ? `&store_id=${STORE_ID}` : '';
-            const r = await fetch(`/api/catalog?gender=${g}${storeParam}`);
-            const data = await r.json();
-            catalog = data.garments || data;
-            if (data.store_name) {
-                storeName = data.store_name;
-                document.getElementById('header-title').textContent = data.store_name;
-                document.getElementById('step2-sub').textContent = `Catálogo de ${data.store_name}`;
-            }
-            renderGarments(catalog);
-        } catch(e) {}
-    }
-
-    function renderGarments(items) {
-        const grid = document.getElementById('garments-grid');
-        if (!items.length) {
-            grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--text2);">No hay prendas disponibles</div>';
-            return;
+            storeName = d.name;
+            document.getElementById('header-title').textContent = d.name;
+            document.title = d.name + ' - Probador Virtual';
         }
-        grid.innerHTML = items.map(g => {
-            const sel = g.id===outfit.top || g.id===outfit.bottom || g.id===outfit.onepiece;
-            const icon = g.category==='tops'?'👕':g.category==='bottoms'?'👖':'👗';
-            const canTry = g.tryon_enabled;
-            return `
-            <div class="garment ${sel?'selected':''} ${canTry?'':'no-tryon'}" onclick="${canTry ? `toggle('${g.id}')` : ''}">
-                ${canTry ? '<div class="check">✓</div>' : ''}
-                <img src="${g.image_url}" alt="${g.name}" style="${canTry?'':'opacity:0.6'}">
-                <div class="info">
-                    <div class="name">${g.name}</div>
-                    <div class="meta">${icon} ${g.size}${canTry?' · ✨':''}</div>
-                    ${g.price ? `<div class="price">$${Number(g.price).toLocaleString('es-CO')}</div>` : ''}
-                </div>
-            </div>`;
-        }).join('');
-    }
+    } catch(e) {}
+}
+loadStoreInfo();
 
-    function toggle(id) {
-        const g = catalog.find(x => x.id===id);
-        if (!g) return;
-        if (g.category === 'one-pieces') {
-            outfit.onepiece = outfit.onepiece===id ? null : id;
-            if (outfit.onepiece) { outfit.top=null; outfit.bottom=null; }
-        } else if (g.category === 'tops') {
-            outfit.top = outfit.top===id ? null : id;
-            if (outfit.top) outfit.onepiece=null;
-        } else {
-            outfit.bottom = outfit.bottom===id ? null : id;
-            if (outfit.bottom) outfit.onepiece=null;
+// ============================================================
+// NAVIGATION
+// ============================================================
+function goStep(n) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.getElementById(`step-${n}`).classList.add('active');
+    document.querySelectorAll('.step').forEach((d,i) => {
+        d.className = 'step';
+        if (i+1 === n) d.classList.add('active');
+        else if (i+1 < n) d.classList.add('done');
+    });
+    if (n === 2) loadCatalog();
+    if (n === 4) document.getElementById('result-area').style.display = 'block';
+}
+
+// ============================================================
+// STEP 1: PROFILE
+// ============================================================
+function selectGender(g) {
+    profile.gender = g;
+    document.querySelectorAll('.gender-opt').forEach(b => b.classList.remove('selected'));
+    event.currentTarget.classList.add('selected');
+}
+
+async function calcSize() {
+    if (!profile.gender) { toast('Selecciona tu género','error'); return; }
+    const h = parseFloat(document.getElementById('height').value);
+    const w = parseFloat(document.getElementById('weight').value);
+    if (!h || !w) { toast('Ingresa estatura y peso','error'); return; }
+    const form = new FormData();
+    form.append('gender', profile.gender);
+    form.append('height_cm', h);
+    form.append('weight_kg', w);
+    try {
+        const r = await fetch('/api/estimate-size', {method:'POST', body:form});
+        const d = await r.json();
+        profile.size = d.estimated_size;
+        document.getElementById('size-display').textContent = d.estimated_size;
+        document.getElementById('size-result').classList.add('visible');
+        toast(`Talla: ${d.estimated_size}`, 'success');
+        setTimeout(() => goStep(2), 600);
+    } catch(e) { toast('Error calculando talla','error'); }
+}
+
+// ============================================================
+// STEP 2: GARMENTS
+// ============================================================
+let currentFilter = 'all';
+
+async function loadCatalog() {
+    try {
+        const g = profile.gender || '';
+        const storeParam = STORE_ID ? `&store_id=${STORE_ID}` : '';
+        const r = await fetch(`/api/catalog?gender=${g}${storeParam}`);
+        const data = await r.json();
+        catalog = data.garments || data;
+        if (data.store_name) {
+            storeName = data.store_name;
+            document.getElementById('header-title').textContent = data.store_name;
+            document.getElementById('step2-sub').textContent = `Catálogo de ${data.store_name} · Selecciona prendas con ✨`;
         }
-        renderGarments(catalog.filter(x => document.querySelector('.filter-btn.active')?.textContent==='Todas' || x.category===document.querySelector('.filter-btn.active')?.dataset?.cat || true));
-        updateOutfit();
+        renderGarments();
+    } catch(e) { console.error(e); }
+}
+
+function renderGarments() {
+    const items = currentFilter === 'all' ? catalog : catalog.filter(g => g.category === currentFilter);
+    const grid = document.getElementById('garments-grid');
+    if (!items.length) {
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--text2);">No hay prendas disponibles</div>';
+        return;
     }
 
-    function updateOutfit() {
-        const has = outfit.top||outfit.bottom||outfit.onepiece;
-        document.getElementById('btn-step3').disabled = !has;
-        const bar = document.getElementById('outfit-bar');
-        if (has) {
-            bar.classList.add('visible');
-            let tags = '';
-            if (outfit.top) tags += `<span class="outfit-tag">👕 ${catalog.find(x=>x.id===outfit.top)?.name}</span> `;
-            if (outfit.bottom) tags += `<span class="outfit-tag">👖 ${catalog.find(x=>x.id===outfit.bottom)?.name}</span> `;
-            if (outfit.onepiece) tags += `<span class="outfit-tag">👗 ${catalog.find(x=>x.id===outfit.onepiece)?.name}</span>`;
-            document.getElementById('outfit-tags').innerHTML = tags;
-        } else { bar.classList.remove('visible'); }
-        renderGarments(catalog);
+    // Sort: tryon_enabled first
+    const sorted = [...items].sort((a,b) => (b.tryon_enabled?1:0) - (a.tryon_enabled?1:0));
+
+    grid.innerHTML = sorted.map(g => {
+        const sel = g.id===outfit.top || g.id===outfit.bottom || g.id===outfit.onepiece;
+        const icon = g.category==='tops'?'👕':g.category==='bottoms'?'👖':'👗';
+        const canTry = g.tryon_enabled;
+        return `
+        <div class="garment ${sel?'selected':''} ${canTry?'':'disabled'}" onclick="${canTry ? `toggle('${g.id}')` : 'toast(\"Esta prenda aún no tiene probador virtual\",\"error\")'}">
+            ${canTry ? '<div class="check">✓</div>' : ''}
+            ${canTry ? '<div class="tryon-badge">✨ Probador IA</div>' : '<div class="no-tryon-badge">Solo exhibición</div>'}
+            <img src="${g.image_url}" alt="${g.name}">
+            <div class="info">
+                <div class="name">${g.name}</div>
+                <div class="meta">${icon} ${g.size}</div>
+                ${g.price ? `<div class="price">$${Number(g.price).toLocaleString('es-CO')}</div>` : ''}
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function toggle(id) {
+    const g = catalog.find(x => x.id===id);
+    if (!g || !g.tryon_enabled) return;
+    if (g.category === 'one-pieces') {
+        outfit.onepiece = outfit.onepiece===id ? null : id;
+        if (outfit.onepiece) { outfit.top=null; outfit.bottom=null; }
+    } else if (g.category === 'tops') {
+        outfit.top = outfit.top===id ? null : id;
+        if (outfit.top) outfit.onepiece=null;
+    } else {
+        outfit.bottom = outfit.bottom===id ? null : id;
+        if (outfit.bottom) outfit.onepiece=null;
     }
+    renderGarments();
+    updateOutfit();
+}
 
-    function filter(cat) {
-        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        event.currentTarget.classList.add('active');
-        if (cat==='all') renderGarments(catalog);
-        else renderGarments(catalog.filter(g => g.category===cat));
-    }
+function updateOutfit() {
+    const has = outfit.top||outfit.bottom||outfit.onepiece;
+    document.getElementById('btn-step3').disabled = !has;
+    const bar = document.getElementById('outfit-bar');
+    if (has) {
+        bar.classList.add('visible');
+        let tags = '';
+        if (outfit.top) tags += `<span class="outfit-tag">👕 ${catalog.find(x=>x.id===outfit.top)?.name}</span> `;
+        if (outfit.bottom) tags += `<span class="outfit-tag">👖 ${catalog.find(x=>x.id===outfit.bottom)?.name}</span> `;
+        if (outfit.onepiece) tags += `<span class="outfit-tag">👗 ${catalog.find(x=>x.id===outfit.onepiece)?.name}</span>`;
+        document.getElementById('outfit-tags').innerHTML = tags;
+    } else { bar.classList.remove('visible'); }
+}
 
-    // Step 3: Camera
-    async function openCam() {
-        try {
-            camStream = await navigator.mediaDevices.getUserMedia({
-                video:{facingMode:frontCam?'user':'environment',width:{ideal:1280},height:{ideal:1920}}, audio:false
-            });
-            document.getElementById('cam-video').srcObject = camStream;
-            document.getElementById('camera-view').style.display = 'block';
-        } catch(e) { toast('No se pudo abrir la cámara','error'); }
-    }
+function filterCat(cat) {
+    currentFilter = cat;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+    renderGarments();
+}
 
-    function flipCam() { frontCam=!frontCam; closeCam(); openCam(); }
+// ============================================================
+// STEP 3: CAMERA
+// ============================================================
+async function openCam() {
+    try {
+        camStream = await navigator.mediaDevices.getUserMedia({
+            video:{facingMode:frontCam?'user':'environment',width:{ideal:1280},height:{ideal:1920}}, audio:false
+        });
+        document.getElementById('cam-video').srcObject = camStream;
+        document.getElementById('camera-view').style.display = 'block';
+    } catch(e) { toast('No se pudo abrir la cámara','error'); }
+}
 
-    function closeCam() {
-        if(camStream) camStream.getTracks().forEach(t=>t.stop());
-        camStream=null;
-        document.getElementById('cam-video').srcObject=null;
-        document.getElementById('camera-view').style.display='none';
-    }
+function flipCam() { frontCam=!frontCam; closeCam(); openCam(); }
 
-    function snapPhoto() {
-        const v = document.getElementById('cam-video');
-        const c = document.getElementById('cam-canvas');
-        if (!v.videoWidth) return;
-        let w=v.videoWidth, h=v.videoHeight;
+function closeCam() {
+    if(camStream) camStream.getTracks().forEach(t=>t.stop());
+    camStream=null;
+    document.getElementById('cam-video').srcObject=null;
+    document.getElementById('camera-view').style.display='none';
+}
+
+function snapPhoto() {
+    const v = document.getElementById('cam-video');
+    const c = document.getElementById('cam-canvas');
+    if (!v.videoWidth) return;
+    let w=v.videoWidth, h=v.videoHeight;
+    if(w>1200||h>1200){if(w>h){h=Math.round(h*1200/w);w=1200;}else{w=Math.round(w*1200/h);h=1200;}}
+    c.width=w; c.height=h;
+    c.getContext('2d').drawImage(v,0,0,w,h);
+    closeCam();
+    const dataUrl = c.toDataURL('image/jpeg', 0.85);
+    const byteStr = atob(dataUrl.split(',')[1]);
+    const ab = new ArrayBuffer(byteStr.length);
+    const ia = new Uint8Array(ab);
+    for(let i=0;i<byteStr.length;i++) ia[i]=byteStr.charCodeAt(i);
+    photoFile = new File([new Blob([ab],{type:'image/jpeg'})], 'camera.jpg', {type:'image/jpeg',lastModified:Date.now()});
+    showPreview(dataUrl);
+}
+
+function galPhoto(input) {
+    if(!input.files||!input.files[0]) return;
+    const file = input.files[0];
+    const img = new Image();
+    img.onload = () => {
+        let w=img.width,h=img.height;
         if(w>1200||h>1200){if(w>h){h=Math.round(h*1200/w);w=1200;}else{w=Math.round(w*1200/h);h=1200;}}
-        c.width=w; c.height=h;
-        c.getContext('2d').drawImage(v,0,0,w,h);
-        closeCam();
+        const c=document.createElement('canvas');c.width=w;c.height=h;
+        c.getContext('2d').drawImage(img,0,0,w,h);
+        c.toBlob(b=>{
+            photoFile=new File([b],'photo.jpg',{type:'image/jpeg'});
+            showPreview(URL.createObjectURL(b));
+        },'image/jpeg',0.85);
+    };
+    img.src = URL.createObjectURL(file);
+}
 
-        const dataUrl = c.toDataURL('image/jpeg', 0.85);
-        const byteStr = atob(dataUrl.split(',')[1]);
-        const ab = new ArrayBuffer(byteStr.length);
-        const ia = new Uint8Array(ab);
-        for(let i=0;i<byteStr.length;i++) ia[i]=byteStr.charCodeAt(i);
-        photoFile = new File([new Blob([ab],{type:'image/jpeg'})], 'camera.jpg', {type:'image/jpeg',lastModified:Date.now()});
-        showPreview(dataUrl);
-    }
+function showPreview(src) {
+    document.getElementById('preview-img').src = src;
+    document.getElementById('photo-preview').style.display = 'block';
+    document.getElementById('capture-btns').style.display = 'none';
+    document.getElementById('photo-guide').style.display = 'none';
+    document.getElementById('photo-nav').style.display = 'none';
+}
 
-    function galPhoto(input) {
-        if(!input.files||!input.files[0]) return;
-        const file = input.files[0];
-        const img = new Image();
-        img.onload = () => {
-            let w=img.width,h=img.height;
-            if(w>1200||h>1200){if(w>h){h=Math.round(h*1200/w);w=1200;}else{w=Math.round(w*1200/h);h=1200;}}
-            const c=document.createElement('canvas');c.width=w;c.height=h;
-            c.getContext('2d').drawImage(img,0,0,w,h);
-            c.toBlob(b=>{
-                photoFile=new File([b],'photo.jpg',{type:'image/jpeg'});
-                showPreview(URL.createObjectURL(b));
-            },'image/jpeg',0.85);
-        };
-        img.src = URL.createObjectURL(file);
-    }
+function retake() {
+    photoFile=null;
+    document.getElementById('photo-preview').style.display='none';
+    document.getElementById('capture-btns').style.display='flex';
+    document.getElementById('photo-guide').style.display='block';
+    document.getElementById('photo-nav').style.display='flex';
+    document.getElementById('result-area').style.display='none';
+    document.getElementById('btn-gen').disabled=false;
+    document.getElementById('btn-gen').textContent='✨ Generar';
+}
 
-    function showPreview(src) {
-        document.getElementById('preview-img').src = src;
-        document.getElementById('photo-preview').style.display = 'block';
-        document.getElementById('capture-btns').style.display = 'none';
-        document.getElementById('photo-guide').style.display = 'none';
-        document.getElementById('photo-nav').style.display = 'none';
-    }
+// ============================================================
+// STEP 4: GENERATE + SHARE
+// ============================================================
+async function generate(retryCount = 0) {
+    if(!photoFile) return;
+    const btn = document.getElementById('btn-gen');
+    btn.disabled=true; btn.textContent='⏳ Generando...';
+    document.getElementById('loader').classList.add('visible');
+    const bar = document.getElementById('prog-bar');
+    bar.style.width = '0%';
+    let elapsed=0;
+    const timer = setInterval(()=>{
+        elapsed+=0.5;
+        bar.style.width = Math.min(90,elapsed/12*100)+'%';
+        const step = document.getElementById('loader-step');
+        if(outfit.top && elapsed<6) step.textContent='👕 Probando superior...';
+        else if(outfit.bottom && elapsed<10) step.textContent='👖 Probando inferior...';
+        else step.textContent='✨ Finalizando...';
+    },500);
 
-    function retake() {
-        photoFile=null;
-        document.getElementById('photo-preview').style.display='none';
-        document.getElementById('capture-btns').style.display='flex';
-        document.getElementById('photo-guide').style.display='block';
-        document.getElementById('photo-nav').style.display='flex';
-        document.getElementById('result-area').style.display='none';
-        document.getElementById('btn-gen').disabled=false;
-        document.getElementById('btn-gen').textContent='✨ Generar';
-    }
+    const form = new FormData();
+    form.append('model_image', photoFile);
+    if(outfit.top) form.append('top_id', outfit.top);
+    if(outfit.bottom) form.append('bottom_id', outfit.bottom);
+    if(outfit.onepiece) form.append('onepiece_id', outfit.onepiece);
 
-    // Step 4: Generate with auto-retry
-    async function generate(retryCount = 0) {
-        if(!photoFile) return;
-        const btn = document.getElementById('btn-gen');
-        btn.disabled=true; btn.textContent='⏳ Generando...';
+    try {
+        const controller = new AbortController();
+        setTimeout(()=>controller.abort(), 180000);
+        const resp = await fetch('/api/try-on-outfit', {method:'POST',body:form,signal:controller.signal});
+        clearInterval(timer); bar.style.width='100%';
 
-        document.getElementById('loader').classList.add('visible');
-        const bar = document.getElementById('prog-bar');
-        bar.style.width = '0%';
-        let elapsed=0;
-        const timer = setInterval(()=>{
-            elapsed+=0.5;
-            bar.style.width = Math.min(90,elapsed/12*100)+'%';
-            const step = document.getElementById('loader-step');
-            if(outfit.top && elapsed<6) step.textContent='👕 Probando superior...';
-            else if(outfit.bottom && elapsed<10) step.textContent='👖 Probando inferior...';
-            else step.textContent='✨ Finalizando...';
-        },500);
-
-        const form = new FormData();
-        form.append('model_image', photoFile);
-        if(outfit.top) form.append('top_id', outfit.top);
-        if(outfit.bottom) form.append('bottom_id', outfit.bottom);
-        if(outfit.onepiece) form.append('onepiece_id', outfit.onepiece);
-
-        try {
-            const controller = new AbortController();
-            setTimeout(()=>controller.abort(), 180000);
-            const resp = await fetch('/api/try-on-outfit', {method:'POST',body:form,signal:controller.signal});
-            clearInterval(timer); bar.style.width='100%';
-
-            if(!resp.ok) {
-                const err = await resp.text();
-                // Auto-retry up to 2 times
-                if (retryCount < 2) {
-                    document.getElementById('loader-step').textContent = `🔄 Reintentando... (${retryCount+1}/2)`;
-                    bar.style.width = '0%';
-                    clearInterval(timer);
-                    setTimeout(() => generate(retryCount + 1), 1500);
-                    return;
-                }
-                document.getElementById('loader').classList.remove('visible');
-                btn.disabled=false; btn.textContent='✨ Generar';
-                toast('Error: '+err.substring(0,100),'error');
-                return;
-            }
-
-            const data = await resp.json();
-            document.getElementById('loader').classList.remove('visible');
-
-            if(data.success) {
-                document.getElementById('result-img').src = data.result_image;
-                const names = data.garments_used.map(g=>g.name).join(' + ');
-                const storeLabel = storeName ? storeName + ' — ' : '';
-                document.getElementById('result-garments').textContent = storeLabel + names;
-                goStep(4);
-            } else {
-                if (retryCount < 2) {
-                    document.getElementById('loader-step').textContent = `🔄 Reintentando... (${retryCount+1}/2)`;
-                    bar.style.width = '0%';
-                    setTimeout(() => generate(retryCount + 1), 1500);
-                    return;
-                }
-                btn.disabled=false; btn.textContent='✨ Generar';
-                toast('Error generando','error');
-            }
-        } catch(e) {
-            clearInterval(timer);
-            // Auto-retry on connection errors
+        if(!resp.ok) {
+            const err = await resp.text();
             if (retryCount < 2) {
                 document.getElementById('loader-step').textContent = `🔄 Reintentando... (${retryCount+1}/2)`;
                 bar.style.width = '0%';
-                setTimeout(() => generate(retryCount + 1), 2000);
+                setTimeout(() => generate(retryCount + 1), 1500);
                 return;
             }
             document.getElementById('loader').classList.remove('visible');
             btn.disabled=false; btn.textContent='✨ Generar';
-            toast('Error de conexión. Intenta de nuevo.','error');
+            toast('Error: '+err.substring(0,100),'error');
+            return;
         }
-    }
 
-    // Share result image via WhatsApp (native share API)
-    async function shareWA() {
-        const img = document.getElementById('result-img');
-        try {
-            // Fetch the result image and convert to blob
-            const resp = await fetch(img.src);
-            const blob = await resp.blob();
-            const file = new File([blob], 'mi-look-virtual.jpg', { type: 'image/jpeg' });
+        const data = await resp.json();
+        document.getElementById('loader').classList.remove('visible');
 
-            // Use native share API if available (sends actual image)
-            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-                await navigator.share({
-                    title: '¡Mira cómo me queda!',
-                    text: '¡Mira cómo me queda esta ropa! 👗✨',
-                    files: [file]
-                });
-            } else {
-                // Fallback: download image + open WhatsApp with text
-                const a = document.createElement('a');
-                a.href = URL.createObjectURL(blob);
-                a.download = 'mi-look-virtual.jpg';
-                a.click();
-                toast('Imagen descargada. Compártela en WhatsApp.', 'success');
-                setTimeout(() => {
-                    window.open('https://wa.me/?text=' + encodeURIComponent('¡Mira cómo me queda esta ropa! 👗✨'), '_blank');
-                }, 1000);
+        if(data.success) {
+            document.getElementById('result-img').src = data.result_image;
+            const names = data.garments_used.map(g=>g.name).join(' + ');
+            const storeLabel = storeName ? storeName + ' — ' : '';
+            document.getElementById('result-garments').textContent = storeLabel + names;
+
+            // Store share data
+            lastResultId = data.result_id;
+            lastShareUrl = window.location.origin + (data.share_url || '');
+            lastStoreData = data.store;
+
+            // Update download button
+            if (lastResultId) {
+                document.getElementById('downloadBtn').href = `/api/share-image/${lastResultId}`;
             }
-        } catch(e) {
-            // Last fallback
-            window.open('https://wa.me/?text=' + encodeURIComponent('¡Mira cómo me queda esta ropa! 👗✨\n' + window.location.href), '_blank');
-        }
-    }
 
-    function toast(msg, type='') {
-        const t = document.getElementById('toast');
-        t.textContent=msg; t.className=`toast visible ${type}`;
-        setTimeout(()=>t.classList.remove('visible'),3000);
+            goStep(4);
+        } else {
+            if (retryCount < 2) {
+                document.getElementById('loader-step').textContent = `🔄 Reintentando... (${retryCount+1}/2)`;
+                bar.style.width = '0%';
+                setTimeout(() => generate(retryCount + 1), 1500);
+                return;
+            }
+            btn.disabled=false; btn.textContent='✨ Generar';
+            toast('Error generando','error');
+        }
+    } catch(e) {
+        clearInterval(timer);
+        if (retryCount < 2) {
+            document.getElementById('loader-step').textContent = `🔄 Reintentando... (${retryCount+1}/2)`;
+            bar.style.width = '0%';
+            setTimeout(() => generate(retryCount + 1), 2000);
+            return;
+        }
+        document.getElementById('loader').classList.remove('visible');
+        btn.disabled=false; btn.textContent='✨ Generar';
+        toast('Error de conexión. Intenta de nuevo.','error');
     }
+}
+
+// ============================================================
+// SHARE FUNCTIONS
+// ============================================================
+async function logShare(platform) {
+    if (!lastResultId) return;
+    try {
+        const form = new FormData();
+        form.append('platform', platform);
+        await fetch(`/api/share/${lastResultId}`, { method: 'POST', body: form });
+    } catch(e) { /* silent */ }
+}
+
+function shareWhatsApp() {
+    logShare('whatsapp');
+    const ig = lastStoreData?.instagram ? ` @${lastStoreData.instagram}` : '';
+    const text = `¡Mira cómo me queda esto! 🔥 ${storeName}${ig}\n\n${lastShareUrl}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+}
+
+function shareFacebook() {
+    logShare('facebook');
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(lastShareUrl)}`, '_blank');
+}
+
+function shareInstagram() {
+    logShare('instagram');
+    toast('📸 Descarga la imagen y súbela a tu historia', 'success');
+    setTimeout(() => {
+        window.location.href = `/api/share-image/${lastResultId}`;
+    }, 800);
+}
+
+async function copyShareLink() {
+    logShare('copy_link');
+    try {
+        await navigator.clipboard.writeText(lastShareUrl);
+        toast('✅ Link copiado', 'success');
+    } catch(e) {
+        const input = document.createElement('input');
+        input.value = lastShareUrl;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+        toast('✅ Link copiado', 'success');
+    }
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+function toast(msg, type='') {
+    const t = document.getElementById('toast');
+    t.textContent=msg; t.className=`toast visible ${type}`;
+    setTimeout(()=>t.classList.remove('visible'),3000);
+}
 </script>
 </body>
 </html>
