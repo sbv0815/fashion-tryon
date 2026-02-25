@@ -7,7 +7,7 @@
     <meta name="description" content="Fashion TryOn - Probador virtual con Inteligencia Artificial. Tus clientes se prueban la ropa desde su celular. Aumenta ventas, reduce devoluciones.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         :root {
@@ -17,8 +17,8 @@
             --white: #f0ece4; --white-pure: #ffffff;
             --text: #f0ece4; --text-mid: #8a8590; --text-dim: #4a4650;
             --green: #4ade80; --green-soft: rgba(74,222,128,0.12);
-            --font-display: 'Syne', sans-serif;
-            --font-body: 'DM Sans', sans-serif;
+            --font-display: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-body: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
             --ease: cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
         html { scroll-behavior: smooth; }
@@ -44,16 +44,17 @@
 
         /* ===== HERO ===== */
         .hero { position: relative; min-height: 100vh; display: flex; align-items: center; overflow: hidden; }
-        .hero-videos { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-        .hero-videos video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 2s ease; }
-        .hero-videos video.active { opacity: 0.3; }
+        .hero-video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.45; }
+        .hero-video-2 { opacity: 0; transition: opacity 2s ease; }
+        .hero-video-2.active { opacity: 0.45; }
+        .hero-video.hidden { opacity: 0; transition: opacity 2s ease; }
         .hero-overlay { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(8,7,12,0.5) 0%, rgba(8,7,12,0.3) 40%, rgba(8,7,12,0.85) 100%); }
         .hero-grain { position: absolute; inset: 0; opacity: 0.03; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
         .hero-content { position: relative; z-index: 2; max-width: 780px; padding: 160px 0 120px; }
         .hero-tag { display: inline-flex; align-items: center; gap: 10px; background: var(--gold-soft); border: 1px solid rgba(201,165,90,0.2); padding: 8px 20px; border-radius: 50px; font-family: var(--font-display); font-size: 0.75rem; color: var(--gold); margin-bottom: 32px; letter-spacing: 2px; text-transform: uppercase; font-weight: 600; }
         .hero-tag .dot { width: 7px; height: 7px; background: var(--gold); border-radius: 50%; animation: pulse-dot 2s infinite; }
         @keyframes pulse-dot { 0%,100%{opacity:1}50%{opacity:0.3} }
-        .hero h1 { font-family: var(--font-display); font-size: clamp(2.6rem, 5.5vw, 4.2rem); font-weight: 800; line-height: 1.08; margin-bottom: 28px; letter-spacing: -1.5px; color: var(--white); }
+        .hero h1 { font-family: var(--font-display); font-size: clamp(2.2rem, 4.5vw, 3.4rem); font-weight: 700; line-height: 1.12; margin-bottom: 28px; letter-spacing: -1px; color: var(--white); }
         .hero h1 .gold { background: linear-gradient(135deg, var(--gold), #e8c56d); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
         .hero-desc { font-size: 1.15rem; color: var(--text-mid); max-width: 560px; margin-bottom: 44px; font-weight: 300; line-height: 1.8; }
         .hero-buttons { display: flex; gap: 14px; flex-wrap: wrap; }
@@ -76,7 +77,7 @@
         /* ===== HOW IT WORKS ===== */
         .how-section { padding: 120px 0; background: var(--surface); position: relative; }
         .how-header { text-align: center; max-width: 600px; margin: 0 auto 70px; }
-        .how-header h2 { font-family: var(--font-display); font-size: 2.6rem; color: var(--white); margin-bottom: 16px; letter-spacing: -1px; font-weight: 800; }
+        .how-header h2 { font-family: var(--font-display); font-size: 2.2rem; color: var(--white); margin-bottom: 16px; letter-spacing: -0.5px; font-weight: 700; }
         .how-header p { font-size: 1.05rem; color: var(--text-mid); }
         .how-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
         .how-card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 40px 32px; transition: all 0.4s var(--ease); position: relative; overflow: hidden; }
@@ -89,7 +90,7 @@
         /* ===== BENEFITS ===== */
         .benefits-section { padding: 120px 0; background: var(--bg); }
         .benefits-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
-        .benefits-title { font-family: var(--font-display); font-size: 2.6rem; color: var(--white); margin-bottom: 24px; letter-spacing: -1px; font-weight: 800; }
+        .benefits-title { font-family: var(--font-display); font-size: 2.2rem; color: var(--white); margin-bottom: 24px; letter-spacing: -0.5px; font-weight: 700; }
         .benefits-title .gold { color: var(--gold); }
         .benefits-text { font-size: 1.05rem; color: var(--text-mid); line-height: 1.8; margin-bottom: 20px; }
         .benefit-list { list-style: none; padding: 0; margin: 32px 0 0; }
@@ -109,7 +110,7 @@
         /* ===== STORES / TIENDAS ===== */
         .stores-section { padding: 120px 0; background: var(--surface); }
         .stores-header { text-align: center; max-width: 600px; margin: 0 auto 60px; }
-        .stores-header h2 { font-family: var(--font-display); font-size: 2.6rem; color: var(--white); margin-bottom: 16px; letter-spacing: -1px; font-weight: 800; }
+        .stores-header h2 { font-family: var(--font-display); font-size: 2.2rem; color: var(--white); margin-bottom: 16px; letter-spacing: -0.5px; font-weight: 700; }
         .stores-header p { font-size: 1.05rem; color: var(--text-mid); }
         .stores-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
         .store-tile { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 28px 24px; transition: all 0.4s var(--ease); cursor: pointer; position: relative; overflow: hidden; }
@@ -125,7 +126,7 @@
         /* ===== CTA SECTION ===== */
         .cta-section { padding: 120px 0; background: var(--bg); position: relative; overflow: hidden; }
         .cta-box { background: linear-gradient(135deg, var(--card), rgba(201,165,90,0.06)); border: 1px solid rgba(201,165,90,0.15); border-radius: 28px; padding: 70px 60px; text-align: center; position: relative; }
-        .cta-box h2 { font-family: var(--font-display); font-size: 2.4rem; color: var(--white); margin-bottom: 16px; font-weight: 800; letter-spacing: -1px; }
+        .cta-box h2 { font-family: var(--font-display); font-size: 2rem; color: var(--white); margin-bottom: 16px; font-weight: 700; letter-spacing: -0.5px; }
         .cta-box p { font-size: 1.05rem; color: var(--text-mid); max-width: 500px; margin: 0 auto 36px; }
         .cta-buttons { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
 
@@ -169,7 +170,7 @@
             .hero-content { padding: 130px 0 80px; }
             .hero-stats { flex-direction: column; gap: 20px; }
             .scroll-indicator { display: none; }
-            .how-header h2, .benefits-title, .stores-header h2, .cta-box h2 { font-size: 2rem; }
+            .how-header h2, .benefits-title, .stores-header h2, .cta-box h2 { font-size: 1.7rem; }
             .cta-box { padding: 40px 24px; }
             .footer-inner { flex-direction: column; text-align: center; }
             .benefits-visual { display: none; }
@@ -199,10 +200,12 @@
 
 <!-- HERO -->
 <section class="hero" id="home">
-    <div class="hero-videos">
-        <video id="vid1" autoplay muted loop playsinline class="active"><source src="/static/pagina_inicio.mp4" type="video/mp4"></video>
-        <video id="vid2" muted loop playsinline><source src="/static/pagina_inicio1.mp4" type="video/mp4"></video>
-    </div>
+    <video class="hero-video" autoplay muted loop playsinline>
+        <source src="/static/pagina_inicio.mp4" type="video/mp4">
+    </video>
+    <video class="hero-video hero-video-2" autoplay muted loop playsinline>
+        <source src="/static/pagina_inicio1.mp4" type="video/mp4">
+    </video>
     <div class="hero-overlay"></div>
     <div class="hero-grain"></div>
     <div class="container">
@@ -361,14 +364,21 @@ const obs = new IntersectionObserver(entries => { entries.forEach(e => { if(e.is
 document.querySelectorAll('.fade-up').forEach(el => obs.observe(el));
 
 // ===== VIDEO CROSSFADE =====
-const vids = [document.getElementById('vid1'), document.getElementById('vid2')];
-let currentVid = 0;
-setInterval(() => {
-    vids[currentVid].classList.remove('active');
-    currentVid = (currentVid + 1) % vids.length;
-    vids[currentVid].play();
-    vids[currentVid].classList.add('active');
-}, 8000);
+const vid1 = document.querySelector('.hero-video');
+const vid2 = document.querySelector('.hero-video-2');
+if (vid1 && vid2) {
+    let showingSecond = false;
+    setInterval(() => {
+        showingSecond = !showingSecond;
+        if (showingSecond) {
+            vid1.classList.add('hidden');
+            vid2.classList.add('active');
+        } else {
+            vid1.classList.remove('hidden');
+            vid2.classList.remove('active');
+        }
+    }, 8000);
+}
 
 // ===== LOAD STORES =====
 async function loadStores() {
