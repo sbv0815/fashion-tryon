@@ -189,6 +189,7 @@
                 <li><a href="#como-funciona">Cómo funciona</a></li>
                 <li><a href="#beneficios">Beneficios</a></li>
                 <li><a href="#tiendas">Tiendas</a></li>
+                <li><a href="#" onclick="event.preventDefault();openLogin('panel')" class="nav-cta" style="background:transparent;border:1.5px solid var(--gold);color:var(--gold);">Mi Tienda 🏪</a></li>
                 <li><a href="#" onclick="event.preventDefault();openLogin('admin')" class="nav-cta">Admin ✦</a></li>
             </ul>
             <button class="nav-hamburger" id="navHamburger" onclick="toggleNav()" aria-label="Menu">
@@ -307,7 +308,7 @@
             <p>Contáctanos y en menos de 24 horas tu tienda estará activa con probador virtual IA.</p>
             <div class="cta-buttons">
                 <a href="https://wa.me/573174352503?text=Hola%2C%20quiero%20activar%20Fashion%20TryOn%20para%20mi%20tienda" target="_blank" class="btn-gold">Contactar por WhatsApp 💬</a>
-                <a href="mailto:contacto@tscamp.co" class="btn-outline">contacto@tscamp.co</a>
+                <a href="/cdn-cgi/l/email-protection#197a76776d787a6d76596d6a7a787469377a76" class="btn-outline"><span class="__cf_email__" data-cfemail="34575b5a405557405b744047575559441a575b">[email&#160;protected]</span></a>
             </div>
         </div>
     </div>
@@ -339,12 +340,18 @@
         <h3 id="loginTitle">Panel Admin</h3>
         <p class="sub" id="loginSub">Ingresa tus credenciales</p>
         <div class="error" id="loginError">Credenciales incorrectas</div>
+        <!-- Store selector (only visible in panel mode from navbar) -->
+        <div id="storeSelector" style="display:none;margin-bottom:14px;">
+            <select id="storeSelect" style="width:100%;padding:14px 16px;background:var(--bg);border:1.5px solid rgba(255,255,255,0.08);border-radius:10px;color:var(--white);font-family:var(--font-body);font-size:0.95rem;appearance:none;cursor:pointer;">
+                <option value="">Selecciona tu tienda</option>
+            </select>
+        </div>
         <input type="password" id="loginPass" placeholder="Contraseña" onkeydown="if(event.key==='Enter')doLogin()">
         <button class="login-btn" onclick="doLogin()">Ingresar →</button>
     </div>
 </div>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // ===== NAV =====
 const navbar = document.getElementById('navbar');
 window.addEventListener('scroll', () => {
@@ -396,7 +403,10 @@ async function loadStores() {
                 <div class="store-name">${s.name}</div>
                 <div class="store-meta">${s.instagram ? '@'+s.instagram+' · ' : ''}${s.address || 'Colombia'}</div>
                 <span class="store-garments">✨ ${s.garment_count || 0} prendas disponibles</span>
-                <a href="/tienda/${s.slug}" class="store-enter">Entrar a la tienda →</a>
+                <div style="display:flex;gap:8px;margin-top:16px;">
+                    <a href="/tienda/${s.slug}" class="store-enter" style="flex:2;">Entrar a la tienda →</a>
+                    <a href="#" onclick="event.preventDefault();openLogin('panel','${s.slug}')" class="store-enter" style="flex:1;background:var(--gold-soft);border-color:rgba(201,165,90,0.2);color:var(--gold);font-size:0.8rem;">🔐 Panel</a>
+                </div>
             </div>
         `).join('');
         // Re-observe new elements
@@ -410,6 +420,7 @@ loadStores();
 // ===== LOGIN =====
 let loginMode = 'admin'; // 'admin' or 'panel'
 let loginSlug = '';
+let storesCache = [];
 
 function openLogin(mode, slug) {
     loginMode = mode;
@@ -417,42 +428,81 @@ function openLogin(mode, slug) {
     const overlay = document.getElementById('loginOverlay');
     document.getElementById('loginPass').value = '';
     document.getElementById('loginError').style.display = 'none';
+    document.getElementById('storeSelector').style.display = 'none';
+
     if (mode === 'admin') {
         document.getElementById('loginTitle').textContent = 'Panel Admin';
         document.getElementById('loginSub').textContent = 'Acceso exclusivo administrador';
     } else {
-        document.getElementById('loginTitle').textContent = 'Panel de Tienda';
-        document.getElementById('loginSub').textContent = 'Ingresa la contraseña de tu tienda';
+        document.getElementById('loginTitle').textContent = '🏪 Panel de Tienda';
+        if (slug) {
+            document.getElementById('loginSub').textContent = 'Ingresa la contraseña de tu tienda';
+        } else {
+            // No slug = came from navbar, show store selector
+            document.getElementById('loginSub').textContent = 'Selecciona tu tienda e ingresa tu contraseña';
+            document.getElementById('storeSelector').style.display = 'block';
+            loadStoreSelector();
+        }
     }
     overlay.classList.add('active');
     setTimeout(() => document.getElementById('loginPass').focus(), 200);
 }
+
+async function loadStoreSelector() {
+    const select = document.getElementById('storeSelect');
+    if (storesCache.length > 0) {
+        populateStoreSelect(select, storesCache);
+        return;
+    }
+    try {
+        const res = await fetch('/api/stores');
+        storesCache = await res.json();
+        populateStoreSelect(select, storesCache);
+    } catch(e) {
+        select.innerHTML = '<option value="">Error cargando tiendas</option>';
+    }
+}
+
+function populateStoreSelect(select, stores) {
+    select.innerHTML = '<option value="">Selecciona tu tienda</option>' +
+        stores.map(s => `<option value="${s.slug}">${s.name}</option>`).join('');
+}
+
 function closeLogin() { document.getElementById('loginOverlay').classList.remove('active'); }
 
 async function doLogin() {
     const pass = document.getElementById('loginPass').value;
     if (loginMode === 'admin') {
-        // Simple admin check - you can customize this
         if (pass === 'fashionadmin2026') {
             window.location.href = '/admin';
         } else {
             document.getElementById('loginError').style.display = 'block';
         }
     } else {
-        // Store panel auth
+        // Panel mode - get slug from selector or from pre-set
+        const slug = loginSlug || document.getElementById('storeSelect').value;
+        if (!slug) {
+            document.getElementById('loginError').textContent = 'Selecciona una tienda';
+            document.getElementById('loginError').style.display = 'block';
+            return;
+        }
         try {
             const res = await fetch('/api/panel/auth', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                body: `store_slug=${loginSlug}&password=${pass}`
+                body: `store_slug=${slug}&password=${pass}`
             });
-            const data = await res.json();
-            if (data.success) {
-                window.location.href = `/panel/${loginSlug}`;
+            if (res.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    window.location.href = `/panel/${slug}`;
+                }
             } else {
+                document.getElementById('loginError').textContent = 'Contraseña incorrecta';
                 document.getElementById('loginError').style.display = 'block';
             }
         } catch(e) {
+            document.getElementById('loginError').textContent = 'Error de conexión';
             document.getElementById('loginError').style.display = 'block';
         }
     }
