@@ -16,8 +16,6 @@
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
-
-        /* HEADER */
         .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
         .logo { font-family: 'Fraunces', serif; font-size: 22px; }
         .logo span:first-child { color: var(--accent); font-weight: 700; letter-spacing: 1px; }
@@ -26,24 +24,18 @@
         .header-badge { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px; font-size: 13px; }
         .header-badge span:first-child { color: var(--text-mid); }
         .header-badge span:last-child { color: var(--accent); font-weight: 600; }
-
-        /* LAYOUT */
         .layout { display: flex; min-height: calc(100vh - 55px); }
         .sidebar { width: 200px; background: var(--surface); border-right: 1px solid var(--border); padding: 16px 0; flex-shrink: 0; }
         .nav-item { display: flex; align-items: center; gap: 10px; padding: 11px 20px; cursor: pointer; font-size: 14px; color: var(--text-mid); border-right: 2px solid transparent; transition: all 0.2s; }
         .nav-item:hover { color: var(--text); background: rgba(255,255,255,0.03); }
         .nav-item.active { color: var(--accent); font-weight: 600; background: var(--accent-soft); border-right-color: var(--accent); }
         .main { flex: 1; padding: 28px; max-width: 1100px; overflow: auto; }
-
-        /* CARDS */
         .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
         .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px; }
         .stat-label { font-size: 11px; color: var(--text-mid); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
         .stat-value { font-size: 24px; font-weight: 700; }
         .stat-value.accent { color: var(--accent); } .stat-value.red { color: var(--red); }
         .stat-value.green { color: var(--green); } .stat-value.blue { color: var(--blue); }
-
-        /* TABLES */
         table { width: 100%; border-collapse: collapse; font-size: 13px; }
         th { padding: 10px 8px; text-align: left; color: var(--text-mid); font-weight: 500; border-bottom: 1px solid var(--border); }
         td { padding: 10px 8px; border-bottom: 1px solid var(--border); }
@@ -53,14 +45,10 @@
         .badge-margin-high { background: var(--green-soft); color: var(--green); }
         .badge-margin-mid { background: var(--blue-soft); color: var(--blue); }
         .badge-margin-low { background: var(--red-soft); color: var(--red); }
-
-        /* SECTION */
         .section { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 20px; }
         .section-title { font-size: 14px; font-weight: 600; color: var(--accent); margin-bottom: 14px; }
         .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
         h2 { font-family: 'Fraunces', serif; font-size: 26px; font-weight: 600; margin-bottom: 24px; }
-
-        /* BUTTONS */
         .btn { display: inline-flex; align-items: center; gap: 6px; border: none; border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Outfit', sans-serif; transition: all 0.2s; }
         .btn-primary { background: var(--accent); color: var(--bg); }
         .btn-primary:hover { filter: brightness(1.1); }
@@ -69,21 +57,15 @@
         .btn-danger { background: var(--red-soft); color: var(--red); }
         .btn-sm { padding: 5px 10px; font-size: 12px; }
         .btn-back { background: var(--card); border: 1px solid var(--border); color: var(--text-mid); margin-right: 12px; }
-
-        /* FORMS */
         select, input { background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 9px 12px; font-size: 14px; font-family: 'Outfit', sans-serif; width: 100%; }
         select:focus, input:focus { outline: none; border-color: var(--accent); }
         .form-group { margin-bottom: 14px; }
         .form-label { font-size: 12px; color: var(--text-mid); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
-
-        /* MODAL */
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 100; }
         .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px; width: 440px; max-height: 90vh; overflow-y: auto; }
         .modal-title { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600; }
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .modal-close { background: none; border: none; color: var(--text-mid); cursor: pointer; font-size: 20px; }
-
-        /* CLIENT ROW */
         .client-row { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 20px; cursor: pointer; transition: all 0.2s; display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; align-items: center; gap: 12px; margin-bottom: 10px; }
         .client-row:hover { border-color: var(--accent); }
         .client-name { font-weight: 600; font-size: 15px; }
@@ -91,26 +73,24 @@
         .client-stat { text-align: center; }
         .client-stat-label { font-size: 11px; color: var(--text-mid); }
         .client-stat-value { font-weight: 600; font-size: 15px; }
-
-        /* GRID 2 */
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
         .info-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
         .info-row:last-child { border-bottom: none; }
         .info-label { color: var(--text-mid); }
         .info-value { font-weight: 600; }
-
-        .link-tryon { display: inline-block; margin-top: 16px; color: var(--accent); text-decoration: none; font-size: 13px; }
-        .link-tryon:hover { text-decoration: underline; }
-
-        /* FOOTER TABLE */
         tfoot td { padding-top: 14px; font-weight: 700; font-size: 14px; border-top: 2px solid var(--accent); border-bottom: none; }
-
-        /* CREDITS BOX */
         .credits-box { background: var(--accent-soft); border: 1px solid rgba(212,168,83,0.3); border-radius: 10px; padding: 12px 16px; display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
         .credits-box .label { font-size: 13px; color: var(--text-mid); }
         .credits-box .value { font-size: 20px; font-weight: 700; color: var(--accent); }
-
         .hidden { display: none !important; }
+        /* Store card */
+        .store-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 20px; margin-bottom: 12px; }
+        .store-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .store-card-name { font-weight: 700; font-size: 16px; }
+        .store-links { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+        .store-link { padding: 4px 10px; border-radius: 6px; font-size: 11px; text-decoration: none; font-weight: 600; }
+        .copy-btn { background: none; border: 1px solid var(--border); color: var(--text-mid); border-radius: 4px; padding: 2px 8px; font-size: 11px; cursor: pointer; font-family: inherit; margin-left: 4px; }
+        .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
         @media (max-width: 900px) {
             .stats-grid { grid-template-columns: repeat(2, 1fr); }
             .client-row { grid-template-columns: 1fr 1fr; }
@@ -120,7 +100,6 @@
 </head>
 <body>
 
-<!-- HEADER -->
 <div class="header">
     <div class="logo"><span>FASHION</span><span>Admin</span></div>
     <div class="header-right">
@@ -136,16 +115,15 @@
 </div>
 
 <div class="layout">
-    <!-- SIDEBAR -->
     <div class="sidebar">
         <div class="nav-item active" onclick="showTab('overview')" data-tab="overview">📊 Resumen</div>
-        <div class="nav-item" onclick="showTab('qrcodes')" data-tab="qrcodes">📱 QR Codes</div>
+        <div class="nav-item" onclick="showTab('stores')" data-tab="stores">🏪 Tiendas</div>
         <div class="nav-item" onclick="showTab('clients')" data-tab="clients">👥 Clientes</div>
+        <div class="nav-item" onclick="showTab('qrcodes')" data-tab="qrcodes">📱 QR Codes</div>
         <div class="nav-item" onclick="showTab('billing')" data-tab="billing">💰 Facturación</div>
         <div class="nav-item" onclick="showTab('activity')" data-tab="activity">📋 Actividad</div>
     </div>
 
-    <!-- MAIN CONTENT -->
     <div class="main">
 
         <!-- ═══ OVERVIEW ═══ -->
@@ -176,34 +154,29 @@
                     <div class="info-row"><span class="info-label">Video 480p</span><span class="info-value" style="color:var(--accent)">1 crédito</span></div>
                     <div class="info-row"><span class="info-label">Video 720p</span><span class="info-value" style="color:var(--accent)">3 créditos</span></div>
                     <div class="info-row"><span class="info-label">Video 1080p</span><span class="info-value" style="color:var(--accent)">6 créditos</span></div>
-                    <div class="info-row"><span class="info-label">Video 10s (2x)</span><span class="info-value" style="color:var(--accent)">x2 costo</span></div>
                 </div>
             </div>
+        </div>
+
+        <!-- ═══ STORES ═══ -->
+        <div id="tab-stores" class="hidden">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+                <h2 style="margin-bottom:0">🏪 Tiendas</h2>
+                <button class="btn btn-primary" onclick="showModal('addStore')">+ Nueva tienda</button>
+            </div>
+            <div id="storesList"></div>
         </div>
 
         <!-- ═══ QR CODES ═══ -->
         <div id="tab-qrcodes" class="hidden">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
                 <h2 style="margin-bottom:0">📱 Códigos QR</h2>
-                <div style="display:flex;gap:10px;">
-                    <a href="/api/garments/qr-all" download class="btn btn-primary" style="text-decoration:none;">⬇️ Descargar todos los QR</a>
-                </div>
+                <a href="/api/garments/qr-all" download class="btn btn-primary" style="text-decoration:none;">⬇️ Descargar todos</a>
             </div>
-
             <div class="section">
                 <div class="section-title">QR por prenda</div>
-                <p style="font-size:13px;color:var(--text-mid);margin-bottom:16px;">Cada QR lleva al cliente directo a probarse esa prenda. Descarga individual o todos juntos para imprimir.</p>
+                <p style="font-size:13px;color:var(--text-mid);margin-bottom:16px;">Cada QR lleva al cliente a probarse esa prenda.</p>
                 <div id="qr-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;"></div>
-            </div>
-
-            <div class="section" style="margin-top:20px;">
-                <div class="section-title">📋 Instrucciones</div>
-                <div style="font-size:13px;color:var(--text-mid);line-height:1.6;">
-                    <p><strong>1.</strong> Descarga los QR (individual o todos)</p>
-                    <p><strong>2.</strong> Imprímelos y colócalos en las etiquetas o perchas de cada prenda</p>
-                    <p><strong>3.</strong> El cliente escanea con su celular → ve la prenda → se toma foto → prueba virtual</p>
-                    <p style="margin-top:10px;"><strong>💡 Tip:</strong> La URL de tu tienda para clientes es: <a href="/tienda" target="_blank" style="color:var(--accent);">/tienda</a></p>
-                </div>
             </div>
         </div>
 
@@ -222,10 +195,16 @@
                 <button class="btn btn-back" onclick="showTab('clients')">← Volver</button>
                 <h2 style="margin-bottom:0" id="clientDetailName"></h2>
             </div>
+
+            <!-- Links de acceso -->
+            <div class="section" id="clientAccessLinks" style="margin-bottom:16px;">
+                <div class="section-title">🔗 Links de acceso</div>
+                <div id="accessLinksContent"></div>
+            </div>
+
             <div class="stats-grid" id="clientDetailStats"></div>
             <div class="grid-2" id="clientDetailInfo"></div>
 
-            <!-- GARMENTS SECTION -->
             <div class="section">
                 <div class="section-header">
                     <div class="section-title">📦 Catálogo de prendas</div>
@@ -238,7 +217,6 @@
                 <div id="clientGarments" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-top:12px;"></div>
             </div>
 
-            <!-- USAGE HISTORY -->
             <div class="section">
                 <div class="section-header">
                     <div class="section-title">Historial de uso</div>
@@ -279,6 +257,33 @@
     </div>
 </div>
 
+<!-- MODAL: ADD STORE -->
+<div id="modal-addStore" class="modal-overlay hidden" onclick="if(event.target===this)closeModal()">
+    <div class="modal" style="max-width:480px;">
+        <div class="modal-header">
+            <div class="modal-title">🏪 Nueva tienda</div>
+            <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="form-group"><div class="form-label">Nombre de la tienda</div><input id="newStoreName" placeholder="Boutique María"></div>
+        <div class="form-group"><div class="form-label">Slug (URL)</div><input id="newStoreSlug" placeholder="boutique-maria" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div class="form-group"><div class="form-label">Teléfono WhatsApp</div><input id="newStorePhone" placeholder="+573001234567"></div>
+            <div class="form-group"><div class="form-label">Email</div><input id="newStoreEmail" placeholder="info@tienda.com"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div class="form-group"><div class="form-label">Instagram (sin @)</div><input id="newStoreIG" placeholder="boutique_maria"></div>
+            <div class="form-group"><div class="form-label">Website</div><input id="newStoreWeb" placeholder="https://tienda.com"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div class="form-group"><div class="form-label">Color de marca</div><input id="newStoreColor" type="color" value="#c9a55a" style="height:42px;padding:4px;"></div>
+            <div class="form-group"><div class="form-label">Contraseña panel</div><input id="newStorePass" placeholder="auto-generada si vacía"></div>
+        </div>
+        <div class="form-group"><div class="form-label">Dirección (opcional)</div><input id="newStoreAddr" placeholder="Calle 123 #45-67, Medellín"></div>
+        <div class="form-group"><div class="form-label">Logo (opcional)</div><input type="file" id="newStoreLogo" accept="image/*" style="padding:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;width:100%;color:var(--text);"></div>
+        <button class="btn btn-primary" style="width:100%;margin-top:8px;padding:12px;font-size:15px" onclick="createStore()">🏪 Crear tienda</button>
+    </div>
+</div>
+
 <!-- MODAL: ADD CLIENT -->
 <div id="modal-addClient" class="modal-overlay hidden" onclick="if(event.target===this)closeModal()">
     <div class="modal">
@@ -304,19 +309,11 @@
         </div>
         <div class="form-group"><div class="form-label">Cliente</div><select id="usageClient"></select></div>
         <div class="form-group"><div class="form-label">Tipo</div>
-            <select id="usageType">
-                <option value="tryon">Virtual Try-On (1 crédito)</option>
-                <option value="video-480p">Video 480p (1 crédito)</option>
-                <option value="video-720p">Video 720p (3 créditos)</option>
-                <option value="video-1080p">Video 1080p (6 créditos)</option>
-            </select>
+            <select id="usageType"><option value="tryon">Virtual Try-On (1 crédito)</option><option value="video-480p">Video 480p (1 crédito)</option><option value="video-720p">Video 720p (3 créditos)</option><option value="video-1080p">Video 1080p (6 créditos)</option></select>
         </div>
         <div class="form-group" id="creditsGroup">
             <div class="form-label">Créditos (1=prenda sola, 2=outfit)</div>
-            <select id="usageCredits">
-                <option value="1">1 crédito (prenda sola)</option>
-                <option value="2">2 créditos (outfit top+bottom)</option>
-            </select>
+            <select id="usageCredits"><option value="1">1 crédito (prenda sola)</option><option value="2">2 créditos (outfit top+bottom)</option></select>
         </div>
         <div class="form-group"><div class="form-label">Prendas</div><input id="usageGarments" placeholder="Camiseta verde + Jean negro"></div>
         <div class="form-group"><div class="form-label">Notas (opcional)</div><input id="usageNotes" placeholder="Outfit completo..."></div>
@@ -336,488 +333,360 @@
             <div class="form-group"><div class="form-label">Categoría</div>
                 <select id="gcCategory">
                     <option value="" disabled selected>Seleccionar...</option>
-                    <optgroup label="👕 Superior">
-                        <option value="tops">Camiseta</option>
-                        <option value="tops">Camisa</option>
-                        <option value="tops">Buzo / Saco</option>
-                        <option value="tops">Blusa</option>
-                    </optgroup>
-                    <optgroup label="👖 Inferior">
-                        <option value="bottoms">Pantalón</option>
-                        <option value="bottoms">Pantaloneta</option>
-                        <option value="bottoms">Falda</option>
-                    </optgroup>
-                    <optgroup label="👗 Completo">
-                        <option value="one-pieces">Vestido</option>
-                        <option value="one-pieces">Enterizo</option>
-                    </optgroup>
+                    <optgroup label="👕 Superior"><option value="tops">Camiseta</option><option value="tops">Camisa</option><option value="tops">Buzo / Saco</option><option value="tops">Blusa</option></optgroup>
+                    <optgroup label="👖 Inferior"><option value="bottoms">Pantalón</option><option value="bottoms">Pantaloneta</option><option value="bottoms">Falda</option></optgroup>
+                    <optgroup label="👗 Completo"><option value="one-pieces">Vestido</option><option value="one-pieces">Enterizo</option></optgroup>
                 </select>
             </div>
             <div class="form-group"><div class="form-label">Género</div>
-                <select id="gcGender">
-                    <option value="mujer">Mujer</option>
-                    <option value="hombre">Hombre</option>
-                    <option value="unisex">Unisex</option>
-                </select>
+                <select id="gcGender"><option value="mujer">Mujer</option><option value="hombre">Hombre</option><option value="unisex">Unisex</option></select>
             </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
-            <div class="form-group"><div class="form-label">Talla</div>
-                <select id="gcSize"><option>XS</option><option>S</option><option selected>M</option><option>L</option><option>XL</option></select>
-            </div>
-            <div class="form-group"><div class="form-label">Precio (COP)</div><input id="gcPrice" type="number" value="0" placeholder="0"></div>
+            <div class="form-group"><div class="form-label">Talla</div><select id="gcSize"><option>XS</option><option>S</option><option selected>M</option><option>L</option><option>XL</option></select></div>
+            <div class="form-group"><div class="form-label">Precio (COP)</div><input id="gcPrice" type="number" value="0"></div>
             <div class="form-group"><div class="form-label">Referencia</div><input id="gcRef" placeholder="REF-001"></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
             <div class="form-group"><div class="form-label">Color</div><input id="gcColor" placeholder="Negro"></div>
             <div class="form-group"><div class="form-label">Material</div><input id="gcMaterial" placeholder="Algodón"></div>
         </div>
-        <div class="form-group">
-            <div class="form-label">Foto de la prenda</div>
-            <input type="file" id="gcImage" accept="image/*" style="padding:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;width:100%;color:var(--text);">
-        </div>
+        <div class="form-group"><div class="form-label">Foto de la prenda</div><input type="file" id="gcImage" accept="image/*" style="padding:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;width:100%;color:var(--text);"></div>
         <button class="btn btn-primary" style="width:100%;margin-top:8px;padding:12px;font-size:15px" onclick="uploadGarmentToClient()">📦 Subir prenda</button>
     </div>
 </div>
 
 <script>
-// ============================================================
-// STATE
-// ============================================================
-let dashData = {};
-let clientsData = [];
-let logsData = [];
+let dashData = {}, clientsData = [], logsData = [], storesData = [];
 let selectedClientId = null;
+const COP = (n) => new Intl.NumberFormat('es-CO', {style:'currency',currency:'COP',minimumFractionDigits:0}).format(n);
 
-const COP = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(n);
-const USD = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(n);
-
-// ============================================================
-// NAVIGATION
-// ============================================================
+// ═══ NAVIGATION ═══
 function showTab(tab) {
     document.querySelectorAll('.main > div[id^="tab-"]').forEach(el => el.classList.add('hidden'));
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-
     if (tab === 'client-detail') {
         document.getElementById('tab-client-detail').classList.remove('hidden');
     } else {
         document.getElementById(`tab-${tab}`).classList.remove('hidden');
         document.querySelector(`.nav-item[data-tab="${tab}"]`)?.classList.add('active');
     }
-
     if (tab === 'overview') loadDashboard();
+    if (tab === 'stores') loadStores();
     if (tab === 'clients') loadClients();
     if (tab === 'billing') loadBilling();
     if (tab === 'activity') loadActivity();
     if (tab === 'qrcodes') loadQRCodes();
 }
+function showModal(id) { document.getElementById(`modal-${id}`).classList.remove('hidden'); if(id==='addUsage') populateClientSelect(); }
+function closeModal() { document.querySelectorAll('.modal-overlay').forEach(el => el.classList.add('hidden')); }
+async function api(url, method='GET', body=null) { const opts={method}; if(body){opts.body=body instanceof FormData?body:new URLSearchParams(body);} return (await fetch(url,opts)).json(); }
+function copyText(text) { navigator.clipboard.writeText(text).then(()=>alert('✅ Copiado: '+text)); }
 
-function showModal(id) {
-    document.getElementById(`modal-${id}`).classList.remove('hidden');
-    if (id === 'addUsage') populateClientSelect();
-}
-function closeModal() {
-    document.querySelectorAll('.modal-overlay').forEach(el => el.classList.add('hidden'));
-}
-
-// ============================================================
-// API CALLS
-// ============================================================
-async function api(url, method = 'GET', body = null) {
-    const opts = { method };
-    if (body) {
-        opts.body = body instanceof FormData ? body : new URLSearchParams(body);
-    }
-    const resp = await fetch(url, opts);
-    return resp.json();
-}
-
-// ============================================================
-// OVERVIEW
-// ============================================================
-async function loadQRCodes() {
-    const data = await api('/api/catalog');
-    const garments = data.garments || data || [];
-    const grid = document.getElementById('qr-grid');
-
-    if (!garments.length) {
-        grid.innerHTML = '<p style="color:var(--text-mid);">No hay prendas. Agrega prendas desde el catálogo principal.</p>';
-        return;
-    }
-
-    grid.innerHTML = garments.map(g => {
-        const icon = g.category==='tops'?'👕':g.category==='bottoms'?'👖':'👗';
-        const catLabel = g.category==='tops'?'Superior':g.category==='bottoms'?'Inferior':'Completo';
-        return `
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;text-align:center;">
-            <a href="/api/garment/${g.id}/qr" download="qr_${g.name}.png" style="display:block;">
-                <img src="/api/garment/${g.id}/qr" style="width:100%;height:auto;cursor:pointer;" alt="QR ${g.name}">
-            </a>
-            <div style="padding:10px;">
-                <div style="font-weight:600;font-size:13px;">${icon} ${g.name}</div>
-                <div style="font-size:11px;color:var(--text-mid);margin-top:2px;">${catLabel} · ${g.size} · ${g.gender}</div>
-                <div style="display:flex;gap:6px;margin-top:8px;">
-                    <a href="/api/garment/${g.id}/qr" download="qr_${g.name}.png" class="btn btn-primary" style="flex:1;text-decoration:none;font-size:11px;padding:6px;">⬇️ Descargar</a>
-                    <a href="/prenda/${g.id}" target="_blank" class="btn" style="flex:1;background:var(--card);border:1px solid var(--border);color:var(--text);font-size:11px;padding:6px;text-decoration:none;">👁️ Ver landing</a>
+// ═══ STORES ═══
+async function loadStores() {
+    const stores = await api('/api/stores');
+    storesData = stores || [];
+    const list = document.getElementById('storesList');
+    if (!storesData.length) { list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-mid)">No hay tiendas. Crea tu primera tienda.</div>'; return; }
+    list.innerHTML = storesData.map(s => `
+        <div class="store-card">
+            <div class="store-card-header">
+                <div>
+                    <div class="store-card-name" style="color:${s.primary_color||'var(--accent)'};">${s.name}</div>
+                    <div style="font-size:12px;color:var(--text-mid);">${s.email||''} ${s.phone?'· '+s.phone:''} ${s.instagram?'· @'+s.instagram:''}</div>
+                </div>
+                <div style="display:flex;gap:6px;">
+                    <span class="badge badge-foto">${s.garment_count} prendas</span>
+                    <button class="btn btn-danger btn-sm" onclick="deleteStore('${s.id}')">✕</button>
                 </div>
             </div>
-        </div>`;
-    }).join('');
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px;">
+                <div>
+                    <div style="color:var(--text-mid);margin-bottom:4px;">👥 Link para clientes (usuarios finales):</div>
+                    <div style="display:flex;align-items:center;gap:4px;">
+                        <a href="/tienda/${s.slug}" target="_blank" style="color:var(--accent);">/tienda/${s.slug}</a>
+                        <button class="copy-btn" onclick="copyText(location.origin+'/tienda/${s.slug}')">📋</button>
+                    </div>
+                </div>
+                <div>
+                    <div style="color:var(--text-mid);margin-bottom:4px;">🏪 Panel de la tienda (dueño):</div>
+                    <div style="display:flex;align-items:center;gap:4px;">
+                        <a href="/panel/${s.slug}" target="_blank" style="color:var(--blue);">/panel/${s.slug}</a>
+                        <button class="copy-btn" onclick="copyText(location.origin+'/panel/${s.slug}')">📋</button>
+                    </div>
+                </div>
+            </div>
+            <div style="margin-top:8px;font-size:12px;">
+                <span style="color:var(--text-mid);">🔐 Contraseña:</span>
+                <code style="background:var(--bg);padding:2px 8px;border-radius:4px;color:var(--accent);font-weight:600;">${s.panel_password||'—'}</code>
+                <button class="copy-btn" onclick="copyText('${s.panel_password||''}')">📋</button>
+            </div>
+        </div>
+    `).join('');
 }
 
-// ============================================================
+async function createStore() {
+    const form = new FormData();
+    form.append('name', document.getElementById('newStoreName').value);
+    form.append('slug', document.getElementById('newStoreSlug').value);
+    form.append('phone', document.getElementById('newStorePhone').value);
+    form.append('email', document.getElementById('newStoreEmail').value);
+    form.append('instagram', document.getElementById('newStoreIG').value);
+    form.append('website', document.getElementById('newStoreWeb').value);
+    form.append('primary_color', document.getElementById('newStoreColor').value);
+    form.append('panel_password', document.getElementById('newStorePass').value);
+    form.append('address', document.getElementById('newStoreAddr').value);
+    const logo = document.getElementById('newStoreLogo');
+    if (logo.files && logo.files[0]) form.append('logo', logo.files[0]);
+    try {
+        const resp = await fetch('/api/store', {method:'POST', body:form});
+        const data = await resp.json();
+        if (data.success) {
+            closeModal();
+            alert(`✅ Tienda creada!\n\n🔐 Contraseña: ${data.store.panel_password}\n🏪 Panel: /panel/${data.store.slug}\n👥 Tienda: /tienda/${data.store.slug}`);
+            document.getElementById('newStoreName').value = '';
+            document.getElementById('newStoreSlug').value = '';
+            document.getElementById('newStorePhone').value = '';
+            document.getElementById('newStoreEmail').value = '';
+            document.getElementById('newStoreIG').value = '';
+            document.getElementById('newStoreWeb').value = '';
+            document.getElementById('newStorePass').value = '';
+            document.getElementById('newStoreAddr').value = '';
+            loadStores();
+        } else { alert('Error: ' + (data.detail || JSON.stringify(data))); }
+    } catch(e) { alert('Error de conexión'); }
+}
+
+async function deleteStore(id) { if(!confirm('¿Eliminar esta tienda?'))return; await api(`/api/store/${id}`,'DELETE'); loadStores(); }
+
+// ═══ DASHBOARD ═══
 async function loadDashboard() {
     dashData = await api('/api/admin/dashboard');
     const credits = await api('/api/credits');
-
     let cred = credits?.credits?.total ?? credits?.credits?.remaining ?? '?';
     document.getElementById('fashnCredits').textContent = cred;
     document.getElementById('creditsOverview').textContent = cred;
     document.getElementById('statFotos').textContent = dashData.total_fotos || 0;
     document.getElementById('statVideos').textContent = dashData.total_videos || 0;
     document.getElementById('planSelect').value = dashData.plan || 'tier1';
-
     document.getElementById('overviewStats').innerHTML = [
-        { label: 'Créditos usados', value: dashData.total_credits, cls: 'accent' },
-        { label: 'Costo FASHN', value: COP(dashData.total_cost_cop), cls: 'red' },
-        { label: 'Ingresos clientes', value: COP(dashData.total_charge_cop), cls: 'green' },
-        { label: 'Ganancia neta', value: COP(dashData.total_profit_cop), cls: 'blue' },
-    ].map(s => `<div class="stat-card"><div class="stat-label">${s.label}</div><div class="stat-value ${s.cls}">${s.value}</div></div>`).join('');
+        {label:'Créditos usados',value:dashData.total_credits,cls:'accent'},
+        {label:'Costo FASHN',value:COP(dashData.total_cost_cop),cls:'red'},
+        {label:'Ingresos clientes',value:COP(dashData.total_charge_cop),cls:'green'},
+        {label:'Ganancia neta',value:COP(dashData.total_profit_cop),cls:'blue'},
+    ].map(s=>`<div class="stat-card"><div class="stat-label">${s.label}</div><div class="stat-value ${s.cls}">${s.value}</div></div>`).join('');
 }
 
-// ============================================================
-// CLIENTS
-// ============================================================
+// ═══ QR CODES ═══
+async function loadQRCodes() {
+    const data = await api('/api/catalog');
+    const garments = data.garments || [];
+    const grid = document.getElementById('qr-grid');
+    if (!garments.length) { grid.innerHTML = '<p style="color:var(--text-mid);">No hay prendas.</p>'; return; }
+    grid.innerHTML = garments.map(g => {
+        const icon = g.category==='tops'?'👕':g.category==='bottoms'?'👖':'👗';
+        return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;text-align:center;">
+            <a href="/api/garment/${g.id}/qr" download><img src="/api/garment/${g.id}/qr" style="width:100%;cursor:pointer;" alt="QR"></a>
+            <div style="padding:10px;"><div style="font-weight:600;font-size:13px;">${icon} ${g.name}</div>
+            <div style="display:flex;gap:6px;margin-top:8px;">
+                <a href="/api/garment/${g.id}/qr" download class="btn btn-primary" style="flex:1;text-decoration:none;font-size:11px;padding:6px;">⬇️</a>
+                <a href="/prenda/${g.id}" target="_blank" class="btn btn-secondary" style="flex:1;font-size:11px;padding:6px;text-decoration:none;">👁️</a>
+            </div></div></div>`;
+    }).join('');
+}
+
+// ═══ CLIENTS ═══
 async function loadClients() {
-    const data = await api('/api/admin/clients');
-    clientsData = data.clients || [];
-
-    if (clientsData.length === 0) {
-        document.getElementById('clientsList').innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-mid)">No hay clientes aún. Crea tu primer cliente para empezar a registrar uso.</div>';
-        return;
-    }
-
+    const data = await api('/api/admin/clients'); clientsData = data.clients || [];
+    if (!clientsData.length) { document.getElementById('clientsList').innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-mid)">No hay clientes.</div>'; return; }
     document.getElementById('clientsList').innerHTML = clientsData.map(c => `
         <div class="client-row" onclick="showClientDetail('${c.id}')">
-            <div><div class="client-name">${c.name}</div><div class="client-email">${c.email || c.phone || ''}</div></div>
+            <div><div class="client-name">${c.name}</div><div class="client-email">${c.email||c.phone||''}</div></div>
             <div class="client-stat"><div class="client-stat-label">Generaciones</div><div class="client-stat-value">${c.stats.total_generations}</div></div>
             <div class="client-stat"><div class="client-stat-label">Créditos</div><div class="client-stat-value" style="color:var(--accent)">${c.stats.total_credits}</div></div>
             <div class="client-stat"><div class="client-stat-label">Cobrar</div><div class="client-stat-value" style="color:var(--green)">${COP(c.stats.charge_cop)}</div></div>
             <div class="client-stat"><div class="client-stat-label">Ganancia</div><div class="client-stat-value" style="color:var(--blue)">${COP(c.stats.profit_cop)}</div></div>
-        </div>
-    `).join('');
+        </div>`).join('');
 }
 
 async function showClientDetail(clientId) {
     selectedClientId = clientId;
     const data = await api('/api/admin/clients');
-    const client = (data.clients || []).find(c => c.id === clientId);
-    if (!client) return;
-
+    const client = (data.clients||[]).find(c=>c.id===clientId); if(!client) return;
     const logs = await api(`/api/admin/usage?client_id=${clientId}`);
     const clientLogs = logs.logs || [];
 
     document.getElementById('clientDetailName').textContent = client.name;
 
+    // Find store for this client
+    if (!storesData.length) storesData = await api('/api/stores') || [];
+    const store = storesData.find(s => s.id === clientId); // store_id === client_id in many cases
+    const accessLinks = document.getElementById('accessLinksContent');
+    if (store) {
+        accessLinks.innerHTML = `
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px;">
+                <div>
+                    <div style="color:var(--text-mid);margin-bottom:4px;">👥 Clientes acceden a:</div>
+                    <a href="/tienda/${store.slug}" target="_blank" style="color:var(--accent);font-weight:600;">${location.origin}/tienda/${store.slug}</a>
+                    <button class="copy-btn" onclick="copyText('${location.origin}/tienda/${store.slug}')">📋</button>
+                </div>
+                <div>
+                    <div style="color:var(--text-mid);margin-bottom:4px;">🏪 El dueño accede a:</div>
+                    <a href="/panel/${store.slug}" target="_blank" style="color:var(--blue);font-weight:600;">${location.origin}/panel/${store.slug}</a>
+                    <button class="copy-btn" onclick="copyText('${location.origin}/panel/${store.slug}')">📋</button>
+                    <div style="margin-top:4px;"><span style="color:var(--text-mid);">🔐</span> <code style="background:var(--bg);padding:2px 6px;border-radius:4px;color:var(--accent);">${store.panel_password||'—'}</code></div>
+                </div>
+            </div>`;
+        document.getElementById('storeLinkBtn').href = `/tienda/${store.slug}`;
+    } else {
+        accessLinks.innerHTML = '<div style="font-size:13px;color:var(--text-mid);">No hay tienda asociada a este cliente. Crea una tienda con el mismo ID en la sección Tiendas.</div>';
+        document.getElementById('storeLinkBtn').href = `/tienda?store=${clientId}`;
+    }
+
     document.getElementById('clientDetailStats').innerHTML = [
-        { label: 'Créditos usados', value: client.stats.total_credits, cls: 'accent' },
-        { label: 'Tu costo', value: COP(client.stats.cost_cop), cls: 'red' },
-        { label: 'Cobrar al cliente', value: COP(client.stats.charge_cop), cls: 'green' },
-        { label: 'Tu ganancia', value: COP(client.stats.profit_cop), cls: 'blue' },
-    ].map(s => `<div class="stat-card"><div class="stat-label">${s.label}</div><div class="stat-value ${s.cls}">${s.value}</div></div>`).join('');
+        {label:'Créditos usados',value:client.stats.total_credits,cls:'accent'},
+        {label:'Tu costo',value:COP(client.stats.cost_cop),cls:'red'},
+        {label:'Cobrar al cliente',value:COP(client.stats.charge_cop),cls:'green'},
+        {label:'Tu ganancia',value:COP(client.stats.profit_cop),cls:'blue'},
+    ].map(s=>`<div class="stat-card"><div class="stat-label">${s.label}</div><div class="stat-value ${s.cls}">${s.value}</div></div>`).join('');
 
     document.getElementById('clientDetailInfo').innerHTML = `
-        <div class="section">
-            <div class="section-title">Tarifas del cliente</div>
-            <div class="info-row"><span class="info-label">Precio por outfit (foto)</span><span class="info-value">${COP(client.price_per_outfit)}</span></div>
+        <div class="section"><div class="section-title">Tarifas</div>
+            <div class="info-row"><span class="info-label">Precio por outfit</span><span class="info-value">${COP(client.price_per_outfit)}</span></div>
             <div class="info-row"><span class="info-label">Precio por video</span><span class="info-value">${COP(client.price_per_video)}</span></div>
-            <div class="info-row"><span class="info-label">Email</span><span class="info-value">${client.email || '—'}</span></div>
-            <div class="info-row"><span class="info-label">Teléfono</span><span class="info-value">${client.phone || '—'}</span></div>
+            <div class="info-row"><span class="info-label">Email</span><span class="info-value">${client.email||'—'}</span></div>
+            <div class="info-row"><span class="info-label">Teléfono</span><span class="info-value">${client.phone||'—'}</span></div>
         </div>
-        <div class="section">
-            <div class="section-title">Resumen</div>
-            <div class="info-row"><span class="info-label">Total generaciones</span><span class="info-value">${client.stats.total_generations}</span></div>
+        <div class="section"><div class="section-title">Resumen</div>
+            <div class="info-row"><span class="info-label">Generaciones</span><span class="info-value">${client.stats.total_generations}</span></div>
             <div class="info-row"><span class="info-label">Fotos</span><span class="info-value">${client.stats.fotos}</span></div>
             <div class="info-row"><span class="info-label">Videos</span><span class="info-value">${client.stats.videos}</span></div>
-            <div class="info-row"><span class="info-label">Cliente desde</span><span class="info-value">${client.created_at?.slice(0,10) || '—'}</span></div>
-        </div>
-    `;
+            <div class="info-row"><span class="info-label">Cliente desde</span><span class="info-value">${client.created_at?.slice(0,10)||'—'}</span></div>
+        </div>`;
 
-    document.getElementById('clientDetailLogs').innerHTML = clientLogs.map(l => `
-        <tr>
-            <td style="color:var(--text-mid)">${l.created_at?.slice(0,10) || ''}</td>
-            <td><span class="badge ${l.usage_type === 'tryon' ? 'badge-foto' : 'badge-video'}">${l.usage_type === 'tryon' ? '📷 Foto' : '🎬 Video'}</span></td>
-            <td>${l.garments_desc || '—'}</td>
-            <td style="color:var(--accent);font-weight:600">${l.credits_used}</td>
-            <td style="color:var(--red)">${COP(l.cost_cop)}</td>
-            <td style="color:var(--green);font-weight:600">${COP(l.charge_cop)}</td>
-            <td style="color:var(--text-mid);font-size:12px">${l.notes || ''}</td>
-            <td><button class="btn btn-danger btn-sm" onclick="deleteLog('${l.id}','${clientId}')">✕</button></td>
-        </tr>
-    `).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text-mid);padding:20px">Sin registros</td></tr>';
+    document.getElementById('clientDetailLogs').innerHTML = clientLogs.map(l => `<tr>
+        <td style="color:var(--text-mid)">${l.created_at?.slice(0,10)||''}</td>
+        <td><span class="badge ${l.usage_type==='tryon'?'badge-foto':'badge-video'}">${l.usage_type==='tryon'?'📷 Foto':'🎬 Video'}</span></td>
+        <td>${l.garments_desc||'—'}</td><td style="color:var(--accent);font-weight:600">${l.credits_used}</td>
+        <td style="color:var(--red)">${COP(l.cost_cop)}</td><td style="color:var(--green);font-weight:600">${COP(l.charge_cop)}</td>
+        <td style="color:var(--text-mid);font-size:12px">${l.notes||''}</td>
+        <td><button class="btn btn-danger btn-sm" onclick="deleteLog('${l.id}','${clientId}')">✕</button></td>
+    </tr>`).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text-mid);padding:20px">Sin registros</td></tr>';
 
     showTab('client-detail');
-
-    // Load garments for this client
     loadClientGarments(clientId);
-
-    // Set store link (using client ID as store_id)
-    document.getElementById('storeLinkBtn').href = `/tienda?store=${clientId}`;
 }
 
 async function loadClientGarments(clientId) {
     const data = await api(`/api/catalog?store_id=${clientId}`);
     const garments = data.garments || [];
     const grid = document.getElementById('clientGarments');
-
-    if (!garments.length) {
-        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--text-mid);font-size:13px;">Sin prendas. Haz clic en "Subir prenda" para agregar productos de este cliente.</div>';
-        return;
-    }
-
+    if (!garments.length) { grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--text-mid);font-size:13px;">Sin prendas.</div>'; return; }
     grid.innerHTML = garments.map(g => {
         const icon = g.category==='tops'?'👕':g.category==='bottoms'?'👖':'👗';
-        const catLabel = g.category==='tops'?'Superior':g.category==='bottoms'?'Inferior':'Completo';
-        const tryonOn = g.tryon_enabled;
-        const tryonStyle = tryonOn
-            ? 'background:var(--green-soft);color:var(--green);border:1px solid var(--green);'
-            : 'background:var(--surface);color:var(--text-mid);border:1px solid var(--border);';
-        const tryonBadge = tryonOn
-            ? '<div style="position:absolute;top:6px;right:6px;background:var(--green);color:#fff;padding:2px 6px;border-radius:8px;font-size:9px;font-weight:600;">✨ Try-On</div>'
-            : '';
-        return `
-        <div style="background:var(--surface);border:1px solid ${tryonOn?'var(--green)':'var(--border)'};border-radius:10px;overflow:hidden;position:relative;">
-            ${tryonBadge}
+        const on = g.tryon_enabled;
+        const style = on ? 'background:var(--green-soft);color:var(--green);border:1px solid var(--green);' : 'background:var(--surface);color:var(--text-mid);border:1px solid var(--border);';
+        return `<div style="background:var(--surface);border:1px solid ${on?'var(--green)':'var(--border)'};border-radius:10px;overflow:hidden;position:relative;">
+            ${on?'<div style="position:absolute;top:6px;right:6px;background:var(--green);color:#fff;padding:2px 6px;border-radius:8px;font-size:9px;font-weight:600;">✨ Try-On</div>':''}
             <img src="${g.image_url}" style="width:100%;height:130px;object-fit:cover;background:#111;">
             <div style="padding:8px 10px;">
                 <div style="font-weight:600;font-size:12px;">${icon} ${g.name}</div>
-                <div style="font-size:11px;color:var(--text-mid);margin-top:2px;">${g.size} · ${catLabel}${g.reference ? ' · '+g.reference : ''}</div>
-                ${g.price ? `<div style="font-size:12px;color:var(--accent);font-weight:600;margin-top:2px;">$${Number(g.price).toLocaleString('es-CO')}</div>` : ''}
-                <button onclick="toggleTryon('${g.id}',${!tryonOn})" style="width:100%;margin-top:6px;padding:5px;border-radius:6px;font-size:10px;cursor:pointer;font-weight:600;${tryonStyle}">${tryonOn ? '✨ Probador Activo' : '○ Activar Probador'}</button>
+                <div style="font-size:11px;color:var(--text-mid);margin-top:2px;">${g.size}${g.reference?' · '+g.reference:''}</div>
+                ${g.price?`<div style="font-size:12px;color:var(--accent);font-weight:600;margin-top:2px;">$${Number(g.price).toLocaleString('es-CO')}</div>`:''}
+                <button onclick="toggleTryon('${g.id}',${!on})" style="width:100%;margin-top:6px;padding:5px;border-radius:6px;font-size:10px;cursor:pointer;font-weight:600;${style}">${on?'✨ Probador Activo':'○ Activar Probador'}</button>
                 <div style="display:flex;gap:4px;margin-top:4px;">
-                    <a href="/api/garment/${g.id}/qr" download="qr_${g.name}.png" style="flex:1;text-align:center;padding:4px;background:var(--blue-soft);color:var(--blue);border:1px solid var(--blue);border-radius:6px;font-size:10px;text-decoration:none;cursor:pointer;">📱 QR</a>
-                    <a href="/prenda/${g.id}" target="_blank" style="flex:1;text-align:center;padding:4px;background:var(--card);border:1px solid var(--border);border-radius:6px;font-size:10px;text-decoration:none;color:var(--text);cursor:pointer;">👁️ Ver</a>
+                    <a href="/api/garment/${g.id}/qr" download style="flex:1;text-align:center;padding:4px;background:var(--blue-soft);color:var(--blue);border:1px solid var(--blue);border-radius:6px;font-size:10px;text-decoration:none;">📱 QR</a>
+                    <a href="/prenda/${g.id}" target="_blank" style="flex:1;text-align:center;padding:4px;background:var(--card);border:1px solid var(--border);border-radius:6px;font-size:10px;text-decoration:none;color:var(--text);">👁️</a>
                     <button onclick="editGarmentCategory('${g.id}','${g.category}')" style="flex:0.7;padding:4px;background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent);border-radius:6px;font-size:10px;cursor:pointer;">✏️</button>
                     <button onclick="deleteGarment('${g.id}')" style="flex:0.5;padding:4px;background:var(--red-soft);color:var(--red);border:1px solid var(--red);border-radius:6px;font-size:10px;cursor:pointer;">✕</button>
                 </div>
-            </div>
-        </div>`;
+            </div></div>`;
     }).join('');
 }
 
+// ═══ GARMENT ACTIONS ═══
 async function uploadGarmentToClient() {
-    const fileInput = document.getElementById('gcImage');
-    if (!fileInput.files || !fileInput.files[0]) { alert('Selecciona una foto'); return; }
-    const name = document.getElementById('gcName').value;
-    const cat = document.getElementById('gcCategory').value;
-    if (!name || !cat) { alert('Nombre y categoría son obligatorios'); return; }
-
-    const form = new FormData();
-    form.append('name', name);
-    form.append('category', cat);
-    form.append('gender', document.getElementById('gcGender').value);
-    form.append('size', document.getElementById('gcSize').value);
-    form.append('price', document.getElementById('gcPrice').value || '0');
-    form.append('image', fileInput.files[0]);
-    form.append('store_id', selectedClientId);
-    form.append('reference', document.getElementById('gcRef').value || '');
-    form.append('color', document.getElementById('gcColor').value || '');
-    form.append('material', document.getElementById('gcMaterial').value || '');
-
+    const f=document.getElementById('gcImage'); if(!f.files||!f.files[0]){alert('Selecciona foto');return;}
+    const name=document.getElementById('gcName').value, cat=document.getElementById('gcCategory').value;
+    if(!name||!cat){alert('Nombre y categoría obligatorios');return;}
+    const form=new FormData();
+    form.append('name',name); form.append('category',cat); form.append('gender',document.getElementById('gcGender').value);
+    form.append('size',document.getElementById('gcSize').value); form.append('price',document.getElementById('gcPrice').value||'0');
+    form.append('image',f.files[0]); form.append('store_id',selectedClientId);
+    form.append('reference',document.getElementById('gcRef').value||'');
+    form.append('color',document.getElementById('gcColor').value||'');
+    form.append('material',document.getElementById('gcMaterial').value||'');
     try {
-        const resp = await fetch('/api/upload-garment', { method: 'POST', body: form });
-        const data = await resp.json();
-        if (data.success) {
-            closeModal();
-            // Clear form
-            document.getElementById('gcName').value = '';
-            document.getElementById('gcRef').value = '';
-            document.getElementById('gcColor').value = '';
-            document.getElementById('gcMaterial').value = '';
-            document.getElementById('gcPrice').value = '0';
-            fileInput.value = '';
-            loadClientGarments(selectedClientId);
-        } else {
-            alert('Error: ' + (data.detail || 'Error subiendo prenda'));
-        }
-    } catch(e) {
-        alert('Error de conexión');
-    }
+        const resp=await fetch('/api/upload-garment',{method:'POST',body:form}); const data=await resp.json();
+        if(data.success){closeModal();document.getElementById('gcName').value='';document.getElementById('gcRef').value='';document.getElementById('gcColor').value='';document.getElementById('gcMaterial').value='';document.getElementById('gcPrice').value='0';f.value='';loadClientGarments(selectedClientId);}
+        else alert('Error: '+(data.detail||'Error'));
+    } catch(e){alert('Error de conexión');}
 }
-
-async function deleteGarment(id) {
-    if (!confirm('¿Eliminar esta prenda?')) return;
-    await api(`/api/garment/${id}`, 'DELETE');
-    loadClientGarments(selectedClientId);
+async function deleteGarment(id){if(!confirm('¿Eliminar?'))return; await api(`/api/garment/${id}`,'DELETE'); loadClientGarments(selectedClientId);}
+async function toggleTryon(id,enable){
+    const form=new FormData(); form.append('tryon_enabled',enable?'true':'false');
+    await fetch(`/api/garment/${id}`,{method:'PUT',body:form}); loadClientGarments(selectedClientId);
 }
-
-async function toggleTryon(id, enable) {
-    try {
-        const form = new FormData();
-        form.append('tryon_enabled', enable ? 'true' : 'false');
-        const resp = await fetch(`/api/garment/${id}`, {method:'PUT', body: form});
-        const data = await resp.json();
-        if (!data.success) alert('Error: ' + JSON.stringify(data));
-    } catch(e) {
-        alert('Error toggle: ' + e.message);
-    }
-    loadClientGarments(selectedClientId);
+async function editGarmentCategory(id,cur){
+    const n=prompt(`Categoría actual: ${cur}\n\nEscribe:\n- tops\n- bottoms\n- one-pieces`);
+    if(!n||!['tops','bottoms','one-pieces'].includes(n.trim())){if(n!==null)alert('Categoría inválida');return;}
+    const form=new FormData(); form.append('category',n.trim());
+    await fetch(`/api/garment/${id}`,{method:'PUT',body:form}); loadClientGarments(selectedClientId);
 }
+function downloadAllQR(){window.open(`/api/garments/qr-all?store_id=${selectedClientId}`,'_blank');}
 
-async function editGarmentCategory(id, currentCat) {
-    const options = {'tops':'👕 Superior (tops)', 'bottoms':'👖 Inferior (bottoms)', 'one-pieces':'👗 Completo (one-pieces)'};
-    const labels = Object.entries(options).map(([k,v]) => `${k === currentCat ? '✅ ' : ''}${v}`).join('\n');
-    const newCat = prompt(`Categoría actual: ${options[currentCat] || currentCat}\n\nEscribe la nueva categoría:\n- tops\n- bottoms\n- one-pieces`);
-    if (!newCat || !['tops','bottoms','one-pieces'].includes(newCat.trim())) {
-        if (newCat !== null) alert('Categoría inválida. Usa: tops, bottoms, o one-pieces');
-        return;
-    }
-    const form = new FormData();
-    form.append('category', newCat.trim());
-    await fetch(`/api/garment/${id}`, {method:'PUT', body: form});
-    loadClientGarments(selectedClientId);
-}
-
-function downloadAllQR() {
-    window.open(`/api/garments/qr-all?store_id=${selectedClientId}`, '_blank');
-}
-
-// ============================================================
-// BILLING
-// ============================================================
+// ═══ BILLING ═══
 async function loadBilling() {
-    const data = await api('/api/admin/clients');
-    const clients = data.clients || [];
-
-    let totFotos = 0, totVideos = 0, totCredits = 0, totCost = 0, totCharge = 0, totProfit = 0;
-
-    document.getElementById('billingTable').innerHTML = clients.map(c => {
-        const s = c.stats;
-        totFotos += s.fotos; totVideos += s.videos; totCredits += s.total_credits;
-        totCost += s.cost_cop; totCharge += s.charge_cop; totProfit += s.profit_cop;
-        const margin = s.charge_cop > 0 ? Math.round((s.profit_cop / s.charge_cop) * 100) : 0;
-        const mCls = margin > 70 ? 'high' : margin > 40 ? 'mid' : 'low';
-        return `<tr>
-            <td style="font-weight:500">${c.name}</td>
-            <td style="text-align:center">${s.fotos}</td>
-            <td style="text-align:center">${s.videos}</td>
-            <td style="text-align:center;color:var(--accent);font-weight:600">${s.total_credits}</td>
-            <td style="text-align:right;color:var(--red)">${COP(s.cost_cop)}</td>
-            <td style="text-align:right;color:var(--green);font-weight:600">${COP(s.charge_cop)}</td>
-            <td style="text-align:right;color:var(--blue);font-weight:700">${COP(s.profit_cop)}</td>
-            <td style="text-align:right"><span class="badge badge-margin-${mCls}">${margin}%</span></td>
-        </tr>`;
+    const data=await api('/api/admin/clients'); const clients=data.clients||[];
+    let tF=0,tV=0,tCr=0,tCo=0,tCh=0,tPr=0;
+    document.getElementById('billingTable').innerHTML = clients.map(c=>{
+        const s=c.stats; tF+=s.fotos;tV+=s.videos;tCr+=s.total_credits;tCo+=s.cost_cop;tCh+=s.charge_cop;tPr+=s.profit_cop;
+        const m=s.charge_cop>0?Math.round(s.profit_cop/s.charge_cop*100):0;
+        return `<tr><td style="font-weight:500">${c.name}</td><td style="text-align:center">${s.fotos}</td><td style="text-align:center">${s.videos}</td><td style="text-align:center;color:var(--accent);font-weight:600">${s.total_credits}</td><td style="text-align:right;color:var(--red)">${COP(s.cost_cop)}</td><td style="text-align:right;color:var(--green);font-weight:600">${COP(s.charge_cop)}</td><td style="text-align:right;color:var(--blue);font-weight:700">${COP(s.profit_cop)}</td><td style="text-align:right"><span class="badge badge-margin-${m>70?'high':m>40?'mid':'low'}">${m}%</span></td></tr>`;
     }).join('');
-
-    const totalMargin = totCharge > 0 ? Math.round((totProfit / totCharge) * 100) : 0;
-    document.getElementById('billingTotals').innerHTML = `<tr>
-        <td>TOTAL</td><td style="text-align:center">${totFotos}</td><td style="text-align:center">${totVideos}</td>
-        <td style="text-align:center;color:var(--accent)">${totCredits}</td>
-        <td style="text-align:right;color:var(--red)">${COP(totCost)}</td>
-        <td style="text-align:right;color:var(--green)">${COP(totCharge)}</td>
-        <td style="text-align:right;color:var(--blue);font-size:15px">${COP(totProfit)}</td>
-        <td style="text-align:right"><span class="badge badge-margin-high">${totalMargin}%</span></td>
-    </tr>`;
+    const tm=tCh>0?Math.round(tPr/tCh*100):0;
+    document.getElementById('billingTotals').innerHTML=`<tr><td>TOTAL</td><td style="text-align:center">${tF}</td><td style="text-align:center">${tV}</td><td style="text-align:center;color:var(--accent)">${tCr}</td><td style="text-align:right;color:var(--red)">${COP(tCo)}</td><td style="text-align:right;color:var(--green)">${COP(tCh)}</td><td style="text-align:right;color:var(--blue);font-size:15px">${COP(tPr)}</td><td style="text-align:right"><span class="badge badge-margin-high">${tm}%</span></td></tr>`;
 }
 
-// ============================================================
-// ACTIVITY
-// ============================================================
+// ═══ ACTIVITY ═══
 async function loadActivity() {
-    const data = await api('/api/admin/usage');
-    logsData = data.logs || [];
-
-    document.getElementById('activityTable').innerHTML = logsData.map(l => `
-        <tr>
-            <td style="color:var(--text-mid)">${l.created_at?.slice(0,10) || ''}</td>
-            <td>${l.client_name}</td>
-            <td><span class="badge ${l.usage_type === 'tryon' ? 'badge-foto' : 'badge-video'}">${l.usage_type === 'tryon' ? '📷 Foto' : '🎬 Video'}</span></td>
-            <td>${l.garments_desc || '—'}</td>
-            <td style="color:var(--accent);font-weight:600">${l.credits_used}</td>
-            <td style="color:var(--red)">${COP(l.cost_cop)}</td>
-            <td style="color:var(--green);font-weight:600">${COP(l.charge_cop)}</td>
-            <td style="color:var(--text-mid);font-size:12px">${l.notes || ''}</td>
-            <td><button class="btn btn-danger btn-sm" onclick="deleteLog('${l.id}')">✕</button></td>
-        </tr>
-    `).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--text-mid);padding:20px">Sin registros</td></tr>';
+    const data=await api('/api/admin/usage'); logsData=data.logs||[];
+    document.getElementById('activityTable').innerHTML = logsData.map(l=>`<tr><td style="color:var(--text-mid)">${l.created_at?.slice(0,10)||''}</td><td>${l.client_name}</td><td><span class="badge ${l.usage_type==='tryon'?'badge-foto':'badge-video'}">${l.usage_type==='tryon'?'📷':'🎬'}</span></td><td>${l.garments_desc||'—'}</td><td style="color:var(--accent);font-weight:600">${l.credits_used}</td><td style="color:var(--red)">${COP(l.cost_cop)}</td><td style="color:var(--green);font-weight:600">${COP(l.charge_cop)}</td><td style="font-size:12px;color:var(--text-mid)">${l.notes||''}</td><td><button class="btn btn-danger btn-sm" onclick="deleteLog('${l.id}')">✕</button></td></tr>`).join('')||'<tr><td colspan="9" style="text-align:center;color:var(--text-mid);padding:20px">Sin registros</td></tr>';
 }
 
-// ============================================================
-// CREATE / DELETE
-// ============================================================
+// ═══ CREATE / DELETE ═══
 async function createClient() {
-    const body = new FormData();
-    body.append('name', document.getElementById('newClientName').value);
-    body.append('email', document.getElementById('newClientEmail').value);
-    body.append('phone', document.getElementById('newClientPhone').value);
-    body.append('price_per_outfit', document.getElementById('newClientOutfit').value);
-    body.append('price_per_video', document.getElementById('newClientVideo').value);
-    const res = await api('/api/admin/clients', 'POST', body);
-    if (res.success) {
-        closeModal();
-        document.getElementById('newClientName').value = '';
-        document.getElementById('newClientEmail').value = '';
-        document.getElementById('newClientPhone').value = '';
-        loadClients();
-    }
+    const body=new FormData();
+    body.append('name',document.getElementById('newClientName').value);
+    body.append('email',document.getElementById('newClientEmail').value);
+    body.append('phone',document.getElementById('newClientPhone').value);
+    body.append('price_per_outfit',document.getElementById('newClientOutfit').value);
+    body.append('price_per_video',document.getElementById('newClientVideo').value);
+    const res=await api('/api/admin/clients','POST',body);
+    if(res.success){closeModal();document.getElementById('newClientName').value='';document.getElementById('newClientEmail').value='';document.getElementById('newClientPhone').value='';loadClients();}
 }
-
 async function createUsage() {
-    const usageType = document.getElementById('usageType').value;
-    let credits = 1;
-    if (usageType === 'tryon') credits = parseInt(document.getElementById('usageCredits').value);
-    else if (usageType === 'video-480p') credits = 1;
-    else if (usageType === 'video-720p') credits = 3;
-    else if (usageType === 'video-1080p') credits = 6;
-
-    const body = new FormData();
-    body.append('client_id', document.getElementById('usageClient').value);
-    body.append('usage_type', usageType);
-    body.append('credits_used', credits);
-    body.append('garments_desc', document.getElementById('usageGarments').value);
-    body.append('notes', document.getElementById('usageNotes').value);
-    const res = await api('/api/admin/usage', 'POST', body);
-    if (res.success) {
-        closeModal();
-        document.getElementById('usageGarments').value = '';
-        document.getElementById('usageNotes').value = '';
-        if (selectedClientId) showClientDetail(selectedClientId);
-        else loadActivity();
-    }
+    const ut=document.getElementById('usageType').value;
+    let cr=1; if(ut==='tryon')cr=parseInt(document.getElementById('usageCredits').value); else if(ut==='video-720p')cr=3; else if(ut==='video-1080p')cr=6;
+    const body=new FormData();
+    body.append('client_id',document.getElementById('usageClient').value);
+    body.append('usage_type',ut); body.append('credits_used',cr);
+    body.append('garments_desc',document.getElementById('usageGarments').value);
+    body.append('notes',document.getElementById('usageNotes').value);
+    const res=await api('/api/admin/usage','POST',body);
+    if(res.success){closeModal();document.getElementById('usageGarments').value='';document.getElementById('usageNotes').value='';if(selectedClientId)showClientDetail(selectedClientId);else loadActivity();}
 }
-
-async function deleteLog(logId, clientId) {
-    if (!confirm('¿Eliminar este registro?')) return;
-    await api(`/api/admin/usage/${logId}`, 'DELETE');
-    if (clientId) showClientDetail(clientId);
-    else loadActivity();
+async function deleteLog(id,cid){if(!confirm('¿Eliminar?'))return; await api(`/api/admin/usage/${id}`,'DELETE'); if(cid)showClientDetail(cid);else loadActivity();}
+function populateClientSelect(){
+    const sel=document.getElementById('usageClient');
+    sel.innerHTML='<option value="">Seleccionar...</option>'+clientsData.map(c=>`<option value="${c.id}" ${c.id===selectedClientId?'selected':''}>${c.name}</option>`).join('');
 }
+document.getElementById('usageType').addEventListener('change',function(){document.getElementById('creditsGroup').style.display=this.value==='tryon'?'block':'none';});
+async function updatePlan(){const form=new FormData();form.append('fashn_plan',document.getElementById('planSelect').value);await api('/api/admin/settings','PUT',form);loadDashboard();}
 
-function populateClientSelect() {
-    const sel = document.getElementById('usageClient');
-    sel.innerHTML = '<option value="">Seleccionar...</option>' +
-        clientsData.map(c => `<option value="${c.id}" ${c.id === selectedClientId ? 'selected' : ''}>${c.name}</option>`).join('');
-}
-
-// Toggle credits field based on usage type
-document.getElementById('usageType').addEventListener('change', function() {
-    document.getElementById('creditsGroup').style.display = this.value === 'tryon' ? 'block' : 'none';
-});
-
-async function updatePlan() {
-    const plan = document.getElementById('planSelect').value;
-    const body = new FormData();
-    body.append('fashn_plan', plan);
-    await api('/api/admin/settings', 'PUT', body);
-    loadDashboard();
-}
-
-// ============================================================
-// INIT
-// ============================================================
-loadDashboard();
-loadClients();
+// ═══ INIT ═══
+loadDashboard(); loadClients();
 </script>
 </body>
 </html>
