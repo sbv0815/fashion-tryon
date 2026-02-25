@@ -220,6 +220,33 @@ async def admin_page(request: Request):
 
 
 # ============================================================
+# STORE PANEL (client-facing dashboard)
+# ============================================================
+@app.get("/panel/{store_slug}", response_class=HTMLResponse)
+async def store_panel(store_slug: str, request: Request, db: Session = Depends(get_db)):
+    """Store owner panel - requires password auth via JS."""
+    store = db.query(Store).filter(Store.slug == store_slug).first()
+    if not store:
+        raise HTTPException(status_code=404, detail="Tienda no encontrada")
+    return templates.TemplateResponse("store_panel.html", {"request": request, "store": store})
+
+
+@app.post("/api/panel/auth")
+async def panel_auth(
+    store_slug: str = Form(...),
+    password: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    """Authenticate store owner for panel access."""
+    store = db.query(Store).filter(Store.slug == store_slug).first()
+    if not store:
+        raise HTTPException(status_code=404, detail="Tienda no encontrada")
+    if store.panel_password and store.panel_password == password:
+        return {"success": True, "store_id": store.id, "store_name": store.name}
+    raise HTTPException(status_code=401, detail="Contraseña incorrecta")
+
+
+# ============================================================
 # ROUTES - STORES (COMPANIES)
 # ============================================================
 @app.post("/api/store")
@@ -228,6 +255,7 @@ async def create_store(
     phone: str = Form(""), email: str = Form(""),
     address: str = Form(""), primary_color: str = Form("#c9a55a"),
     instagram: str = Form(""), website: str = Form(""),
+    panel_password: str = Form(""),
     logo: UploadFile = File(None),
     db: Session = Depends(get_db)
 ):
@@ -237,6 +265,9 @@ async def create_store(
     if existing:
         raise HTTPException(status_code=400, detail="Slug ya existe")
     store_id = uuid.uuid4().hex[:12]
+    # Auto-generate password if not provided
+    if not panel_password:
+        panel_password = uuid.uuid4().hex[:8]
     logo_path = None
     if logo and logo.filename:
         ext = Path(logo.filename).suffix or ".png"
@@ -247,12 +278,17 @@ async def create_store(
         id=store_id, name=name, slug=slug,
         phone=phone, email=email, address=address,
         primary_color=primary_color, instagram=instagram, website=website,
+        panel_password=panel_password,
         logo_path=logo_path,
         logo_url=f"/api/store-logo/{store_id}" if logo_path else None
     )
     db.add(store)
     db.commit()
-    return {"success": True, "store": {"id": store.id, "name": store.name, "slug": store.slug}}
+    return {"success": True, "store": {
+        "id": store.id, "name": store.name, "slug": store.slug,
+        "panel_password": panel_password,
+        "panel_url": f"/panel/{store.slug}"
+    }}
 
 
 @app.get("/api/stores")
@@ -261,9 +297,11 @@ async def list_stores(db: Session = Depends(get_db)):
     return [{"id": s.id, "name": s.name, "slug": s.slug, "phone": s.phone,
              "email": s.email, "primary_color": s.primary_color,
              "instagram": s.instagram, "website": s.website,
+             "panel_password": s.panel_password,
              "logo_url": s.logo_url, "active": s.active,
              "garment_count": db.query(Garment).filter(Garment.store_id == s.id).count(),
              "store_url": f"/tienda/{s.slug}",
+             "panel_url": f"/panel/{s.slug}",
              } for s in stores]
 
 

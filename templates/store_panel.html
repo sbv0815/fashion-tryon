@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel - {{ store.name }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --accent: {{ store.primary_color or '#c9a55a' }};
+            --bg: #0c0b0f; --surface: #16151a; --card: #1a191f;
+            --border: #2a2930; --text: #eae6df; --text-mid: #9a9590; --text-dim: #5c5856;
+            --green: #4ade80; --green-soft: rgba(74,222,128,0.12);
+            --red: #f87171; --blue: #60a5fa; --blue-soft: rgba(96,165,250,0.12);
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Outfit',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+
+        /* Login overlay */
+        .login-overlay {
+            position:fixed; inset:0; background:var(--bg); z-index:999;
+            display:flex; align-items:center; justify-content:center;
+        }
+        .login-overlay.hidden { display:none; }
+        .login-box {
+            background:var(--surface); border:1px solid var(--border); border-radius:16px;
+            padding:40px; width:380px; text-align:center;
+        }
+        .login-box h2 { font-family:'Fraunces',serif; font-size:24px; margin-bottom:8px; }
+        .login-box .store-label { color:var(--accent); font-size:14px; margin-bottom:24px; }
+        .login-box input {
+            width:100%; padding:12px 16px; background:var(--bg); border:1px solid var(--border);
+            border-radius:10px; color:var(--text); font-family:inherit; font-size:15px; margin-bottom:14px;
+        }
+        .login-box input:focus { outline:none; border-color:var(--accent); }
+        .login-box .btn-login {
+            width:100%; padding:14px; background:var(--accent); color:var(--bg);
+            border:none; border-radius:10px; font-family:inherit; font-size:15px;
+            font-weight:600; cursor:pointer;
+        }
+        .login-error { color:var(--red); font-size:13px; margin-top:8px; display:none; }
+
+        /* Header */
+        .header {
+            background:var(--surface); border-bottom:2px solid var(--accent);
+            padding:14px 24px; display:flex; align-items:center; justify-content:space-between;
+        }
+        .header-left { display:flex; align-items:center; gap:12px; }
+        .header-left img { height:32px; border-radius:6px; }
+        .logo { font-family:'Fraunces',serif; font-size:18px; }
+        .logo span { color:var(--accent); }
+        .header-right { display:flex; align-items:center; gap:10px; }
+        .header-link {
+            padding:6px 14px; border-radius:8px; font-size:12px; text-decoration:none;
+            border:1px solid var(--border); color:var(--text-mid); transition:all 0.2s;
+        }
+        .header-link:hover { border-color:var(--accent); color:var(--text); }
+
+        /* Layout */
+        .container { max-width:1000px; margin:0 auto; padding:24px 20px; }
+
+        /* Tabs */
+        .tabs { display:flex; gap:4px; margin-bottom:24px; background:var(--surface); border-radius:12px; padding:4px; }
+        .tab {
+            flex:1; padding:10px; text-align:center; border-radius:10px; cursor:pointer;
+            font-size:13px; font-weight:500; color:var(--text-mid); transition:all 0.2s;
+        }
+        .tab.active { background:var(--accent); color:var(--bg); font-weight:600; }
+        .tab:hover:not(.active) { color:var(--text); }
+
+        /* Stats */
+        .stats-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:24px; }
+        .stat-card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px; text-align:center; }
+        .stat-icon { font-size:24px; margin-bottom:4px; }
+        .stat-value { font-size:26px; font-weight:700; }
+        .stat-label { font-size:11px; color:var(--text-mid); text-transform:uppercase; letter-spacing:0.8px; margin-top:2px; }
+
+        /* Sections */
+        .section { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:20px; margin-bottom:16px; }
+        .section-title { font-size:14px; font-weight:600; color:var(--accent); margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+
+        /* Garment grid */
+        .garment-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:10px; }
+        .g-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; overflow:hidden; position:relative; }
+        .g-card img { width:100%; height:120px; object-fit:cover; background:#111; }
+        .g-card .g-body { padding:8px 10px; }
+        .g-card .g-name { font-weight:600; font-size:12px; }
+        .g-card .g-meta { font-size:11px; color:var(--text-mid); margin-top:2px; }
+        .g-card .g-price { color:var(--accent); font-weight:600; font-size:12px; margin-top:2px; }
+        .g-badge { position:absolute; top:6px; right:6px; background:var(--green); color:#fff; padding:2px 6px; border-radius:8px; font-size:9px; font-weight:600; }
+
+        /* Ranking */
+        .rank-row {
+            display:grid; grid-template-columns:30px 50px 1fr 60px 60px 60px 60px;
+            align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); font-size:13px;
+        }
+        .rank-row:last-child { border-bottom:none; }
+        .rank-num { font-size:18px; font-weight:700; color:var(--text-dim); text-align:center; }
+        .rank-num.top3 { color:var(--accent); }
+        .rank-img { width:42px; height:42px; border-radius:6px; object-fit:cover; }
+        .rank-name { font-weight:600; font-size:13px; }
+        .rank-sub { font-size:10px; color:var(--text-mid); }
+        .rank-val { text-align:center; font-weight:600; }
+
+        /* Feedback */
+        .fb-card {
+            background:var(--surface); border:1px solid var(--border); border-radius:10px;
+            padding:12px 14px; margin-bottom:8px;
+        }
+        .fb-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+        .fb-garment { font-weight:600; font-size:13px; }
+        .fb-date { font-size:11px; color:var(--text-dim); }
+        .fb-stars { color:var(--accent); font-size:14px; }
+        .fb-comment { font-size:13px; color:var(--text-mid); margin-top:6px; font-style:italic; }
+        .fb-buy { display:inline-block; background:var(--green-soft); color:var(--green); padding:2px 8px; border-radius:6px; font-size:11px; font-weight:600; margin-top:4px; }
+
+        /* Platform pills */
+        .platform-row { display:flex; gap:10px; flex-wrap:wrap; }
+        .platform-pill {
+            background:var(--surface); border:1px solid var(--border); border-radius:10px;
+            padding:12px 18px; text-align:center; min-width:100px;
+        }
+        .platform-pill .p-icon { font-size:22px; }
+        .platform-pill .p-count { font-size:20px; font-weight:700; margin-top:4px; }
+        .platform-pill .p-name { font-size:10px; color:var(--text-mid); text-transform:uppercase; }
+
+        /* Tab content */
+        .tab-content { display:none; }
+        .tab-content.active { display:block; }
+
+        .hidden { display:none !important; }
+
+        @media(max-width:700px) {
+            .stats-grid { grid-template-columns:repeat(2,1fr); }
+            .rank-row { grid-template-columns:24px 36px 1fr 40px 40px; font-size:11px; }
+            .rank-row > :nth-child(6), .rank-row > :nth-child(7) { display:none; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-overlay" id="loginOverlay">
+    <div class="login-box">
+        <h2>🔐 Panel de tienda</h2>
+        <div class="store-label">{{ store.name }}</div>
+        <input type="password" id="loginPass" placeholder="Contraseña" onkeydown="if(event.key==='Enter')doLogin()">
+        <button class="btn-login" onclick="doLogin()">Ingresar</button>
+        <div class="login-error" id="loginError">Contraseña incorrecta</div>
+    </div>
+</div>
+
+<!-- HEADER -->
+<div class="header">
+    <div class="header-left">
+        {% if store.logo_url %}<img src="{{ store.logo_url }}" alt="{{ store.name }}">{% endif %}
+        <div class="logo"><span>{{ store.name }}</span> · Panel</div>
+    </div>
+    <div class="header-right">
+        <a href="/tienda/{{ store.slug }}" target="_blank" class="header-link">👁️ Ver tienda</a>
+        <select id="periodSelect" onchange="loadAll()" style="background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 10px;font-family:inherit;font-size:12px;">
+            <option value="7">7 días</option>
+            <option value="30" selected>30 días</option>
+            <option value="90">90 días</option>
+        </select>
+    </div>
+</div>
+
+<div class="container">
+
+    <!-- TABS -->
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('overview')">📊 Resumen</div>
+        <div class="tab" onclick="switchTab('catalog')">📦 Catálogo</div>
+        <div class="tab" onclick="switchTab('feedback')">⭐ Opiniones</div>
+        <div class="tab" onclick="switchTab('shares')">📱 Redes</div>
+    </div>
+
+    <!-- OVERVIEW -->
+    <div class="tab-content active" id="tc-overview">
+        <div class="stats-grid" id="statsGrid"></div>
+
+        <div class="section">
+            <div class="section-title">🏆 Ranking de prendas</div>
+            <div style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">Ordenadas por interacción total (visitas + pruebas + shares)</div>
+            <div id="rankingList"></div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">💡 Insights</div>
+            <div id="insightsList"></div>
+        </div>
+    </div>
+
+    <!-- CATALOG -->
+    <div class="tab-content" id="tc-catalog">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <div style="font-size:13px;color:var(--text-mid);"><span id="catalogCount">0</span> prendas en tu catálogo</div>
+            <div style="display:flex;gap:8px;">
+                <a href="#" id="qrAllBtn" download class="header-link" style="font-size:12px;">📱 QR de todas</a>
+                <a href="/tienda/{{ store.slug }}" target="_blank" class="header-link" style="font-size:12px;">👁️ Ver tienda</a>
+            </div>
+        </div>
+        <div class="garment-grid" id="catalogGrid"></div>
+    </div>
+
+    <!-- FEEDBACK -->
+    <div class="tab-content" id="tc-feedback">
+        <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px;">
+            <div class="stat-card"><div class="stat-icon">⭐</div><div class="stat-value" id="fbAvg">—</div><div class="stat-label">Promedio</div></div>
+            <div class="stat-card"><div class="stat-icon">💬</div><div class="stat-value" id="fbTotal">0</div><div class="stat-label">Opiniones</div></div>
+            <div class="stat-card"><div class="stat-icon">🛒</div><div class="stat-value" id="fbBuy">0</div><div class="stat-label">Quieren comprar</div></div>
+        </div>
+        <div class="section">
+            <div class="section-title">💬 Opiniones de clientes</div>
+            <div style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">Las opiniones son privadas — solo tú puedes verlas</div>
+            <div id="feedbackList"></div>
+        </div>
+    </div>
+
+    <!-- SHARES -->
+    <div class="tab-content" id="tc-shares">
+        <div class="section">
+            <div class="section-title">📱 Compartidas por plataforma</div>
+            <div class="platform-row" id="platformRow"></div>
+        </div>
+        <div class="section" style="margin-top:16px;">
+            <div class="section-title">📈 Alcance estimado</div>
+            <div id="reachEstimate" style="font-size:14px;color:var(--text-mid);"></div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+const STORE_SLUG = '{{ store.slug }}';
+const STORE_ID = '{{ store.id }}';
+let authenticated = false;
+
+// ============================================================
+// AUTH
+// ============================================================
+async function doLogin() {
+    const pass = document.getElementById('loginPass').value;
+    try {
+        const form = new FormData();
+        form.append('store_slug', STORE_SLUG);
+        form.append('password', pass);
+        const resp = await fetch('/api/panel/auth', { method:'POST', body:form });
+        if (resp.ok) {
+            authenticated = true;
+            document.getElementById('loginOverlay').classList.add('hidden');
+            loadAll();
+        } else {
+            document.getElementById('loginError').style.display = 'block';
+        }
+    } catch(e) {
+        document.getElementById('loginError').style.display = 'block';
+    }
+}
+
+// ============================================================
+// TABS
+// ============================================================
+function switchTab(tab) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+    document.getElementById(`tc-${tab}`).classList.add('active');
+}
+
+// ============================================================
+// LOAD DATA
+// ============================================================
+async function loadAll() {
+    if (!authenticated) return;
+    const days = document.getElementById('periodSelect').value;
+    try {
+        const [analyticsResp, feedbackResp, catalogResp] = await Promise.all([
+            fetch(`/api/analytics/${STORE_ID}?days=${days}`),
+            fetch(`/api/feedback/${STORE_ID}`),
+            fetch(`/api/catalog?store_id=${STORE_ID}`)
+        ]);
+        const analytics = await analyticsResp.json();
+        const feedback = await feedbackResp.json();
+        const catalog = await catalogResp.json();
+
+        renderOverview(analytics);
+        renderCatalog(catalog.garments || []);
+        renderFeedback(feedback.feedback || [], analytics.totals);
+        renderShares(analytics);
+    } catch(e) { console.error(e); }
+}
+
+// ============================================================
+// OVERVIEW
+// ============================================================
+const platformIcons = { whatsapp:'💬', instagram:'📸', facebook:'👤', tiktok:'🎵', copy_link:'🔗', download:'⬇️' };
+const platformNames = { whatsapp:'WhatsApp', instagram:'Instagram', facebook:'Facebook', tiktok:'TikTok', copy_link:'Link', download:'Descargas' };
+
+function renderOverview(data) {
+    const t = data.totals || {};
+    document.getElementById('statsGrid').innerHTML = [
+        { icon:'👁️', value:t.views||0, label:'Visitas' },
+        { icon:'✨', value:t.tryons||0, label:'Pruebas IA' },
+        { icon:'📤', value:t.shares||0, label:'Compartidas' },
+        { icon:'⭐', value:t.avg_rating ? `${t.avg_rating}/5` : '—', label:'Calificación' },
+        { icon:'🛒', value:t.buy_intent||0, label:'Quieren comprar' },
+        { icon:'📈', value:`${t.conversion_rate||0}%`, label:'Conversión' },
+    ].map(s => `<div class="stat-card"><div class="stat-icon">${s.icon}</div><div class="stat-value">${s.value}</div><div class="stat-label">${s.label}</div></div>`).join('');
+
+    // Ranking
+    const ranking = data.garment_ranking || [];
+    const maxEng = ranking[0]?.engagement || 1;
+    document.getElementById('rankingList').innerHTML = ranking.length ? ranking.map((g, i) => {
+        const stars = g.avg_rating ? '⭐'.repeat(Math.round(g.avg_rating)) : '';
+        return `<div class="rank-row">
+            <div class="rank-num ${i<3?'top3':''}">${i+1}</div>
+            <img src="${g.image_url}" class="rank-img">
+            <div><div class="rank-name">${g.name}</div><div class="rank-sub">${g.reference||g.category} ${stars}</div></div>
+            <div class="rank-val" style="color:var(--text-mid)">${g.views}</div>
+            <div class="rank-val" style="color:var(--accent)">${g.tryons}</div>
+            <div class="rank-val" style="color:var(--green)">${g.shares}</div>
+            <div class="rank-val" style="color:var(--blue)">${g.buy_intent||0} 🛒</div>
+        </div>`;
+    }).join('') : '<div style="text-align:center;padding:20px;color:var(--text-mid);font-size:13px;">Comparte tu tienda para empezar a ver datos</div>';
+
+    // Insights
+    renderInsights(data);
+}
+
+function renderInsights(data) {
+    const ranking = data.garment_ranking || [];
+    const t = data.totals || {};
+    const insights = [];
+
+    if (ranking.length > 0) {
+        const top = ranking[0];
+        insights.push({ icon:'🏆', title:`Tu prenda estrella: ${top.name}`, text:`Con ${top.tryons} pruebas y ${top.shares} compartidas. Dale más visibilidad en tienda y redes.` });
+    }
+    if (ranking.length > 3) {
+        const bottom = ranking.slice(-2).map(g=>g.name).join(' y ');
+        insights.push({ icon:'📉', title:`Menos interacción: ${bottom}`, text:'Revisa la foto, ubicación en tienda, o considera ofrecer descuento.' });
+    }
+    if (t.buy_intent > 0) {
+        insights.push({ icon:'🛒', title:`${t.buy_intent} personas quieren comprar`, text:'Clientes que tocaron "¡Lo quiero!" después de probarse prendas. Contacta rápido.' });
+    }
+    if (t.shares > 0) {
+        insights.push({ icon:'📱', title:`${t.shares} publicaciones en redes`, text:`Publicidad gratis. Cada share vale ~$5,000 COP en alcance orgánico estimado.` });
+    }
+    if (t.avg_rating > 0) {
+        const q = t.avg_rating >= 4 ? 'excelente' : t.avg_rating >= 3 ? 'buena' : 'a mejorar';
+        insights.push({ icon:'⭐', title:`Calificación ${q}: ${t.avg_rating}/5`, text:`Basado en ${t.total_feedback} opiniones de clientes.` });
+    }
+    if (!insights.length) {
+        insights.push({ icon:'🚀', title:'Empieza a generar datos', text:'Comparte el link de tu tienda o los QR codes de tus prendas.' });
+    }
+
+    document.getElementById('insightsList').innerHTML = insights.map(i => `
+        <div style="background:var(--surface);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;padding:12px 16px;margin-bottom:8px;">
+            <div style="font-weight:600;font-size:13px;">${i.icon} ${i.title}</div>
+            <div style="font-size:12px;color:var(--text-mid);margin-top:3px;">${i.text}</div>
+        </div>
+    `).join('');
+}
+
+// ============================================================
+// CATALOG
+// ============================================================
+function renderCatalog(garments) {
+    document.getElementById('catalogCount').textContent = garments.length;
+    document.getElementById('qrAllBtn').href = `/api/garments/qr-all?store_id=${STORE_ID}`;
+
+    document.getElementById('catalogGrid').innerHTML = garments.length ? garments.map(g => {
+        const icon = g.category==='tops'?'👕':g.category==='bottoms'?'👖':'👗';
+        return `<div class="g-card">
+            ${g.tryon_enabled ? '<div class="g-badge">✨ IA</div>' : ''}
+            <img src="${g.image_url}" alt="${g.name}">
+            <div class="g-body">
+                <div class="g-name">${icon} ${g.name}</div>
+                <div class="g-meta">${g.size} · ${g.reference||g.category}</div>
+                ${g.price ? `<div class="g-price">$${Number(g.price).toLocaleString('es-CO')}</div>` : ''}
+            </div>
+        </div>`;
+    }).join('') : '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--text-mid);">No hay prendas</div>';
+}
+
+// ============================================================
+// FEEDBACK
+// ============================================================
+function renderFeedback(feedbacks, totals) {
+    document.getElementById('fbAvg').textContent = totals?.avg_rating ? `${totals.avg_rating}/5` : '—';
+    document.getElementById('fbTotal').textContent = totals?.total_feedback || feedbacks.length;
+    document.getElementById('fbBuy').textContent = totals?.buy_intent || feedbacks.filter(f=>f.would_buy).length;
+
+    document.getElementById('feedbackList').innerHTML = feedbacks.length ? feedbacks.map(f => `
+        <div class="fb-card">
+            <div class="fb-header">
+                <div class="fb-garment">${f.garment_name}</div>
+                <div class="fb-date">${f.created_at?.slice(0,10)||''}</div>
+            </div>
+            <div class="fb-stars">${'⭐'.repeat(f.rating)}</div>
+            ${f.comment ? `<div class="fb-comment">"${f.comment}"</div>` : ''}
+            ${f.would_buy ? '<div class="fb-buy">🛒 Quiere comprar</div>' : ''}
+        </div>
+    `).join('') : '<div style="text-align:center;padding:20px;color:var(--text-mid);font-size:13px;">Aún no hay opiniones</div>';
+}
+
+// ============================================================
+// SHARES
+// ============================================================
+function renderShares(data) {
+    const platforms = data.shares_by_platform || {};
+    const entries = Object.entries(platforms);
+    const totalShares = Object.values(platforms).reduce((a,b)=>a+b, 0);
+
+    document.getElementById('platformRow').innerHTML = entries.length ? entries.map(([p, count]) => `
+        <div class="platform-pill">
+            <div class="p-icon">${platformIcons[p]||'📱'}</div>
+            <div class="p-count">${count}</div>
+            <div class="p-name">${platformNames[p]||p}</div>
+        </div>
+    `).join('') : '<div style="color:var(--text-mid);font-size:13px;">Aún no hay compartidas</div>';
+
+    document.getElementById('reachEstimate').innerHTML = totalShares > 0
+        ? `<div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px;">
+            <div><span style="font-size:24px;font-weight:700;color:var(--accent)">${totalShares}</span><br><span style="font-size:11px;color:var(--text-mid);">Total shares</span></div>
+            <div><span style="font-size:24px;font-weight:700;color:var(--green)">~${(totalShares*150).toLocaleString('es-CO')}</span><br><span style="font-size:11px;color:var(--text-mid);">Personas alcanzadas (est.)</span></div>
+            <div><span style="font-size:24px;font-weight:700;color:var(--blue)">$${(totalShares*5000).toLocaleString('es-CO')}</span><br><span style="font-size:11px;color:var(--text-mid);">Valor publicitario (est.)</span></div>
+           </div>`
+        : '<div style="font-size:13px;color:var(--text-mid);">Cuando tus clientes compartan sus pruebas virtuales, verás el alcance aquí.</div>';
+}
+</script>
+</body>
+</html>

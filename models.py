@@ -30,6 +30,7 @@ class Store(Base):
     address = Column(Text, nullable=True)
     instagram = Column(String(100), nullable=True)
     website = Column(Text, nullable=True)
+    panel_password = Column(String(100), nullable=True)  # simple password for store panel
     active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -198,7 +199,7 @@ def init_db():
         if 'stores' in existing_tables:
             existing_cols = [c['name'] for c in insp.get_columns('stores')]
             with engine.connect() as conn:
-                for col_name, col_type in {'instagram': 'VARCHAR(100)', 'website': 'TEXT'}.items():
+                for col_name, col_type in {'instagram': 'VARCHAR(100)', 'website': 'TEXT', 'panel_password': 'VARCHAR(100)'}.items():
                     if col_name not in existing_cols:
                         conn.execute(text(f"ALTER TABLE stores ADD COLUMN {col_name} {col_type}"))
                         conn.commit()
